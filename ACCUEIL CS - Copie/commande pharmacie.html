@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Commande Pharmacie — CIS VERGEZE</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;}
+body{background:#f6f8fb;min-height:100vh;color:#111;display:flex;flex-direction:column;}
+header{
+  position:relative;background:#0d2b52;color:#fff;padding:16px 22px;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-right:140px;
+}
+header h1{font-size:20px;font-weight:700;}
+header .meta{font-size:12px;opacity:.95;}
+header .left{display:flex;flex-direction:column;gap:4px;}
+header .center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;white-space:nowrap;}
+main{max-width:1600px;margin:20px auto;padding:0 16px;flex:1;width:100%;}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+.toolbar input[type="search"]{flex:1;min-width:220px;padding:10px 12px;border:1px solid #d0d7e2;border-radius:10px;}
+.btn{border:none;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer;transition:.2s;}
+.btn.primary{background:#1a73e8;color:#fff;}
+.btn.primary:hover{background:#155bb5;}
+.btn.ghost{background:#fff;color:#0d2b52;border:1px solid #d0d7e2;}
+
+/* Désactivation visuelle des boutons */
+.btn.primary:disabled{
+  opacity:0.5;
+  cursor:not-allowed;
+  filter:saturate(0.6);
+}
+
+/* Colonnes fixes 4 / 3 / 2 / 1 + dense filling */
+.grid{display:grid;gap:14px;grid-auto-flow:dense;}
+@media (min-width:1500px){.grid{grid-template-columns:repeat(4,1fr);}}
+@media (min-width:1100px) and (max-width:1499.98px){.grid{grid-template-columns:repeat(3,1fr);}}
+@media (min-width:720px) and (max-width:1099.98px){.grid{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:719.98px){.grid{grid-template-columns:1fr;}}
+
+/* Multi-span for EXCHANGE card */
+.card.span-3{grid-column:span 3;}
+@media (max-width:1499.98px){ .card.span-3{grid-column:span 2;} }
+@media (max-width:1099.98px){ .card.span-3{grid-column:span 1;} } /* <= 2 cols or mobile, revert */
+
+.card{background:#fff;border:1px solid #e6ebf3;border-radius:12px;box-shadow:0 2px 6px rgba(13,43,82,.06);overflow:hidden;}
+.card h2{background:#eef5ff;color:#0d2b52;font-size:14px;font-weight:800;padding:10px 12px;border-bottom:1px solid #e6ebf3;}
+.list{padding:6px 8px;}
+.row{display:grid;grid-template-columns:22px 1fr 52px 74px;align-items:center;gap:8px;padding:6px 6px;border-bottom:1px solid #f1f4f8;}
+.row:last-child{border-bottom:none;}
+.row input[type="number"]{width:74px;padding:6px;border:1px solid #d0d7e2;border-radius:8px;text-align:center;}
+.row.highlight{background:#fff7bf;}
+.badge{font-size:11px;color:#555;background:#f0f3f9;border:1px solid #e2e7f0;padding:2px 6px;border-radius:6px;justify-self:center;}
+.row.twf{grid-template-columns:22px 1fr 120px 120px;}
+.row .textcell input{width:100%;padding:6px;border:1px solid #d0d7e2;border-radius:8px;}
+
+/* Compact */
+.card .row{padding:5px 6px;}
+.card h2{padding:9px 10px;}
+.card .list{padding:5px 6px;}
+
+/* Observations */
+.card.note{margin-top:16px;}
+.card.note .content{padding:12px;}
+textarea.obs{width:100%;min-height:110px;border:1px solid #d0d7e2;border-radius:10px;padding:10px;resize:vertical;}
+
+footer.sticky{position:sticky;bottom:0;background:#fff;border-top:1px solid #e6ebf3;margin-top:14px;padding:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;border-radius:12px;}
+.small{font-size:12px;color:#666;}
+
+/* Bouton retour */
+.back-btn{position:absolute;top:16px;right:22px;background:#d32f2f;color:#fff;border:none;border-radius:30px;padding:8px 18px;font-weight:600;cursor:pointer;transition:background .2s;z-index:1000;}
+.back-btn:hover{background:#b71c1c;}
+</style>
+</head>
+<body>
+<header>
+  <div class="left">
+    <h1>📦 Commande Pharmacie — CIS VERGEZE</h1>
+    <div class="meta">Sélectionnez les lignes à commander (cases) et saisissez la quantité. Les lignes cochées sont surlignées en jaune.</div>
+  </div>
+  <div class="center meta" id="agentMeta">Agent : <span id="agentName">Agent du CIS</span> • <span id="today"></span></div>
+  <button class="back-btn" onclick="window.location.href='accueil.html'">⬅ Retour</button>
+</header>
+
+<main>
+  <div class="toolbar">
+    <input id="search" type="search" placeholder="Rechercher (désignation, catégorie)..." oninput="render()">
+    <button class="btn ghost" onclick="selectAll()">Tout cocher</button>
+    <button class="btn ghost" onclick="clearAll()">Tout décocher</button>
+    <button class="btn primary" onclick="generatePDF()">📄 Générer le PDF</button>
+    <!-- 🔹 bouton Outlook haut avec un id -->
+    <button id="btnOutlookTop" class="btn primary" onclick="sendOutlook()">📤 Ouvrir dans Outlook 365</button>
+  </div>
+
+  <div id="grid" class="grid"></div>
+
+  <div class="card note">
+    <h2>OBSERVATIONS / DEMANDES SPÉCIFIQUES / AUTRE PRODUIT</h2>
+    <div class="content">
+      <textarea id="obs" class="obs" placeholder="Ex : référence spécifique, conditionnement, urgence, autre produit non listé…"></textarea>
+    </div>
+  </div>
+
+  <footer class="sticky">
+    <div class="small"><strong>Récap :</strong> <span id="recap">0 ligne • 0 article</span></div>
+    <div>
+      <button class="btn primary" onclick="generatePDF()">📄 PDF</button>
+      <!-- 🔹 bouton Outlook bas avec un id -->
+      <button id="btnOutlookBottom" class="btn primary" onclick="sendOutlook()">📤 Outlook 365</button>
+    </div>
+  </footer>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.3/jspdf.plugin.autotable.min.js"></script>
+
+<!-- 🔌 Firebase + Firestore + stockage partagé -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="cloud-storage.js"></script>
+
+<script>
+/* =======================================================
+     🔁 SYNCHRO PHARMA <-> FIRESTORE
+   ======================================================= */
+
+// On ne synchronise ici que la main courante (journal_…)
+function shouldSyncPHARMA(key){
+  return key && key.startsWith("journal_");
+}
+
+/* 🔄 Cloud ➜ Local */
+async function syncPHARMAFromCloud(){
+  try{
+    if(typeof db === "undefined") return console.warn("Firestore non initialisé");
+
+    const snap = await db.collection("accueilcs").get();
+    snap.forEach(doc=>{
+      const key = doc.id;
+      if(shouldSyncPHARMA(key)){
+        localStorage.setItem(key, JSON.stringify(doc.data()));
+      }
+    });
+    console.log("PHARMA : sync Firestore → localStorage OK");
+  }catch(e){
+    console.error("syncPHARMAFromCloud", e);
+  }
+}
+
+/* 🔄 Local ➜ Cloud */
+(function(){
+  const oldSet = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, val){
+    oldSet(key, val);
+    if(shouldSyncPHARMA(key)){
+      try{ cloudSetJSON(key, JSON.parse(val)); } catch(e){}
+    }
+  };
+
+  const oldRemove = localStorage.removeItem.bind(localStorage);
+  localStorage.removeItem = function(key){
+    if(shouldSyncPHARMA(key)){
+      try{ db.collection("accueilcs").doc(key).delete(); }catch(_){}
+    }
+    oldRemove(key);
+  };
+})();
+</script>
+
+<script>
+(async function(){
+
+  // 🔄 On synchronise Firestore -> localStorage avant d'utiliser la main courante
+  await syncPHARMAFromCloud();
+
+/* ====== LOG MAIN COURANTE (ajout) ====== */
+function logActivityToJournal(type, text) {
+  try {
+    const sess = JSON.parse(localStorage.getItem("csver_session") || "null");
+    if (!sess) return;
+    const cis = Array.isArray(sess.cis) ? sess.cis[0] : (sess.cis || "CIS");
+    const key = "journal_" + cis;
+    const arr = JSON.parse(localStorage.getItem(key) || "[]");
+    arr.push({
+      type,
+      text,
+      ts: Date.now(),
+      by: (((sess.prenom||"") + " " + (sess.nom||"")).trim()) || sess.matricule || "Agent"
+    });
+    localStorage.setItem(key, JSON.stringify(arr.slice(-500)));
+    // Permet à l'accueil (s'il est ouvert) d'actualiser la main courante
+    window.dispatchEvent(new Event("storage"));
+  } catch(e) { console.error(e); }
+}
+
+function currentAgentName(){
+  try{
+    const s = JSON.parse(localStorage.getItem('csver_session')||'null');
+    return ((((s?.prenom)||"") + " " + ((s?.nom)||"")).trim()) || (s?.matricule) || "Agent";
+  }catch(_){ return "Agent"; }
+}
+
+const DEST_MAIL = "SSSM-PHARMACIE@sdis30.fr";
+const CIS_NAME = "CIS VERGEZE";
+const LOGO_URL = "https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png";
+
+/* Nouvel ordre :
+   - IMMOBILISATION et DIVERS intervertis
+   - DIVERS est placé juste avant EXCHANGE (à gauche), EXCHANGE s'étend sur 3 colonnes grand écran
+*/
+const ORDER = [
+  "PANSEMENT",
+  "PERFUSION",
+  "VENTILATION / RCP",
+  "HYGIENE/DESINFECTION",
+  "SACOCHE VSAV",
+  "ASPIRATION",
+  "THERMOMETRE",
+  "GLYCEMIE",
+  "EPI : RISQUES INFECTIEUX",
+  "DASRI",
+  "IMMOBILISATION",
+  "SOLUTES",
+  "DIVERS",
+  "PRODUITS DISPENSES QU'EN ECHANGE (pour avance)"
+];
+
+let INVENTAIRE = [
+  {"categorie":"PANSEMENT","designation":"Dakin 60 ml","qte_dotation":2},
+  {"categorie":"PERFUSION","designation":"Bétadine Alcoolique orange 10 ml","qte_dotation":6},
+  {"categorie":"DASRI","designation":"Réceptacle Aiguille usagée","qte_dotation":4},
+  {"categorie":"PANSEMENT","designation":"Chlorure de Sodium Dose 20ml","qte_dotation":6},
+  {"categorie":"PERFUSION","designation":"Dermafilm (Tégaderm)","qte_dotation":10},
+  {"categorie":"DASRI","designation":"Dasri sac grand modèle","qte_dotation":1},
+  {"categorie":"PANSEMENT","designation":"Chlorure de Sodium Dose 45ml","qte_dotation":6},
+  {"categorie":"PERFUSION","designation":"Garrot pour perfusion","qte_dotation":2},
+  {"categorie":"DASRI","designation":"Dasri sac petit modèle","qte_dotation":2},
+  {"categorie":"PANSEMENT","designation":"Champ stérile 60x45","qte_dotation":2},
+  {"categorie":"PERFUSION","designation":"Aiguille Epicranienne","qte_dotation":2},
+  {"categorie":"DASRI","designation":"Dasri Carton","qte_dotation":5},
+  {"categorie":"PANSEMENT","designation":"Drap Stérile","qte_dotation":2},
+  {"categorie":"PERFUSION","designation":"Aiguille Trocard19g orange/rose","qte_dotation":5},
+  {"categorie":"DASRI","designation":"Sac Poubelle 20L","qte_dotation":3},
+  {"categorie":"PANSEMENT","designation":"Compresse non Stérile (paquet)","qte_dotation":5},
+  {"categorie":"PERFUSION","designation":"Aiguille I.V 20g jaune","qte_dotation":2},
+  {"categorie":"PANSEMENT","designation":"Compresse Stérile","qte_dotation":50},
+  {"categorie":"PERFUSION","designation":"Aiguille I.M 21g verte","qte_dotation":2},
+  {"categorie":"PANSEMENT","designation":"Pansement Absorbant","qte_dotation":15},
+  {"categorie":"PERFUSION","designation":"Aiguille S.C 23g bleue","qte_dotation":2},
+  {"categorie":"HYGIENE/DESINFECTION","designation":"Gant non stérile S(boite)","qte_dotation":1},
+  {"categorie":"PANSEMENT","designation":"Bande Extensible","qte_dotation":15},
+  {"categorie":"PERFUSION","designation":"Cathéter 16g gris","qte_dotation":2},
+  {"categorie":"HYGIENE/DESINFECTION","designation":"Gant non stérile M(boite)","qte_dotation":3},
+  {"categorie":"PANSEMENT","designation":"sparadrap","qte_dotation":5},
+  {"categorie":"PERFUSION","designation":"Cathéter 18g vert","qte_dotation":5},
+  {"categorie":"HYGIENE/DESINFECTION","designation":"Gant non stérile L(boite)","qte_dotation":5},
+  {"categorie":"PANSEMENT","designation":"Rasoir","qte_dotation":3},
+  {"categorie":"PERFUSION","designation":"Cathéter 20g rose","qte_dotation":5},
+  {"categorie":"HYGIENE/DESINFECTION","designation":"Gant non stérile XL (boite)","qte_dotation":2},
+  {"categorie":"PANSEMENT","designation":"Ciseau Gesco","qte_dotation":2},
+  {"categorie":"PERFUSION","designation":"Cathéter 22g bleu","qte_dotation":2},
+  {"categorie":"HYGIENE/DESINFECTION","designation":"Anios Surfanios premium(dosette)","qte_dotation":20},
+  {"categorie":"PERFUSION","designation":"Cathéter 24g jaune","qte_dotation":2},
+  {"categorie":"HYGIENE/DESINFECTION","designation":"Anios surfasafe (spray)","qte_dotation":3},
+  {"categorie":"PERFUSION","designation":"Perfuseur 3 voies","qte_dotation":10},
+  {"categorie":"HYGIENE/DESINFECTION","designation":"Solution hydroalcoolique 100 ml","qte_dotation":6},
+  {"categorie":"PERFUSION","designation":"Seringue 2 ml","qte_dotation":2},
+  {"categorie":"HYGIENE/DESINFECTION","designation":"Solution hydroalcoolique 500 ml","qte_dotation":3},
+  {"categorie":"PERFUSION","designation":"Seringue 5 ml","qte_dotation":5},
+  {"categorie":"HYGIENE/DESINFECTION","designation":"Phagospore Spray","qte_dotation":2},
+
+  /* VENTILATION / RCP */
+  {"categorie":"VENTILATION / RCP","designation":"Bavu Adulte","qte_dotation":3},
+  {"categorie":"VENTILATION / RCP","designation":"Bavu Enfant","qte_dotation":2},
+  {"categorie":"VENTILATION / RCP","designation":"Bavu Filtre","qte_dotation":5},
+  {"categorie":"VENTILATION / RCP","designation":"Masque HC Adulte","qte_dotation":15},
+  {"categorie":"VENTILATION / RCP","designation":"Masque HC Enfant","qte_dotation":6},
+  {"categorie":"VENTILATION / RCP","designation":"Canule de guédel 0 noire","qte_dotation":1},
+  {"categorie":"VENTILATION / RCP","designation":"Canule guédel 1 blanche/marron","qte_dotation":1},
+  {"categorie":"VENTILATION / RCP","designation":"Canule de guédel 2 verte","qte_dotation":3},
+  {"categorie":"VENTILATION / RCP","designation":"Canule de guédel 3 jaune","qte_dotation":3},
+  {"categorie":"VENTILATION / RCP","designation":"Canule de guédel 4 rouge","qte_dotation":3},
+  {"categorie":"VENTILATION / RCP","designation":"Canule de guédel 5 violet","qte_dotation":1},
+  {"categorie":"VENTILATION / RCP","designation":"Electrode DSA Adulte Schiller","qte_dotation":3},
+
+  {"categorie":"PERFUSION","designation":"Seringue 10 ml","qte_dotation":5},
+  {"categorie":"HYGIENE/DESINFECTION","designation":"Phagospore Bidon","qte_dotation":1},
+  {"categorie":"PERFUSION","designation":"Seringue 20 ml","qte_dotation":2},
+  {"categorie":"HYGIENE/DESINFECTION","designation":"Gants Stériles T 7","qte_dotation":1},
+  {"categorie":"HYGIENE/DESINFECTION","designation":"Gants Stériles T 8,5","qte_dotation":1},
+  {"categorie":"HYGIENE/DESINFECTION","designation":"Lavette nettoyage Vsav (bleue)","qte_dotation":5},
+
+  {"categorie":"SOLUTES","designation":"Eau Stérile","qte_dotation":2},
+  {"categorie":"SOLUTES","designation":"Chlorure de Sodium 100 ml","qte_dotation":3},
+  {"categorie":"SOLUTES","designation":"Chlorure de Sodium 500 ml","qte_dotation":5},
+  {"categorie":"SOLUTES","designation":"Glucose 5% 100 ml","qte_dotation":2},
+  {"categorie":"SOLUTES","designation":"Ringer  500 ml","qte_dotation":2},
+
+  {"categorie":"IMMOBILISATION","designation":"Collier Adulte","qte_dotation":3},
+  {"categorie":"IMMOBILISATION","designation":"Collier Pedia","qte_dotation":2},
+  {"categorie":"IMMOBILISATION","designation":"Echarpe","qte_dotation":6},
+
+  {"categorie":"DIVERS","designation":"Couverture de Survie","qte_dotation":5},
+  {"categorie":"DIVERS","designation":"Couverture de Survie Stérile","qte_dotation":2},
+  {"categorie":"DIVERS","designation":"Couverture SP Bactériostatique","qte_dotation":1},
+  {"categorie":"DIVERS","designation":"Housse Mortuaire","qte_dotation":2},
+  {"categorie":"DIVERS","designation":"Sac Gelifiant bassin ♀","qte_dotation":2},
+  {"categorie":"DIVERS","designation":"Haricot U.U","qte_dotation":5},
+  {"categorie":"DIVERS","designation":"Sachet Vomix","qte_dotation":5},
+
+  {"categorie":"SACOCHE VSAV","designation":"Sacoche VSAV Rouge","qte_dotation":""},
+  {"categorie":"SACOCHE VSAV","designation":"Sacoche VSAV Marron","qte_dotation":""},
+  {"categorie":"SACOCHE VSAV","designation":"Sacoche VSAV Bleu","qte_dotation":""},
+  {"categorie":"SACOCHE VSAV","designation":"Sacoche VSAV Orange","qte_dotation":""},
+
+  {"categorie":"ASPIRATION","designation":"Réceptacle Aspi U.U LSU","qte_dotation":3},
+  {"categorie":"ASPIRATION","designation":"Tubulure aspi petit modèle","qte_dotation":3},
+  {"categorie":"ASPIRATION","designation":"Sonde Buccale Yankauer","qte_dotation":3},
+  {"categorie":"ASPIRATION","designation":"Raccord bi-conique","qte_dotation":3},
+
+  {"categorie":"THERMOMETRE","designation":"Thermomètre manuel","qte_dotation":1},
+  {"categorie":"THERMOMETRE","designation":"Thermomètre Protection U.U","qte_dotation":5},
+
+  {"categorie":"GLYCEMIE","designation":"Bandelette","qte_dotation":3},
+  {"categorie":"GLYCEMIE","designation":"Lancettes ( paquet de 20)","qte_dotation":60},
+
+  {"categorie":"EPI : RISQUES INFECTIEUX","designation":"Kit Grippe","qte_dotation":4},
+  {"categorie":"EPI : RISQUES INFECTIEUX","designation":"Kit Infectieux","qte_dotation":5},
+  {"categorie":"EPI : RISQUES INFECTIEUX","designation":"Boite de Masques chirurgicaux","qte_dotation":2},
+  {"categorie":"EPI : RISQUES INFECTIEUX","designation":"Lunette de protection","qte_dotation":3},
+
+  {"categorie":"PRODUITS DISPENSES QU'EN ECHANGE (pour avance)","designation":"Kit Accouchement","qte_dotation":"","twoFields":true,"f1":"","f2":""},
+  {"categorie":"PRODUITS DISPENSES QU'EN ECHANGE (pour avance)","designation":"Ampoulier","qte_dotation":"","twoFields":true,"f1":"","f2":""},
+  {"categorie":"PRODUITS DISPENSES QU'EN ECHANGE (pour avance)","designation":"Kit hémorragie","qte_dotation":"","twoFields":true,"f1":"","f2":""},
+  {"categorie":"PRODUITS DISPENSES QU'EN ECHANGE (pour avance)","designation":"Trousse CCF/ CDG","qte_dotation":"","twoFields":true,"f1":"","f2":""},
+  {"categorie":"PRODUITS DISPENSES QU'EN ECHANGE (pour avance)","designation":"Bouteille Oxygène (préciser B5 ou B15)","qte_dotation":"","twoFields":true,"f1":"","f2":""}
+].map((x,i)=>Object.assign({id:i,checked:false,qte:0,f1:x.f1||'',f2:x.f2||''}, x));
+
+function normalize(s){
+  try{
+    return (s||"").toString().toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  }catch(e){
+    return (s||"").toString().toLowerCase();
+  }
+}
+
+function initMeta(){
+  document.getElementById('today').textContent =
+    new Date().toLocaleDateString('fr-FR');
+  try{
+    const u = JSON.parse(localStorage.getItem("csver_session")||"null");
+    const name = u
+      ? (((u.prenom||"")+" "+(u.nom||"")).trim() || u.matricule || "Agent du CIS")
+      : "Agent du CIS";
+    document.getElementById('agentName').textContent = name;
+  }catch(e){}
+}
+initMeta();
+
+function categorySortKey(cat){
+  const idx = ORDER.indexOf(cat);
+  return idx === -1 ? 999 : idx;
+}
+
+/* ✅ Vrai si au moins 1 ligne est commandée OU des observations sont saisies */
+function hasSelectionOrObs(){
+  const sel = INVENTAIRE.filter(it =>
+    it.checked && (((it.qte||0)>0) || (it.twoFields && (it.f1 || it.f2)))
+  );
+  const obs = (document.getElementById('obs').value || '').trim();
+  return sel.length > 0 || !!obs;
+}
+
+function render(){
+  const q = normalize(document.getElementById('search').value || "");
+  const grid=document.getElementById('grid');
+  grid.innerHTML="";
+  const map=new Map();
+  const catsSet=new Set();
+  INVENTAIRE.forEach(it=>{
+    const c=it.categorie||"Autre";
+    if(!map.has(c)) map.set(c,[]);
+    map.get(c).push(it);
+    catsSet.add(c);
+  });
+  const cats = Array.from(catsSet)
+    .sort((a,b)=>categorySortKey(a)-categorySortKey(b));
+
+  cats.forEach(cat=>{
+    const list = map.get(cat).filter(it=>
+      !q || normalize(it.designation).includes(q) ||
+      normalize(it.categorie).includes(q)
+    );
+    if(list.length===0) return;
+    const card=document.createElement('div'); 
+    card.className="card";
+    if(cat==="PRODUITS DISPENSES QU'EN ECHANGE (pour avance)")
+      card.classList.add("span-3"); /* multi-colonnes 3 */
+
+    card.innerHTML=`<h2>${escapeHtml(cat)}</h2>`;
+    const ul=document.createElement('div'); ul.className="list";
+
+    list.forEach(it=>{
+      const isTwo=!!it.twoFields;
+      const row=document.createElement('div');
+      const hasTyped=!!(isTwo&&(it.f1||it.f2));
+      row.className="row"+(isTwo?" twf":"") + ((it.checked||hasTyped)?" highlight":"");
+      row.setAttribute("data-id",it.id);
+      if(isTwo){
+        row.innerHTML=`
+          <input type="checkbox" ${it.checked?"checked":""} onchange="toggleCheck(${it.id}, this.checked)">
+          <div>${escapeHtml(it.designation)}</div>
+          <div class="textcell"><input type="text" placeholder="Champ 1" value="${escapeAttr(it.f1||'')}" oninput="setField(${it.id}, 'f1', this.value)"></div>
+          <div class="textcell"><input type="text" placeholder="Champ 2" value="${escapeAttr(it.f2||'')}" oninput="setField(${it.id}, 'f2', this.value)"></div>`;
+      } else {
+        row.innerHTML=`
+          <input type="checkbox" ${it.checked?"checked":""} onchange="toggleCheck(${it.id}, this.checked)">
+          <div>${escapeHtml(it.designation)}</div>
+          <div class="badge">${it.qte_dotation??""}</div>
+          <input type="number" min="0" value="${it.qte||0}" onchange="setQty(${it.id}, this.value)">`;
+      }
+      ul.appendChild(row);
+    });
+    card.appendChild(ul);
+    grid.appendChild(card);
+  });
+
+  updateRecap();
+}
+
+function toggleCheck(id,val){
+  const it=INVENTAIRE.find(x=>x.id===id);
+  it.checked=!!val;
+  render();
+}
+function setQty(id,val){
+  const it=INVENTAIRE.find(x=>x.id===id);
+  it.qte=Math.max(0,parseInt(val||0));
+  if(it.qte>0 && !it.checked) it.checked=true;
+  render();
+}
+function setField(id,which,val){
+  const it=INVENTAIRE.find(x=>x.id===id);
+  it[which]=val;
+  const hasTyped=!!(it.f1||it.f2);
+  if(hasTyped && !it.checked) it.checked=true;
+  const row=document.querySelector('.row[data-id="'+id+'"]');
+  if(row){
+    if(it.checked||hasTyped) row.classList.add('highlight');
+    else row.classList.remove('highlight');
+    const cb=row.querySelector('input[type="checkbox"]');
+    if(cb) cb.checked=!!it.checked;
+  }
+  updateRecap();
+}
+function selectAll(){
+  INVENTAIRE.forEach(it=>it.checked=true);
+  render();
+}
+function clearAll(){
+  INVENTAIRE.forEach(it=>{
+    it.checked=false;
+    it.qte=0;
+    it.f1='';
+    it.f2='';
+  });
+  render();
+}
+
+function updateRecap(){
+  const sel=INVENTAIRE.filter(it=>
+    it.checked && ((it.qte||0)>0 || (it.twoFields&&(it.f1||it.f2)))
+  );
+  const lines=sel.length;
+  const qty=sel.reduce((a,b)=>a+((b.qte||0)),0);
+  document.getElementById('recap').textContent=
+    `${lines} ligne${lines>1?'s':''} • ${qty} article${qty>1?'s':''}`;
+
+  // 🔒 Activer/désactiver les boutons Outlook selon contenu
+  const hasData = hasSelectionOrObs();
+  const btnTop = document.getElementById('btnOutlookTop');
+  const btnBottom = document.getElementById('btnOutlookBottom');
+  if(btnTop) btnTop.disabled = !hasData;
+  if(btnBottom) btnBottom.disabled = !hasData;
+}
+
+function loadImageDataURL(url){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.crossOrigin="anonymous";
+    img.onload=()=>{
+      const c=document.createElement('canvas');
+      c.width=img.width;
+      c.height=img.height;
+      c.getContext('2d').drawImage(img,0,0);
+      resolve(c.toDataURL('image/png'));
+    };
+    img.onerror=reject;
+    img.src=url;
+  });
+}
+
+async function generatePDF(){
+  const jsPDF=window.jspdf.jsPDF;
+  const doc=new jsPDF({unit:'pt',format:'a4'});
+  const margin=40;
+  const pageWidth=doc.internal.pageSize.getWidth();
+  const pageHeight=doc.internal.pageSize.getHeight();
+  const d=new Date();
+  const dd=String(d.getDate()).padStart(2,'0');
+  const mm=String(d.getMonth()+1).padStart(2,'0');
+  const yyyy=d.getFullYear();
+
+  try{
+    const dataUrl=await loadImageDataURL(LOGO_URL);
+    doc.addImage(dataUrl,'PNG',margin,18,36,36);
+  }catch(e){}
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);
+  doc.text(`Commande Pharmacie — ${CIS_NAME}`,pageWidth/2,40,{align:'center'});
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  const agent=document.getElementById('agentName').textContent;
+  doc.text(
+    `Date : ${dd}/${mm}/${yyyy}   •   Agent : ${agent}`,
+    pageWidth/2,58,{align:'center'}
+  );
+
+  const selected=INVENTAIRE.filter(it=>
+    it.checked && (((it.qte||0)>0) || (it.twoFields&&(it.f1||it.f2)))
+  );
+  const obs=(document.getElementById('obs').value||'').trim();
+  if(selected.length===0 && !obs){
+    alert("Aucune ligne cochée avec une quantité > 0");
+    return false;
+  }
+
+  if(selected.length){
+    const map=new Map();
+    const catsSet=new Set();
+    selected.forEach(it=>{
+      const c=it.categorie||"Autre";
+      if(!map.has(c)) map.set(c,[]);
+      map.get(c).push(it);
+      catsSet.add(c);
+    });
+    const cats = Array.from(catsSet)
+      .sort((a,b)=>categorySortKey(a)-categorySortKey(b));
+    const body=[]; 
+    cats.forEach(cat=>{
+      map.get(cat).sort((a,b)=>
+        a.designation.localeCompare(b.designation,'fr',{sensitivity:'base'})
+      );
+      body.push([{
+        content:cat,
+        colSpan:4,
+        styles:{fillColor:[230,236,250],fontStyle:'bold',halign:'left'}
+      }]); 
+      map.get(cat).forEach(it=>{
+        let des=it.designation;
+        if(it.twoFields){
+          const a=it.f1? " — "+it.f1:'';
+          const b=it.f2? " — "+it.f2:'';
+          des=des+a+b;
+        }
+        body.push(["",des,it.qte_dotation??"",it.twoFields?"":(it.qte||0)]);
+      });
+    });
+    doc.autoTable({
+      startY:80,
+      head:[['Catégorie','Désignation','Dotation','Quantité']],
+      body,
+      theme:'grid',
+      styles:{font:'helvetica',fontSize:9,cellPadding:4},
+      headStyles:{fillColor:[216,228,248],textColor:0},
+      columnStyles:{
+        0:{cellWidth:110},
+        1:{cellWidth:280},
+        2:{cellWidth:80,halign:'center'},
+        3:{cellWidth:80,halign:'center'}
+      },
+      margin:{left:margin,right:margin}
+    });
+  }
+
+  let y=(doc.lastAutoTable?.finalY||80);
+  if(obs){
+    y+=16;
+    const lines=doc.splitTextToSize(obs,pageWidth-2*margin);
+    doc.autoTable({
+      startY:y,
+      head:[['Observations / Demandes spécifiques / Autre produit']],
+      body:[[lines.join("\n")]],
+      theme:'grid',
+      styles:{font:'helvetica',fontSize:9,cellPadding:6},
+      headStyles:{fillColor:[216,228,248],textColor:0,halign:'left'},
+      margin:{left:margin,right:margin}
+    });
+    y=(doc.lastAutoTable?.finalY||y);
+  }
+
+  if(selected.length){
+    const totalQty=selected.reduce((a,b)=>a+((b.qte||0)),0);
+    y+=16;
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(11);
+    doc.text(`Total des articles commandés : ${totalQty}`,margin,y);
+  }
+
+  const footer="Les commandes sont à faxer ou envoyer par mail à la Pharmacie du SDIS 30 au : 04-66-63-36-96 ou SSSM-PHARMACIE@SDIS30.FR — N° de téléphone: 5140 — Responsable pharmacie: COL PICARD Alexandra - COL STREFF Kerstin";
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  const fl=doc.splitTextToSize(footer,pageWidth-2*margin);
+  const fh=fl.length*12;
+  const fy=pageHeight-24-fh+12;
+  for(let i=0;i<fl.length;i++){
+    doc.text(fl[i],pageWidth/2,fy+i*12,{align:'center'});
+  }
+
+  doc.save(`Commande_Pharmacie_CIS_VERGEZE_${dd}-${mm}-${yyyy}.pdf`);
+  return true;
+}
+
+/* ====== MODIF : Outlook ne s'ouvre QUE s'il y a quelque chose à envoyer ====== */
+async function sendOutlook(){
+  // On laisse generatePDF vérifier la même condition et on regarde son retour
+  const ok = await generatePDF();
+  if(!ok) return; // rien à envoyer → pas d'Outlook
+
+  const d=new Date();
+  const dd=String(d.getDate()).padStart(2,'0');
+  const mm=String(d.getMonth()+1).padStart(2,'0');
+  const yyyy=d.getFullYear();
+  const subject=`Commande Pharmacie — ${CIS_NAME} — ${dd}-${mm}-${yyyy}`;
+  const body=`Bonjour,%0D%0A%0D%0AVeuillez trouver en pièce jointe la commande pharmacie du ${dd}/${mm}/${yyyy} pour ${encodeURIComponent(CIS_NAME)}.%0D%0A%0D%0ACordialement.`;
+  const url=`https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(DEST_MAIL)}&subject=${encodeURIComponent(subject)}&body=${body}`;
+  window.open(url,"_blank","noopener");
+
+  // Journal main courante
+  const who = currentAgentName();
+  logActivityToJournal("PHARMA", `Commande pharmacie effectuée par ${who}`);
+}
+
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>\"']/g,m=>({
+    "&":"&amp;","<":"&lt;","\"":"&quot;",">":"&gt;","'":"&#39;"
+  }[m]));
+}
+function escapeAttr(s){return escapeHtml(s);}
+
+/* 🔓 Rendre les fonctions accessibles aux onclick/onchange HTML */
+window.render        = render;
+window.selectAll     = selectAll;
+window.clearAll      = clearAll;
+window.generatePDF   = generatePDF;
+window.sendOutlook   = sendOutlook;
+window.toggleCheck   = toggleCheck;
+window.setQty        = setQty;
+window.setField      = setField;
+
+/* 📝 Maj du recap si on tape dans les observations */
+document.getElementById('obs').addEventListener('input', updateRecap);
+
+/* Premier rendu */
+render();
+
+}());
+</script>
+
+</body>
+</html>

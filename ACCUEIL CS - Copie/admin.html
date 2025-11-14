@@ -1,0 +1,1130 @@
+<!DOCTYPE html> 
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Administration — CS VER</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+  *{box-sizing:border-box;font-family:'Inter',sans-serif;margin:0;padding:0}
+  body{background:#f5f5f5;padding:30px;color:#222;}
+  h1{text-align:center;margin-bottom:20px;color:#d32f2f;position:relative;}
+  .container{max-width:1100px;margin:auto;background:#fff;border-radius:12px;padding:25px 30px;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
+  .top-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  .right-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .search-box input{padding:8px 12px;border:1px solid #ccc;border-radius:6px;width:280px;font-size:15px;}
+  table{width:100%;border-collapse:collapse;margin-top:15px;}
+  th,td{border:1px solid #ddd;padding:10px;text-align:left;vertical-align:top;}
+  th{background:#004aad;color:#fff;}
+  tr:nth-child(even){background:#f9f9f9;}
+  tr:hover{background:#e3f2fd;}
+  button{padding:8px 14px;margin:4px;border:none;border-radius:6px;cursor:pointer;font-weight:600;}
+  .btn-primary{background:#004aad;color:#fff;}
+  .btn-edit{background:#ff9800;color:#fff;}
+  .btn-delete{background:#d32f2f;color:#fff;}
+  .btn-close{background:#6c757d;color:#fff;}
+  .btn-ghost{background:#eef2ff;color:#233;}
+  .form-box{margin-top:30px;background:#fafafa;border:1px solid #ddd;border-radius:8px;padding:20px;}
+  .inline-box{margin-top:12px;background:#f7f9ff;border:1px solid #cfd7ff;border-radius:8px;padding:12px;}
+  label{font-weight:600;margin-top:8px;display:block;}
+  input,select{width:100%;padding:8px;margin-top:4px;margin-bottom:10px;border-radius:6px;border:1px solid #ccc;}
+  footer{text-align:center;margin-top:20px;color:#888;}
+  .back-btn{position:absolute;top:20px;right:30px;background:#d32f2f;color:#fff;border:none;border-radius:30px;padding:8px 18px;font-weight:600;cursor:pointer;transition:background .2s;}
+  .back-btn:hover{background:#b71c1c;}
+  .hint{font-size:12px;color:#666;margin-top:-6px;margin-bottom:8px}
+  .cis-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:700px){.cis-wrap{grid-template-columns:1fr}}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:20px}
+  .modal .panel{background:#fff;border-radius:12px;max-width:1100px;width:100%;padding:18px 20px;box-shadow:0 10px 30px rgba(0,0,0,0.25);}
+  .modal h3{margin-bottom:8px;color:#004aad}
+  .modal .topline{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between;margin-bottom:8px}
+  .modal .search{flex:1;min-width:260px}
+  .modal .muted{font-size:12px;color:#666}
+  .perm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:6px}
+  .perm-grid label{display:flex;gap:8px;align-items:center;font-weight:500;margin:0}
+  .perm-title{font-weight:700;margin:8px 0 6px;color:#004aad}
+  select:disabled, input:disabled { background:#eee !important; color:#666 !important; cursor:not-allowed; }
+
+  /* --- Répertoire des agents: mise en page plus propre --- */
+  #dirModal table{ table-layout: fixed; }
+  #dirModal th, #dirModal td{ word-wrap: break-word; vertical-align: top; }
+  #dirModal th:nth-child(1), #dirModal td:nth-child(1){ width: 110px; }
+  #dirModal th:nth-child(2), #dirModal td:nth-child(2){ width: 150px; }
+  #dirModal th:nth-child(3), #dirModal td:nth-child(3){ width: 150px; }
+  #dirModal th:nth-child(4), #dirModal td:nth-child(4){ width: 170px; }
+  #dirModal th:nth-child(5), #dirModal td:nth-child(5){ width: 420px; }
+
+  .dir-card{
+    background:#f9fbff;
+    border:1px solid #dfe6ff;
+    border-radius:10px;
+    padding:10px;
+    box-shadow:0 2px 6px rgba(0,0,0,.05);
+  }
+  .dir-line{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
+  .perm-grid.perm-grid-sm{ grid-template-columns: repeat(2, minmax(140px,1fr)); gap:6px; }
+  .dir-card label{ font-weight:500; }
+
+  /* ===== AJOUTS pour le séparateur & le sous-titre des droits accès ===== */
+  .perm-grid .fullrow { grid-column: 1 / -1; }
+  .perm-divider { border-top: 1px dashed #cfd7ff; height: 0; margin: 8px 0; }
+  .perm-subtitle { font-weight: 700; color: #233; margin: 2px 0 6px; }
+</style>
+</head>
+<body>
+
+<button class="back-btn" onclick="window.location.href='accueil.html'">⬅ Retour</button>
+
+<h1>⚙️ Gestion des utilisateurs — Accueil CS</h1>
+
+<div class="container">
+  <div class="top-bar">
+    <h2>Liste des utilisateurs</h2>
+    <div class="right-actions">
+      <div class="search-box">🔍 <input type="text" id="search" placeholder="Rechercher (matricule, nom, prénom, statut ou CIS)..."></div>
+      <button id="dirBtn" class="btn-ghost" style="display:none" onclick="openDirectory()">📕 Répertoire agents</button>
+      <button class="btn-primary" onclick="showForm()">➕ Nouvel utilisateur</button>
+    </div>
+  </div>
+
+  <table id="userTable">
+    <thead>
+      <tr>
+        <th>Matricule</th>
+        <th>Nom</th>
+        <th>Prénom</th>
+        <th>Statut (CIS principal)</th>
+        <th>Affectations CIS</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="userList"></tbody>
+  </table>
+
+  <!-- Formulaire -->
+  <div id="userForm" class="form-box" style="display:none">
+    <h3 id="formTitle">Créer un utilisateur</h3>
+
+    <label>Matricule :</label>
+    <input type="text" id="matricule">
+    <div id="lockIdentHint" class="hint" style="display:none">Identité verrouillée en mode Administrateur du CIS.</div>
+
+    <label>Nom :</label>
+    <input type="text" id="nom">
+
+    <label>Prénom :</label>
+    <input type="text" id="prenom">
+
+    <div class="cis-wrap">
+      <div>
+        <label>Statut (CIS principal) :</label>
+        <select id="statutPrincipal">
+          <option value="SPP">SPP</option>
+          <option value="SPV">SPV</option>
+          <option value="PATS">PATS</option>
+        </select>
+        <div id="lockRoleHint" class="hint" style="display:none">Modification du statut verrouillée (hors agents de votre CIS).</div>
+      </div>
+      <div>
+        <label>CIS principal (choix unique) :</label>
+        <select id="cisPrincipal"></select>
+        <div id="lockCisHint" class="hint" style="display:none">Modification du CIS principal verrouillée (utilisez “Mutation”).</div>
+      </div>
+    </div>
+
+    <!-- 🔵 Accès menus (CIS principal) -->
+    <div id="permPanel" class="inline-box">
+      <div class="perm-title">Accès menus (CIS principal)</div>
+      <div class="perm-grid" id="permPrimaryGrid"></div>
+      <div class="hint" id="permPrimaryHint">Si <strong>SOG</strong> est coché → accès à <em>tous</em> les menus sauf « Administrateur » + boutons véhicules visibles.<br>Si <strong>seul</strong> « Agent du centre » est coché → visibles : Agent du centre, Formation, FDF, Habillement et boutons véhicules cachés.</div>
+    </div>
+
+    <!-- 🔵 Mon CIS (secondaire) -->
+    <div id="myCisPanel" class="inline-box" style="display:none">
+      <div style="font-weight:700;margin-bottom:6px">Mon CIS (secondaire) — droits & statut</div>
+      <div id="myCisContent"></div>
+    </div>
+
+    <!-- 🟢 Mutation -->
+    <div id="mutatePanel" class="inline-box" style="display:none">
+      <div style="font-weight:600;margin-bottom:6px">Mutation de l’agent</div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
+        <select id="mutateCisSelect"></select>
+        <button type="button" class="btn-primary" id="mutateBtn">Muter cet agent</button>
+      </div>
+      <div class="hint">La mutation définit un <strong>nouveau CIS principal</strong> et retire l’agent de votre CIS (même en secondaire). Il disparaîtra de votre liste.</div>
+    </div>
+
+    <!-- 🟣 Super Admin : gestion de TOUS les secondaires -->
+    <div id="allSecPanel" class="inline-box" style="display:none">
+      <div style="font-weight:700;margin-bottom:6px">Affectations secondaires (toutes)</div>
+      <div id="allSecRows"></div>
+      <button class="btn-ghost" id="allSecAddBtn" type="button">➕ Ajouter un CIS secondaire</button>
+      <div class="hint">En tant que Super Admin (1414), tu peux ajouter/modifier/supprimer toutes les affectations secondaires <em>et</em> leurs droits.</div>
+    </div>
+
+    <div style="margin-top:14px">
+      <button class="btn-primary" onclick="saveUser()">💾 Enregistrer</button>
+      <button class="btn-close" onclick="cancelForm()">❌ Annuler</button>
+    </div>
+  </div>
+</div>
+
+<footer>© CS VER — Administration 2025</footer>
+
+<!-- Modal Répertoire (optionnel) -->
+<div id="dirModal" class="modal" aria-hidden="true">
+  <div class="panel">
+    <div class="topline">
+      <h3>Répertoire des agents</h3>
+      <button class="btn-close" onclick="closeDirectory()">Fermer</button>
+    </div>
+    <div class="topline">
+      <input id="dirSearch" class="search" type="text" placeholder="Rechercher (matricule, nom, prénom, CIS)...">
+      <div class="muted">Affectez un agent existant à votre CIS (en <strong>secondaire</strong>) avec un statut ; vous réglerez ses droits ensuite dans la fiche.</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr>
+          <th style="background:#eef">Matricule</th>
+          <th style="background:#eef">Nom</th>
+          <th style="background:#eef">Prénom</th>
+          <th style="background:#eef">CIS principal</th>
+          <th style="background:#eef">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="dirList"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 🔌 Firebase + Firestore + stockage partagé -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="cloud-storage.js"></script>
+
+<script>
+/* ===================================================
+   🔥 Intégration Firestore pour les utilisateurs
+   - au chargement : on récupère les docs Firestore
+     et on les met dans localStorage
+   - ensuite : dès qu'on fait localStorage.setItem /
+     removeItem sur "csver_user_*", on répercute dans
+     Firestore automatiquement.
+   =================================================== */
+
+async function syncUsersFromCloud(){
+  try{
+    if (typeof db === "undefined") {
+      console.warn("Firestore non disponible, admin en mode localStorage uniquement.");
+      return;
+    }
+    const snap = await db.collection("accueilcs").get();
+    snap.forEach(doc=>{
+      if(doc.id.startsWith("csver_user_")){
+        try{
+          localStorage.setItem(doc.id, JSON.stringify(doc.data()));
+        }catch(e){
+          console.error("Erreur lors du cache local", e);
+        }
+      }
+    });
+    console.log("Synchronisation Firestore → localStorage terminée.");
+  }catch(e){
+    console.error("syncUsersFromCloud error", e);
+  }
+}
+
+/* Interception de localStorage.setItem / removeItem
+   pour synchroniser automatiquement avec Firestore */
+(function(){
+  const origSetItem = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, value){
+    origSetItem(key, value);
+    if(key.startsWith("csver_user_") && typeof cloudSetJSON === "function"){
+      try{
+        const obj = JSON.parse(value);
+        cloudSetJSON(key, obj); // envoi dans Firestore (collection "accueilcs")
+      }catch(e){
+        console.error("cloudSetJSON error", e);
+      }
+    }
+  };
+
+  const origRemoveItem = localStorage.removeItem.bind(localStorage);
+  localStorage.removeItem = function(key){
+    if(key.startsWith("csver_user_") && typeof db !== "undefined"){
+      db.collection("accueilcs").doc(key).delete().catch(err=>{
+        console.warn("Suppression Firestore échouée (non bloquant)", err);
+      });
+    }
+    origRemoveItem(key);
+  };
+})();
+
+/* ---- Liste CIS ---- */
+const cisListe = [
+  "Aigoual","Alès","Bagnols sur Cèze","Barjac","Beaucaire","Bessèges","CODIS","Fournès",
+  "Génolhac","La Grand Combe","Le Vigan","Lédignan","Les Angles","Marguerittes",
+  "Méjannes le Clap","Nîmes","Nîmes Saint-Césaire","Pharmacie","Pont Saint Esprit","Roquemaure",
+  "Saint Ambroix","Saint Géniès de Malgoire","Saint Gilles","Saint Hippolyte du Fort",
+  "Saint Jean du Gard","Sommières","SSSM","Sumène","Terre de Camargue","Uzès","Vauvert",
+  "Vergèze","Villeneuve les Avignon"
+];
+
+/* ---- Session ---- */
+function getSession(){ try { return JSON.parse(localStorage.getItem("csver_session")||"null"); } catch { return null; } }
+
+/* Normaliser libellés de rôles */
+function normalizeRole(r){
+  if(!r) return "";
+  const x = String(r).trim().toLowerCase();
+  if(["admin","administrator","administrateur","adm"].includes(x)) return "admin";
+  if(["superadmin","super admin","root"].includes(x)) return "superadmin";
+  return x;
+}
+
+function myCis(){
+  const c = getSession()?.cis;
+  const first = Array.isArray(c) ? (c[0] || "") : (c || "");
+  return first || "";
+}
+
+/* Récupérer la fiche agent de l'utilisateur courant (par matricule) */
+function sessionAgent(){
+  const s = getSession();
+  if(!s || !s.matricule) return null;
+  const raw = localStorage.getItem("csver_user_" + s.matricule);
+  if(!raw) return null;
+  try { return normalizeUser(JSON.parse(raw)); } catch { return null; }
+}
+
+/* --- Autorisations --- */
+function isSuperAdmin(){
+  const s=getSession();
+  return !!(s && (String(s.matricule)==='1414' || normalizeRole(s?.role)==='superadmin'));
+}
+
+/* Admin de CIS = rôle "Administrateur" OU droit 'admin' sur son CIS (principal OU secondaire) */
+function isAdminRole(){
+  if(isSuperAdmin()) return true;
+  const s=getSession();
+  if(normalizeRole(s?.role)==='admin') return true;
+
+  const u = sessionAgent();
+  const mine = myCis();
+  if(!u || !mine) return false;
+
+  const isPrimarySame  = normCis(u.cis?.primary||"") === normCis(mine);
+  const adminPrimary   = !!(u.permissions?.primary?.admin);
+  const adminSecondary = !!(u.permissions?.secondaries?.[mine]?.admin);
+
+  return (isPrimarySame && adminPrimary) || adminSecondary;
+}
+
+/* Compat : endroits où on testait "isCmd()" */
+function isCmd(){ return isAdminRole() || isSuperAdmin(); }
+
+/* normalisation CIS pour comparaisons robustes */
+function normCis(x){
+  if(!x) return "";
+  return String(x).replace(/^CIS\s*/i,"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+}
+
+/* ---- Utilitaires stockage ---- */
+function getUsers(){
+  const users=[];
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(key.startsWith("csver_user_")){
+      try{ users.push(JSON.parse(localStorage.getItem(key))); }catch{}
+    }
+  }
+  return users;
+}
+
+/* Schéma normalisé (statut + permissions) */
+function normalizeUser(u){
+  const copy=JSON.parse(JSON.stringify(u||{}));
+
+  // cis structure
+  if(Array.isArray(copy.cis)){
+    const primary=copy.cis[0]||"";
+    const rest=(copy.cis.slice(1)||[]).map(c=>({cis:c,statut:copy.statut||"SPV"}));
+    copy.cis={primary,secondaries:rest};
+  }else if(typeof copy.cis==="string"){
+    copy.cis={primary:copy.cis,secondaries:[]};
+  }else{
+    copy.cis=copy.cis||{primary:"",secondaries:[]};
+  }
+
+  // statut
+  if(!copy.statut){ copy.statut="SPV"; }
+
+  // migrate old 'role' to 'statut' if present
+  if(copy.role && !copy.statut){
+    const r=String(copy.role).toLowerCase();
+    copy.statut = (r.includes('spp')?'SPP': (r.includes('pats')?'PATS':'SPV'));
+    delete copy.role;
+  }
+
+  // normalize secondaries + remove duplicates
+  if(copy.cis?.secondaries){
+    const seen=new Set();
+    copy.cis.secondaries=copy.cis.secondaries.filter(s=>{
+      if(!s||!s.cis) return false;
+      const k=normCis(s.cis);
+      if(seen.has(k)||k===normCis(copy.cis.primary||"")) return false;
+      // default statut if missing
+      s.statut = s.statut || "SPV";
+      return seen.add(k), true;
+    });
+  }
+
+  // permissions structure
+  const defaultP = defaultPerms();
+  copy.permissions = copy.permissions || { primary: defaultP, secondaries: {} };
+  // ensure shapes
+  copy.permissions.primary = Object.assign({}, defaultP, copy.permissions.primary||{});
+  copy.permissions.secondaries = copy.permissions.secondaries || {};
+
+  // clean keys of secondaries permissions
+  const sec = {};
+  Object.keys(copy.permissions.secondaries).forEach(k=>{
+    const v = copy.permissions.secondaries[k]||{};
+    sec[k] = Object.assign({}, defaultP, v);
+  });
+  copy.permissions.secondaries = sec;
+
+  return copy;
+}
+
+/* ---- Helpers affectations ---- */
+function userHasCis(u,cisName){
+  const k=normCis(cisName||"");
+  if(!k) return false;
+  if(normCis(u.cis?.primary||"")===k) return true;
+  return (u.cis?.secondaries||[]).some(s=>normCis(s.cis||"")===k);
+}
+function secondaryIndex(u,cisName){
+  const k=normCis(cisName||"");
+  return (u.cis?.secondaries||[]).findIndex(s=>normCis(s.cis||"")===k);
+}
+function assignSecondary(u,cisName,statutForThisCis, perms){
+  const nu=normalizeUser(u);
+  if(normCis(nu.cis?.primary||"")===normCis(cisName||"")) return nu;
+  const idx=secondaryIndex(nu,cisName);
+  if(idx>=0){ nu.cis.secondaries[idx].statut=statutForThisCis||nu.cis.secondaries[idx].statut||"SPV"; }
+  else{ nu.cis.secondaries.push({cis:cisName,statut:statutForThisCis||"SPV"}); }
+  // set permissions for this secondary
+  nu.permissions.secondaries[cisName] = Object.assign({}, defaultPerms(), perms||nu.permissions.secondaries[cisName]||{});
+  return nu;
+}
+function updateSecondaryStatut(u,cisName,newStatut){
+  const nu=normalizeUser(u);
+  const idx=secondaryIndex(nu,cisName);
+  if(idx>=0) nu.cis.secondaries[idx].statut=newStatut||"SPV";
+  return nu;
+}
+function removeSecondary(u,cisName){
+  const nu=normalizeUser(u);
+  const k=normCis(cisName||"");
+  nu.cis.secondaries=(nu.cis.secondaries||[]).filter(s=>normCis(s.cis||"")!==k);
+  // also remove permissions entry
+  const newSecPerms={};
+  Object.keys(nu.permissions.secondaries||{}).forEach(name=>{
+    if(normCis(name)!==k) newSecPerms[name]=nu.permissions.secondaries[name];
+  });
+  nu.permissions.secondaries=newSecPerms;
+  return nu;
+}
+
+/* ---- Permissions helpers ---- */
+/* >>> Ajout "gestion_habillement" + "gestion_stages" dans les clés <<< */
+const PERM_KEYS = ["agent","sog","formation","fdf","pharma","habillement","gestion_habillement","gestion_stages","mnr","véhicules","atelier","magasin","saisie_fma","admin"];
+function defaultPerms(){
+  const o={}; PERM_KEYS.forEach(k=>o[k]=false); return o;
+}
+
+/* ======= REMPLACEMENT minimal : regroupement + séparateur + sous-titre ======= */
+function makePermCheckboxes(prefix, obj){
+  const LABELS = {
+    agent:"Agent du centre", sog:"SOG", formation:"Formation", fdf:"FDF", pharma:"Pharmacie",
+    habillement:"Habillement", gestion_habillement:"Gestion habillement", gestion_stages:"Gestion stages",
+    mnr:"MNR", véhicules:"Véhicules", atelier:"Atelier", magasin:"Magasin",
+    saisie_fma:"Saisie FMA", admin:"Administrateur"
+  };
+  const box = (k) => {
+    const id = `${prefix}_${k}`;
+    const checked = obj && obj[k] ? "checked" : "";
+    const label = LABELS[k] || k;
+    return `<label><input type="checkbox" id="${id}" ${checked}> ${label}</label>`;
+  };
+  const BOTTOM = new Set(["saisie_fma","gestion_habillement","gestion_stages","véhicules"]);
+  const top = PERM_KEYS.filter(k => !BOTTOM.has(k)).map(box).join("");
+  const bottom =
+    `<div class="fullrow perm-divider"></div>
+     <div class="fullrow perm-subtitle">Droits accès</div>
+     ${["saisie_fma","gestion_habillement","gestion_stages","véhicules"].map(box).join("")}`;
+  return top + bottom;
+}
+
+function readPermsFromForm(prefix){
+  const o={}; PERM_KEYS.forEach(k=>{ o[k] = !!document.getElementById(`${prefix}_${k}`)?.checked; });
+  return o;
+}
+function writePermsToForm(prefix, obj){
+  PERM_KEYS.forEach(k=>{
+    const el = document.getElementById(`${prefix}_${k}`);
+    if(el) el.checked = !!(obj && obj[k]);
+  });
+}
+function setPrimaryPermsDisabled(flag){
+  const grid = document.getElementById('permPrimaryGrid');
+  if(!grid) return;
+  grid.querySelectorAll('input[type="checkbox"]').forEach(cb=>{ cb.disabled = !!flag; });
+  const hint = document.getElementById('permPrimaryHint');
+  if(flag){
+    hint.innerHTML = 'Gestion des accès du <strong>CIS principal</strong> : <strong>réservée</strong> au Super Admin (1414) ou à l’<strong>Administrateur</strong> du CIS (si l’agent est de son CIS).';
+  }else{
+    hint.innerHTML = 'Si <strong>SOG</strong> est coché → accès à <em>tous</em> les menus sauf « Administrateur » + boutons véhicules visibles.<br>Si <strong>seul</strong> « Agent du centre » est coché → visibles : Agent du centre, Formation, FDF, Habillement et boutons véhicules cachés.';
+  }
+}
+
+/* ---- Rendu du tableau ---- */
+function renderTable(filter=""){
+  const mine=myCis();
+
+  const hasCis = !!mine;
+  const canOpenDirectory = (isAdminRole() || isSuperAdmin()) && hasCis;
+  document.getElementById("dirBtn").style.display = canOpenDirectory ? "inline-block" : "none";
+
+  const tbody=document.getElementById("userList"); tbody.innerHTML="";
+  let users=getUsers().map(normalizeUser);
+
+  if(!isSuperAdmin() && mine){
+    users = users.filter(u => userHasCis(u, mine));
+  }
+
+  const q=(filter||"").toLowerCase();
+  users
+    .filter(u=>{
+      const cisNames=[u.cis?.primary||""].concat((u.cis?.secondaries||[]).map(s=>s.cis));
+      const statNames=[u.statut||"SPV"].concat((u.cis?.secondaries||[]).map(s=>s.statut||"SPV"));
+      return [u.matricule||"",u.nom||"",u.prenom||"",...cisNames,...statNames].join(" ").toLowerCase().includes(q);
+    })
+    .sort((a,b)=>{
+      const A=(a.nom||"").toLowerCase(),B=(b.nom||"").toLowerCase();
+      const aP=(a.prenom||"").toLowerCase(),bP=(b.prenom||"").toLowerCase();
+      if(A<B) return -1; if(A>B) return 1; return aP.localeCompare(bP);
+    })
+    .forEach(u=>{
+      const tr=document.createElement("tr");
+      const sec=(u.cis?.secondaries||[]).map(s=>`${s.cis} (${s.statut||"-"})`).join(", ")||"-";
+
+      const isPrimaryMine = normCis(u.cis?.primary||"") === normCis(mine||"");
+      const canDelete = isSuperAdmin() || (!isCmd()) || (isCmd() && isPrimaryMine);
+
+      tr.innerHTML=`
+        <td>${u.matricule}</td>
+        <td>${u.nom||"-"}</td>
+        <td>${u.prenom||"-"}</td>
+        <td>${u.statut||"-"}</td>
+        <td>
+          <div><strong>Principal :</strong> ${u.cis?.primary||"-"}</div>
+          <div><strong>Secondaires :</strong> ${sec}</div>
+        </td>
+        <td>
+          <button class="btn-edit" onclick="editUser('${u.matricule}')">✏️</button>
+          ${canDelete ? `<button class="btn-delete" onclick="deleteUser('${u.matricule}')">🗑️</button>` : ``}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+}
+
+/* --- suppression utilisateur --- */
+function deleteUser(matricule){
+  const raw = localStorage.getItem("csver_user_" + matricule);
+  if(!raw){ alert("Utilisateur introuvable."); return; }
+
+  const u = normalizeUser(JSON.parse(raw));
+  const mine = myCis();
+  const iCmd = isCmd();
+  const isPrimaryMine = normCis(u.cis?.primary||"") === normCis(mine||"");
+
+  const allowed = isSuperAdmin() || (!iCmd) || (iCmd && isPrimaryMine);
+  if(!allowed){
+    alert("Vous n'êtes pas autorisé à supprimer cet utilisateur.");
+    return;
+  }
+
+  const label = `${u.prenom||''} ${u.nom||''}`.trim() || 'cet utilisateur';
+  if(!confirm(`Supprimer définitivement ${label} (${u.matricule}) ?`)) return;
+
+  localStorage.removeItem("csver_user_" + matricule);
+
+  if(editMode && currentMatricule === matricule){
+    cancelForm();
+  }
+
+  alert("🗑️ Utilisateur supprimé.");
+  renderTable(document.getElementById("search").value);
+}
+
+/* ---- Formulaire ---- */
+let editMode=false, currentMatricule=null, editingOriginal=null;
+
+const cisPrincipalSel=document.getElementById('cisPrincipal');
+const statutPrincipalSel=document.getElementById('statutPrincipal');
+const lockRoleHint=document.getElementById('lockRoleHint');
+const lockCisHint=document.getElementById('lockCisHint');
+const lockIdentHint=document.getElementById('lockIdentHint');
+const fldMat=document.getElementById('matricule');
+const fldNom=document.getElementById('nom');
+const fldPre=document.getElementById('prenom');
+
+const mutatePanel=document.getElementById('mutatePanel');
+const mutateSel=document.getElementById('mutateCisSelect');
+const mutateBtn=document.getElementById('mutateBtn');
+
+function populateCisPrincipal(selected=""){
+  cisPrincipalSel.innerHTML='<option value="">— Sélectionner —</option>'+cisListe.map(c=>`<option value="${c}">${c}</option>`).join("");
+  cisPrincipalSel.value=selected||"";
+}
+function populateCisSelect(sel, exclude=""){
+  const exLC=(exclude||"").toLowerCase();
+  sel.innerHTML='<option value="">— Choisir un CIS —</option>'+cisListe
+    .filter(c=>c.toLowerCase()!==exLC)
+    .map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+
+function applyLocks(edit){
+  if(isSuperAdmin()){
+    statutPrincipalSel.disabled=false; cisPrincipalSel.disabled=false;
+    fldMat.disabled=false; fldNom.disabled=false; fldPre.disabled=false;
+    lockRoleHint.style.display='none'; lockCisHint.style.display='none'; lockIdentHint.style.display='none';
+    setPrimaryPermsDisabled(false);
+    return;
+  }
+  const lockBase=isCmd() && edit;
+  // éditer statut si agent de mon CIS
+  const canEditIfMine = lockBase && editingOriginal && (normCis(editingOriginal.cis?.primary||"")===normCis(myCis()||""));
+
+  // 👉 Admin peut éditer le statut principal si l’agent est de son CIS
+  statutPrincipalSel.disabled = lockBase ? !canEditIfMine : false;
+  cisPrincipalSel.disabled = lockBase;
+  fldMat.disabled=lockBase; fldNom.disabled=lockBase; fldPre.disabled=lockBase;
+
+  lockRoleHint.style.display = (lockBase && !canEditIfMine) ? 'block' : 'none';
+  lockCisHint.style.display  = lockBase ? 'block' : 'none';
+  lockIdentHint.style.display= lockBase ? 'block' : 'none';
+
+  // 🔓 Accès menus (CIS principal) : Admin autorisé si même CIS (ou en création), Super Admin toujours
+  const agentPrimary = (editingOriginal && editingOriginal.cis && editingOriginal.cis.primary) ? editingOriginal.cis.primary : '';
+  const canEditPrimaryPerms =
+    isSuperAdmin() || (
+      isAdminRole() && (
+        !edit || normCis(agentPrimary) === normCis(myCis())
+      )
+    );
+  setPrimaryPermsDisabled(!canEditPrimaryPerms);
+}
+
+/* 🔵 Mon CIS (secondaire) */
+function refreshMyCisPanel(){
+  const panel=document.getElementById('myCisPanel');
+  const content=document.getElementById('myCisContent');
+  if(isSuperAdmin()){ panel.style.display='none'; content.innerHTML=''; return; }
+  if(!isCmd() || !editMode || !editingOriginal){ panel.style.display='none'; content.innerHTML=''; return; }
+
+  const mine=myCis();
+  const u=normalizeUser(editingOriginal);
+  const isPrimaryMine=normCis(u.cis?.primary||"")===normCis(mine||"");
+  const idx=secondaryIndex(u,mine);
+  panel.style.display='block';
+
+  if(isPrimaryMine){
+    content.innerHTML=`<div class="hint">Cet agent a <strong>${mine}</strong> en <strong>principal</strong>. Gérez ses droits principaux ci-dessus.</div>`;
+    return;
+  }
+
+  if(idx>=0){
+    const currentStatut=u.cis.secondaries[idx]?.statut || 'SPV';
+    const secPerms = (u.permissions?.secondaries||{})[mine] || defaultPerms();
+    content.innerHTML=`
+      <div class="cis-wrap">
+        <div>
+          <label>Statut sur ${mine} (secondaire) :</label>
+          <select id="myCisStatutSelect">
+            <option value="SPP">SPP</option><option value="SPV">SPV</option><option value="PATS">PATS</option>
+          </select>
+        </div>
+      </div>
+      <div class="perm-title">Droits sur ${mine}</div>
+      <div class="perm-grid" id="myCisPermGrid">${makePermCheckboxes('mycis', secPerms)}</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
+        <button class="btn-primary" id="btnMyCisSave">💾 Enregistrer</button>
+        <button class="btn-delete" id="btnMyCisRemove">Retirer de mon CIS</button>
+      </div>
+      <div class="hint">Vous modifiez le <strong>rattachement secondaire</strong> à ${mine} (statut et droits).</div>
+    `;
+    document.getElementById('myCisStatutSelect').value=currentStatut;
+    document.getElementById('btnMyCisSave').onclick=()=>{
+      const newStatut=document.getElementById('myCisStatutSelect').value;
+      const newPerms=readPermsFromForm('mycis');
+      const raw=localStorage.getItem("csver_user_"+u.matricule); if(!raw){alert("Utilisateur introuvable.");return;}
+      let upd=updateSecondaryStatut(JSON.parse(raw), mine, newStatut);
+      upd=assignSecondary(upd, mine, newStatut, newPerms); // also writes perms
+      localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(upd));
+      alert("✅ Rôle secondaire & droits mis à jour.");
+      cancelForm();
+      renderTable(document.getElementById("search").value);
+    };
+    document.getElementById('btnMyCisRemove').onclick=()=>{
+      if(!confirm(`Retirer cet agent de ${mine} ?`)) return;
+      const raw=localStorage.getItem("csver_user_"+u.matricule); if(!raw){alert("Utilisateur introuvable.");return;}
+      const upd=removeSecondary(JSON.parse(raw), mine);
+      localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(upd));
+      alert("✅ Rattachement secondaire supprimé.");
+      cancelForm();
+      renderTable(document.getElementById("search").value);
+    };
+  }else{
+    const defPerms = defaultPerms(); defPerms.agent = true;
+    content.innerHTML=`
+      <label>Affecter cet agent à mon CIS (${mine}) :</label>
+      <div class="cis-wrap">
+        <div>
+          <label>Statut à attribuer :</label>
+          <select id="myCisStatutAttach">
+            <option value="SPP">SPP</option><option value="SPV" selected>SPV</option><option value="PATS">PATS</option>
+          </select>
+        </div>
+      </div>
+      <div class="perm-title">Droits initiaux</div>
+      <div class="perm-grid" id="myCisPermAttach">${makePermCheckboxes('mycis_new', defPerms)}</div>
+      <button class="btn-primary" id="btnMyCisAttach">Affecter à mon CIS</button>
+      <div class="hint">L'agent sera ajouté en secondaire sur ${mine} avec le statut choisi et les droits cochés.</div>
+    `;
+    document.getElementById('mycis_new_agent').checked = true;
+    document.getElementById('btnMyCisAttach').onclick=()=>{
+      const statut=document.getElementById('myCisStatutAttach').value;
+      const perms=readPermsFromForm('mycis_new');
+      const raw=localStorage.getItem("csver_user_"+u.matricule); if(!raw){alert("Utilisateur introuvable.");return;}
+      const upd=assignSecondary(JSON.parse(raw), mine, statut, perms);
+      localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(upd));
+      alert("✅ Rattaché à votre CIS avec droits.");
+      cancelForm();
+      renderTable(document.getElementById("search").value);
+    };
+  }
+}
+
+/* 🟢 Mutation */
+function refreshMutatePanel(){
+  if(isSuperAdmin()){ mutatePanel.style.display='none'; return; }
+  if(!isAdminRole() || !editMode || !editingOriginal){ mutatePanel.style.display='none'; return; }
+
+  const mine=myCis();
+  const u=normalizeUser(editingOriginal);
+  const isPrimaryMine=normCis(u.cis?.primary||"")===normCis(mine||"");
+
+  if(!isPrimaryMine){ mutatePanel.style.display='none'; return; }
+
+  populateCisSelect(mutateSel, u.cis.primary);
+  mutatePanel.style.display='block';
+
+  mutateBtn.onclick=()=>{
+    const newCis=mutateSel.value;
+    if(!newCis){ alert("Choisis le nouveau CIS principal."); return; }
+    const raw=localStorage.getItem("csver_user_"+u.matricule);
+    if(!raw){ alert("Utilisateur introuvable."); return; }
+    const data=normalizeUser(JSON.parse(raw));
+
+    const oldMine = mine;
+    data.cis.primary = newCis;
+    data.cis.secondaries = (data.cis.secondaries||[])
+      .filter(s => normCis(s.cis||"") !== normCis(oldMine||""));
+    // permissions: au gestionnaire de définir les perms du nouveau CIS
+
+    localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(data));
+    alert(`✅ Agent muté vers ${newCis}. Il est retiré de ${oldMine}.`);
+    cancelForm();
+    renderTable(document.getElementById("search").value);
+  };
+}
+
+/* 🟣 Panneau Super Admin : toutes les affectations secondaires */
+function refreshAllSecPanel(){
+  const panel=document.getElementById('allSecPanel');
+  const rows=document.getElementById('allSecRows');
+  const addBtn=document.getElementById('allSecAddBtn');
+  if(!isSuperAdmin() || !editingOriginal){ panel.style.display='none'; rows.innerHTML=''; return; }
+  panel.style.display='block';
+
+  function makeRow(obj={}, idx=null){
+    const wrap=document.createElement('div');
+    wrap.style.display='grid';
+    wrap.style.gridTemplateColumns='1fr 160px';
+    wrap.style.gap='8px';
+    wrap.style.alignItems='start';
+    wrap.style.margin='8px 0';
+
+    const left=document.createElement('div');
+    const right=document.createElement('div');
+
+    // left: CIS + statut + perms
+    const selCis=document.createElement('select');
+    populateCisSelect(selCis, editingOriginal?.cis?.primary || "");
+    selCis.value=obj.cis||'';
+
+    const selStatut=document.createElement('select');
+    selStatut.innerHTML='<option value="SPP">SPP</option><option value="SPV">SPV</option><option value="PATS">PATS</option>';
+    selStatut.value=(obj.statut||'SPV');
+
+    const grid=document.createElement('div');
+    grid.className='perm-grid';
+    const perms = (editingOriginal.permissions?.secondaries||{})[obj.cis||''] || defaultPerms();
+    grid.innerHTML = makePermCheckboxes('sec_'+Math.random().toString(36).slice(2), perms);
+
+    left.innerHTML = '<label>CIS secondaire :</label>';
+    left.appendChild(selCis);
+    const lab=document.createElement('label'); lab.textContent='Statut :'; left.appendChild(lab);
+    left.appendChild(selStatut);
+    const t=document.createElement('div'); t.className='perm-title'; t.textContent='Droits :'; left.appendChild(t);
+    left.appendChild(grid);
+
+    // right: actions
+    const del=document.createElement('button');
+    del.className='btn-delete';
+    del.textContent='Supprimer';
+    del.type='button';
+    del.onclick=()=>{ wrap.remove(); };
+
+    right.appendChild(del);
+
+    wrap.appendChild(left); wrap.appendChild(right);
+    rows.appendChild(wrap);
+
+    // store nodes for save
+    wrap._cisSel = selCis;
+    wrap._statSel = selStatut;
+    wrap._grid = grid;
+  }
+
+  rows.innerHTML='';
+  const u=normalizeUser(editingOriginal);
+  (u.cis?.secondaries||[]).forEach(s=>makeRow(s));
+  addBtn.onclick=()=>makeRow();
+}
+
+/* --- Affichages / locks / panneaux --- */
+function showForm(edit=false){
+  document.getElementById("userForm").style.display="block";
+  document.getElementById("formTitle").textContent=edit?"Modifier un utilisateur":"Créer un utilisateur";
+  applyLocks(edit);
+  if(!edit){
+    const defaultCis = isAdminRole() ? myCis() : "";
+    populateCisPrincipal(defaultCis);
+    statutPrincipalSel.value='SPV';
+    fldMat.value=""; fldNom.value=""; fldPre.value="";
+
+    if (isAdminRole() && !isSuperAdmin()){
+      cisPrincipalSel.disabled = true;
+      lockCisHint.style.display = 'block';
+      lockCisHint.textContent = "En création, votre CIS est imposé comme principal.";
+    } else {
+      cisPrincipalSel.disabled = false;
+      lockCisHint.style.display = 'none';
+    }
+
+    // Permissions par défaut (Agent du centre coché)
+    document.getElementById('permPrimaryGrid').innerHTML = makePermCheckboxes('primary', defaultPerms());
+    document.getElementById('primary_agent').checked = (isAdminRole() || isSuperAdmin());
+    setPrimaryPermsDisabled(!(isSuperAdmin() || isAdminRole()));
+
+    document.getElementById('myCisPanel').style.display='none';
+    mutatePanel.style.display='none';
+    refreshAllSecPanel();
+  }else{
+    refreshMyCisPanel();
+    refreshMutatePanel();
+    refreshAllSecPanel();
+  }
+}
+
+function cancelForm(){
+  document.getElementById("userForm").style.display="none";
+  fldMat.value=""; fldNom.value=""; fldPre.value="";
+  populateCisPrincipal("");
+  document.getElementById('permPrimaryGrid').innerHTML = "";
+  document.getElementById('allSecRows').innerHTML='';
+  mutatePanel.style.display='none';
+  editMode=false; currentMatricule=null; editingOriginal=null;
+}
+
+function validateUserPayload(p){
+  if(!p.matricule || !p.nom || !p.prenom) return "Veuillez remplir matricule, nom, prénom.";
+  if(!p.cis.primary) return "Merci de sélectionner un CIS principal.";
+  const set=new Set([normCis(p.cis.primary||'')]);
+  for(const s of (p.cis.secondaries||[])){
+    if(!s.cis) return "Un CIS secondaire est vide. Supprimez la ligne ou choisissez un CIS.";
+    const k=normCis(s.cis);
+    if(set.has(k)) return "Un CIS est sélectionné en double (principal/secondaire).";
+    set.add(k);
+  }
+  return null;
+}
+
+function saveUser(){
+  let matricule=fldMat.value.trim(), nom=fldNom.value.trim(), prenom=fldPre.value.trim();
+  let statut=statutPrincipalSel.value, cisPrimary=cisPrincipalSel.value;
+
+  if(isAdminRole() && editMode && editingOriginal && !isSuperAdmin()){
+    matricule=editingOriginal.matricule;
+    nom=editingOriginal.nom; prenom=editingOriginal.prenom;
+    const isMine=normCis(editingOriginal.cis?.primary||"")===normCis(myCis()||"");
+    if(!isMine){ statut=editingOriginal.statut; }
+    cisPrimary=editingOriginal.cis?.primary||cisPrimary;
+  }
+
+  // collect primary permissions
+  const primaryPerms = readPermsFromForm('primary');
+
+  let secondaries=[];
+  let secPerms = {};
+  if(isSuperAdmin()){
+    // read rows
+    const rows=[...document.getElementById('allSecRows').children];
+    for(const r of rows){
+      const cis=r._cisSel.value;
+      const st = r._statSel.value;
+      if(!cis) continue;
+      secondaries.push({cis, statut:st});
+      // read grid checkboxes inside r._grid
+      const cb = r._grid.querySelectorAll('input[type="checkbox"]');
+      const o = defaultPerms();
+      cb.forEach(x=>{
+        const label = x.parentElement && x.parentElement.textContent ? x.parentElement.textContent.trim() : "";
+        const mapR = {"Agent du centre":"agent","SOG":"sog","Formation":"formation","FDF":"fdf","Pharmacie":"pharma",
+          "Habillement":"habillement","Gestion habillement":"gestion_habillement","Gestion stages":"gestion_stages",
+          "MNR":"mnr","Véhicules":"véhicules","Atelier":"atelier","Magasin":"magasin",
+          "Saisie FMA":"saisie_fma","Administrateur":"admin"};
+        const key = mapR[label] || "";
+        if(key) o[key]=x.checked;
+      });
+      secPerms[cis]=o;
+    }
+  }else if(editMode){
+    const norm=normalizeUser(editingOriginal||{});
+    secondaries=norm.cis?.secondaries||[];
+    secPerms = norm.permissions?.secondaries || {};
+  }
+
+  const payload={matricule,nom,prenom,statut,cis:{primary:cisPrimary,secondaries}, permissions:{ primary: primaryPerms, secondaries: secPerms }};
+  const err=validateUserPayload(payload); if(err){ alert(err); return; }
+
+  if(editMode){
+    const existing=JSON.parse(localStorage.getItem("csver_user_"+currentMatricule)||"null");
+    // preserve auth fields if any
+    ["hash","salt","iters","kdf","secret_question"].forEach(k=>{ if(existing?.[k]!=null) payload[k]=existing[k]; });
+
+    if(currentMatricule!==matricule){ localStorage.removeItem("csver_user_"+currentMatricule); }
+    localStorage.setItem("csver_user_"+matricule, JSON.stringify(payload));
+  }else{
+    if(localStorage.getItem("csver_user_"+matricule)){
+      if(!confirm("Un utilisateur avec ce matricule existe déjà. Écraser ?")) return;
+    }
+    localStorage.setItem("csver_user_"+matricule, JSON.stringify(payload));
+  }
+
+  alert("✅ Utilisateur enregistré !");
+  cancelForm(); renderTable(document.getElementById("search").value);
+}
+
+function editUser(matricule){
+  const raw=localStorage.getItem("csver_user_"+matricule);
+  if(!raw){ alert("Utilisateur introuvable."); return; }
+  const u=normalizeUser(JSON.parse(raw));
+  editingOriginal=JSON.parse(JSON.stringify(u));
+
+  const fldMat=document.getElementById('matricule');
+  const fldNom=document.getElementById('nom');
+  const fldPre=document.getElementById('prenom');
+
+  fldMat.value=u.matricule; fldNom.value=u.nom||""; fldPre.value=u.prenom||"";
+  document.getElementById('statutPrincipal').value=u.statut||"SPV"; populateCisPrincipal(u.cis?.primary||"");
+  currentMatricule=matricule; editMode=true;
+
+  // Charger permissions du CIS principal
+  document.getElementById('permPrimaryGrid').innerHTML = makePermCheckboxes('primary', u.permissions?.primary || defaultPerms());
+
+  // 🔓 Autorisations d'édition des permissions du CIS principal
+  (function(){
+    const agentPrimary = (u && u.cis && u.cis.primary) ? u.cis.primary : '';
+    const canEditPrimaryPerms =
+      isSuperAdmin()
+      || (isAdminRole() && normCis(agentPrimary) === normCis(myCis()));
+    setPrimaryPermsDisabled(!canEditPrimaryPerms);
+  })();
+
+  applyLocks(true);
+  document.getElementById("userForm").style.display="block";
+  refreshMyCisPanel();
+  refreshMutatePanel();
+  refreshAllSecPanel();
+}
+
+/* ---- Répertoire (optionnel) ---- */
+function openDirectory(){ const m=document.getElementById('dirModal'); m.style.display='flex'; document.getElementById('dirSearch').value=''; renderDirectory(); }
+function closeDirectory(){ document.getElementById('dirModal').style.display='none'; }
+function renderDirectory(){
+  if(!(isAdminRole() || isSuperAdmin())){
+    alert("Seuls les administrateurs du CIS peuvent affecter depuis le répertoire.");
+    return;
+  }
+
+  const mine=myCis(); const tbody=document.getElementById('dirList'); const q=(document.getElementById('dirSearch').value||"").toLowerCase();
+  tbody.innerHTML=""; const all=getUsers().map(normalizeUser);
+  all
+   .filter(u=>{
+     const cisNames=[u.cis?.primary||""].concat((u.cis?.secondaries||[]).map(s=>s.cis));
+     return [u.matricule||"",u.nom||"",u.prenom||"",...cisNames].join(" ").toLowerCase().includes(q);
+   })
+   .sort((a,b)=>{const A=(a.nom||"").toLowerCase(),B=(b.nom||"").toLowerCase(); const aP=(a.prenom||"").toLowerCase(),bP=(b.prenom||"").toLowerCase(); if(A<B)return-1;if(A>B)return 1;return aP.localeCompare(bP);})
+   .forEach(u=>{
+     let actionHTML='';
+     if(isSuperAdmin()){
+       actionHTML='<span class="muted">Utilise le formulaire pour gérer toutes les affectations & droits.</span>';
+     }else{
+       const isPrimaryMine=normCis(u.cis?.primary||"")===normCis(mine||"");
+       const alreadySecondary=secondaryIndex(u,mine)>=0;
+       if(isPrimaryMine){ actionHTML='<span class="muted">Principal de mon CIS — gérable dans le formulaire.</span>'; }
+       else if(alreadySecondary){ actionHTML='<span class="muted">Déjà rattaché à mon CIS — gère-le dans le formulaire.</span>'; }
+       else{
+         // simple : statut + bouton; droits réglés ensuite dans la fiche
+         actionHTML=`
+           <div class="dir-card">
+             <div class="dir-line">
+               <select data-statut><option value="SPP">SPP</option><option value="SPV" selected>SPV</option><option value="PATS">PATS</option></select>
+               <button class="btn-primary" data-affecter>Affecter à mon CIS</button>
+             </div>
+             <div class="hint">Les droits seront configurés ensuite dans la fiche utilisateur.</div>
+           </div>`;
+       }
+     }
+     const tr=document.createElement('tr');
+     tr.innerHTML=`<td>${u.matricule}</td><td>${u.nom||"-"}</td><td>${u.prenom||"-"}</td><td>${u.cis?.primary||"-"}</td><td>${actionHTML}</td>`;
+     if(!isSuperAdmin()){
+       const isPrimaryMine=normCis(u.cis?.primary||"")===normCis(mine||"");
+       const alreadySecondary=secondaryIndex(u,mine)>=0;
+       if(!isPrimaryMine && !alreadySecondary){
+         const statutSel=tr.querySelector('select[data-statut]'); const btn=tr.querySelector('[data-affecter]');
+         btn.addEventListener('click',()=>{
+           const statut=statutSel.value;
+           const raw=localStorage.getItem("csver_user_"+u.matricule); if(!raw){alert("Utilisateur introuvable.");return;}
+           const base = JSON.parse(raw);
+           const perms = defaultPerms(); perms.agent = true; // droits par défaut (Agent du centre)
+           const upd=assignSecondary(base, mine, statut, perms);
+           localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(upd));
+           alert("✅ Rattaché à votre CIS.");
+           closeDirectory();
+           renderTable(document.getElementById("search").value);
+         });
+       }
+     }
+     tbody.appendChild(tr);
+   });
+}
+
+/* ---- Réactivité ---- */
+document.getElementById("search").addEventListener("input",e=>renderTable(e.target.value));
+
+window.addEventListener("DOMContentLoaded", async ()=>{
+  // 🔥 D'abord, on ramène toutes les fiches depuis Firestore
+  try{
+    await syncUsersFromCloud();
+  }catch(e){
+    console.error(e);
+  }
+
+  // Puis on affiche avec les données (localStorage rempli)
+  populateCisPrincipal("");
+  renderTable();
+
+  // construire le grid des permissions (vide par défaut)
+  document.getElementById('permPrimaryGrid').innerHTML =
+    makePermCheckboxes('primary', defaultPerms());
+});
+
+/* ============================================================
+   Logique intelligente des permissions
+   - Cocher "Agent du centre" coche Formation, FDF, Habillement
+   - Cocher "SOG" coche tout, sauf Véhicules, Saisie FMA, Administrateur
+   - Toujours réversible manuellement par l’utilisateur
+   ============================================================ */
+
+/** Retourne { prefix, key } pour un id du type "<prefix>_<key>" */
+function splitId(id){
+  const p = id.lastIndexOf('_');
+  return { prefix: id.slice(0,p), key: id.slice(p+1) };
+}
+
+/** Coche/décoche un checkbox par (prefix,key) dans un grid donné */
+function setBox(prefix, key, value, grid){
+  const el = grid.querySelector(`#${CSS.escape(prefix + '_' + key)}`);
+  if (el && !el.disabled) el.checked = !!value;
+}
+
+/** Quand on coche "Agent du centre" → coche Formation, FDF, Habillement */
+function applyAgentDefaults(prefix, grid){
+  setBox(prefix, 'formation', true, grid);
+  setBox(prefix, 'fdf',        true, grid);
+  setBox(prefix, 'habillement',true, grid);
+}
+
+/** Quand on coche "SOG" → coche tout, sauf Véhicules, Saisie FMA, Administrateur
+ *  ⚠️ Laisse "gestion_habillement" et "gestion_stages" tels quels (ni forcés à true, ni à false)
+ */
+function applySogDefaults(prefix, grid){
+  const EXCEPT = new Set(['véhicules','saisie_fma','admin','gestion_habillement','gestion_stages']);
+
+  // coche tout sauf les exceptions
+  PERM_KEYS.forEach(k=>{
+    if (EXCEPT.has(k)) return;
+    setBox(prefix, k, true, grid);
+  });
+
+  // exceptions explicitement désactivées
+  setBox(prefix, 'véhicules',  false, grid);
+  setBox(prefix, 'saisie_fma', false, grid);
+  setBox(prefix, 'admin',      false, grid);
+
+  // "gestion_habillement" et "gestion_stages" restent inchangés
+}
+
+
+/** Écoute déléguée : s’applique à TOUTES les grilles .perm-grid (principal & secondaires) */
+document.addEventListener('change', function(e){
+  const t = e.target;
+  if(!(t instanceof HTMLInputElement)) return;
+  if(t.type !== 'checkbox') return;
+  if(!t.id || !t.closest('.perm-grid')) return;
+
+  const grid = t.closest('.perm-grid');
+  const { prefix, key } = splitId(t.id);
+
+  // Logique seulement quand on COCHET (le décochement reste libre)
+  if(!t.checked) return;
+
+  if(key === 'agent'){
+    applyAgentDefaults(prefix, grid);
+  }else if(key === 'sog'){
+    applySogDefaults(prefix, grid);
+  }
+});
+</script>
+
+</body>
+</html>
