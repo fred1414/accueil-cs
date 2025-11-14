@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Réservations véhicules</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif}
+body{
+  background:linear-gradient(135deg,#1d3f73 0%,#d43d3d 100%);
+  min-height:100vh;display:flex;flex-direction:column;color:#222;
+}
+
+/* HEADER (logo à gauche, bouton Accueil rouge à droite) */
+header{
+  background:#fff;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+header img{height:60px}
+header .title{font-size:24px;color:#0d2b52;font-weight:800}
+header .subtitle{font-size:14px;color:#444;margin-top:4px}
+.acceuil-btn{
+  background:#b71c1c;color:#fff;font-weight:800;border:none;border-radius:12px;
+  padding:10px 14px;cursor:pointer;transition:.2s;font-size:14px;
+}
+.acceuil-btn:hover{background:#8b0000}
+
+/* MAIN */
+main{
+  flex:1;max-width:1200px;margin:20px auto;padding:0 16px;
+  display:grid;gap:16px;grid-template-columns:1fr;
+}
+
+/* PANELS */
+.panel{
+  background:rgba(255,255,255,.92);
+  border-radius:16px;padding:18px;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);
+  display:flex;flex-direction:column;gap:14px;
+}
+.panel h2{
+  font-size:20px;font-weight:800;color:#0d2b52;
+  border-left:6px solid #b71c1c;padding-left:10px;
+}
+.panel .headerline{display:flex;align-items:center;justify-content:space-between;gap:10px}
+
+/* FORM */
+.form-grid{
+  display:grid;gap:12px;
+  grid-template-columns:repeat(6, minmax(0,1fr));
+}
+.form-grid .col-2{grid-column:span 2}
+.form-grid .col-3{grid-column:span 3}
+.form-grid .col-6{grid-column:1 / -1}
+label{font-weight:700;color:#0d2b52;font-size:14px}
+input,select,textarea{
+  width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:10px;
+  background:#fff;font-size:14px;
+}
+textarea{min-height:70px;resize:vertical}
+.form-actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{
+  border:none;border-radius:10px;padding:12px 16px;cursor:pointer;
+  color:#fff;font-size:15px;font-weight:800;box-shadow:0 3px 8px rgba(0,0,0,.12);
+  transition:transform .2s ease;
+}
+.btn:hover{transform:translateY(-2px)}
+.btn.primary{background:#1a73e8}
+.btn.secondary{background:#6a1b9a}
+.btn.ghost{background:#eef2ff;color:#223}
+
+/* TABLES */
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{border:1px solid #eef2fb;padding:8px 10px;text-align:left}
+.table th{background:#f7f9ff;color:#123}
+.badge{
+  display:inline-block;padding:2px 8px;border-radius:999px;font-weight:800;font-size:12px
+}
+.badge.pending{border:1px solid #ffd39b;background:#fff4e5;color:#a36100}
+.badge.approved{border:1px solid #a7e2be;background:#e6f7ec;color:#0a8a3a}
+.badge.rejected{border:1px solid #f5b6b6;background:#fdecec;color:#b71c1c}
+
+/* ACTIONS / PETITS BOUTONS */
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.small-btn{
+  border:none;border-radius:8px;padding:6px 8px;cursor:pointer;font-weight:700;font-size:12px;
+  background:#eef2ff;color:#223;
+}
+.small-btn.danger{background:#fdecec;color:#b71c1c}
+.small-btn.ok{background:#e6f7ec;color:#0a8a3a}
+.small-btn.warn{background:#fff3cd;color:#7a5800}
+
+/* MODAL Historique */
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:2000;padding:20px}
+.modal-card{background:#fff;border-radius:14px;max-width:1100px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.25);overflow:hidden;display:flex;flex-direction:column}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#0d2b52;color:#fff}
+.modal-body{padding:14px 16px;max-height:70vh;overflow:auto}
+.modal-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+.select{
+  border:1px solid #e2e8f0;border-radius:8px;padding:6px 8px;background:#fff;font-weight:700
+}
+
+.help{font-size:13px;color:#444}
+footer{text-align:center;color:#fff;font-size:13px;padding:20px}
+
+@media (max-width:900px){
+  .form-grid{grid-template-columns:1fr 1fr}
+  .form-grid .col-3{grid-column:span 2}
+  .form-grid .col-2{grid-column:span 1}
+}
+</style>
+<!-- 🔌 Firebase + Firestore + stockage partagé -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="cloud-storage.js"></script>
+</head>
+<body>
+
+<header>
+  <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png" alt="Logo SDIS 30">
+  <div>
+    <div class="title">Réservations véhicules</div>
+    <div class="subtitle" id="cisLabel">—</div>
+  </div>
+  <button class="acceuil-btn" onclick="goAccueil()">⟵ Accueil</button>
+</header>
+
+<main>
+
+  <!-- FORMULAIRE -->
+  <section class="panel">
+    <h2>📝 Nouvelle demande</h2>
+    <p class="help">Le véhicule sera choisi par le valideur lors de l’acceptation. L’agent est rempli automatiquement.</p>
+    <form id="resForm" onsubmit="return submitReservation(event)">
+      <div class="form-grid">
+        <div class="col-2">
+          <label>Agent</label>
+          <input type="text" id="agentName" readonly value="">
+        </div>
+
+        <!-- DATES -->
+        <div class="col-2">
+          <label>Date début</label>
+          <input type="date" id="dateDebut" required>
+        </div>
+        <div class="col-2">
+          <label>Date fin</label>
+          <input type="date" id="dateFin" required>
+        </div>
+
+        <div>
+          <label>Heure début</label>
+          <input type="time" id="heureDebut" required step="3600" min="06:00" max="22:00" value="08:00">
+        </div>
+        <div>
+          <label>Heure fin</label>
+          <input type="time" id="heureFin" required step="3600" min="06:00" max="22:00" value="12:00">
+        </div>
+
+        <div class="col-3">
+          <label>Motif</label>
+          <input type="text" id="motif" required placeholder="Ex : Stage, Formation, Spécialité…">
+        </div>
+        <div class="col-3">
+          <label>Destination</label>
+          <input type="text" id="destination" required placeholder="Ex : Vauvert, SDIS, NSC…">
+        </div>
+
+        <div class="col-6 form-actions">
+          <button class="btn primary" type="submit">Demander la réservation</button>
+          <button class="btn secondary" type="button" onclick="clearForm()">Réinitialiser</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- DEMANDES EN ATTENTE -->
+  <section class="panel">
+    <h2>📌 Suivi des demandes</h2>
+    <div style="overflow:auto">
+      <table class="table" id="reqTable">
+        <thead>
+          <tr>
+            <th>Date</th><th>Heures</th><th>Véhicule (à affecter)</th><th>Agent</th><th>Motif</th><th>Destination</th><th>Statut</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="help">Choisir un véhicule puis <strong>Accepter</strong> ou <strong>Refuser</strong>. Les refus disparaissent de cette liste.</p>
+  </section>
+
+  <!-- A VENIR -->
+  <section class="panel">
+    <div class="headerline">
+      <h2>⏭️ Réservations à venir</h2>
+      <div class="modal-actions">
+        <button class="small-btn" onclick="openHistory()">📚 Historique</button>
+        <!-- Bouton admin (affiché si isAdmin === true) -->
+        <button id="btnPurgeAll" class="small-btn danger" style="display:none" onclick="purgeAllReservations()">🗑️ Purger toutes les réservations</button>
+      </div>
+    </div>
+    <div style="overflow:auto">
+      <table class="table" id="upcomingTable">
+        <thead>
+          <tr>
+            <th>Date</th><th>Heures</th><th>Véhicule</th><th>Agent</th><th>Motif</th><th>Destination</th><th>Statut</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="help">Affiche uniquement les réservations <strong>acceptées</strong> dont le créneau n’est pas encore terminé.</p>
+  </section>
+
+</main>
+
+<!-- MODAL HISTORIQUE -->
+<div id="histModal" class="modal" aria-hidden="true">
+  <div class="modal-card">
+    <div class="modal-head">
+      <strong>📚 Historique des réservations</strong>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label for="histFilter" style="font-size:13px;opacity:.9">Statut :</label>
+        <select id="histFilter" class="select" onchange="renderHistory()">
+          <option value="all">Toutes</option>
+          <option value="approved">Acceptées</option>
+          <option value="pending">En attente</option>
+          <option value="rejected">Refusées</option>
+        </select>
+        <button class="small-btn" onclick="closeHistory()">Fermer</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div style="overflow:auto">
+        <table class="table" id="histTable">
+          <thead>
+            <tr>
+              <th>Date</th><th>Heures</th><th>Véhicule</th><th>Agent</th><th>Motif</th><th>Destination</th><th>Statut</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="help" style="margin-top:8px">Liste des réservations dont le créneau est <strong>terminé</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<footer>© SDIS 30 — Réservations véhicules — 2025</footer>
+<!-- 🔁 SYNCHRO FIRESTORE RESERVATIONS -->
+<script>
+/* =======================================================
+     🔁 SYNCHRO RESERVATIONS <-> FIRESTORE
+   ======================================================= */
+
+/* On synchronise :
+   - reservations_<CIS>
+   - vehicules_<CIS>
+   - journal_<CIS>
+*/
+function shouldSyncRESERV(key){
+  return key && (
+    key.startsWith("reservations_") ||
+    key.startsWith("vehicules_")    ||
+    key.startsWith("journal_")
+  );
+}
+
+/* 🔄 Cloud ➜ Local */
+async function syncRESERVFromCloud(){
+  try{
+    if(typeof db === "undefined"){
+      console.warn("Firestore non initialisé");
+      return;
+    }
+
+    const snap = await db.collection("accueilcs").get();
+    snap.forEach(doc=>{
+      const key = doc.id;
+      if(shouldSyncRESERV(key)){
+        localStorage.setItem(key, JSON.stringify(doc.data()));
+      }
+    });
+    console.log("RESERV : sync Firestore → localStorage OK");
+  }catch(e){
+    console.error("syncRESERVFromCloud", e);
+  }
+}
+
+/* 🔄 Local ➜ Cloud */
+(function(){
+  const oldSet = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, val){
+    oldSet(key, val);
+    if(shouldSyncRESERV(key)){
+      try{
+        cloudSetJSON(key, JSON.parse(val));
+      }catch(e){}
+    }
+  };
+
+  const oldRemove = localStorage.removeItem.bind(localStorage);
+  localStorage.removeItem = function(key){
+    if(shouldSyncRESERV(key)){
+      try{
+        db.collection("accueilcs").doc(key).delete();
+      }catch(_){}
+    }
+    oldRemove(key);
+  };
+})();
+</script>
+<script>
+/* ===== Helpers ===== */
+function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;","<": "&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
+function toMinutes(hhmm){ const [h,m]=String(hhmm||"").split(":").map(x=>parseInt(x||"0",10)); return (isNaN(h)?0:h)*60+(isNaN(m)?0:m); }
+function fmtDDMMYYYY(iso){ try{ const [Y,M,D]=String(iso||"").split("-"); return [D,M,Y].join("-"); }catch(_){ return iso||""; } }
+function vehKey(name){ try{ return String(name||"").trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').toLowerCase(); }catch(_){ return String(name||"").trim().toLowerCase(); } }
+function vehId(name){ return vehKey(name).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
+function overlap(aStart,aEnd,bStart,bEnd){ return aStart < bEnd && bStart < aEnd; }
+function statusBadge(s){ if(s==="approved")return'<span class="badge approved">Acceptée</span>'; if(s==="rejected")return'<span class="badge rejected">Refusée</span>'; return'<span class="badge pending">En attente</span>'; }
+
+/* === Helpers dates multi-jours === */
+function getDateStart(r){
+  return r.dateDebut || r.date || "";
+}
+function getDateEnd(r){
+  return r.dateFin || r.date || "";
+}
+function fmtDateRange(d1,d2){
+  if(!d1) return "";
+  if(!d2 || d1===d2) return fmtDDMMYYYY(d1);
+  return fmtDDMMYYYY(d1) + " au " + fmtDDMMYYYY(d2);
+}
+function computeTs(r){
+  const d1 = getDateStart(r);
+  const d2 = getDateEnd(r);
+  const h1 = r.h1 || "00:00";
+  const h2 = r.h2 || h1 || "23:59";
+  const tsStart = Date.parse(d1 + "T" + h1);
+  const tsEnd   = Date.parse(d2 + "T" + h2);
+  r.tsStart = isNaN(tsStart) ? 0 : tsStart;
+  r.tsEnd   = isNaN(tsEnd)   ? r.tsStart : tsEnd;
+  return r;
+}
+
+/* ===== Contexte ===== */
+let ctx={user:null,cis:"",keyVehs:"",keyRes:""};
+function robustSession(){ try{const raw=localStorage.getItem("csver_session");if(!raw)return null;const s=JSON.parse(raw);return s&&typeof s==="object"?s:null;}catch(_){return null;} }
+function getDisplayName(u){
+  const n=(((u?.prenom||"")+" "+(u?.nom||"")).trim()); if(n) return n;
+  try{ const fiche=JSON.parse(localStorage.getItem("csver_user_"+(u?.matricule||""))||"null"); const n2=(((fiche?.prenom||"")+" "+(fiche?.nom||"")).trim()); if(n2) return n2; }catch(_){}
+  try{ const agents=JSON.parse(localStorage.getItem("agents_data")||"[]"); const hit=agents.find(a=>a.matricule===u?.matricule); if(hit){ const n3=(((hit.prenom||"")+" "+(hit.nom||"")).trim()); return n3||hit.nom||hit.prenom||u?.matricule||"Agent"; } }catch(_){}
+  return u?.matricule||"Agent";
+}
+function fillAgentField(force=false){
+  const input=document.getElementById("agentName"); if(!input) return;
+  const sess=robustSession(); const name=sess?getDisplayName(sess):"Agent";
+  if(force||!input.value) input.value=name; if(!input.value) input.value="Agent";
+}
+
+/* ===== Roles ===== */
+function _norm(s){
+  try{
+    return String(s||"")
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/\s+/g,' ').trim().toLowerCase();
+  }catch(_){ return String(s||"").toLowerCase().trim(); }
+}
+function _getPermsForCurrentCis(){
+  try{
+    const sess = ctx.user;
+    if(!sess) return null;
+    const fiche = JSON.parse(localStorage.getItem("csver_user_"+(sess.matricule||"")) || "null");
+    if(!fiche || !fiche.permissions) return null;
+
+    const cisCur = Array.isArray(sess.cis) ? sess.cis[0] : sess.cis;
+    const cisPrim = fiche.cis && fiche.cis.primary ? fiche.cis.primary : null;
+    const isPrim  = cisPrim && _norm(cisPrim) === _norm(cisCur);
+
+    if(isPrim) return fiche.permissions.primary || null;
+
+    const sec = fiche.permissions.secondaries || {};
+    const key = Object.keys(sec).find(k => _norm(k) === _norm(cisCur));
+    return sec[cisCur] || (key ? sec[key] : null);
+  }catch(_){ return null; }
+}
+function isManager(){
+  try{
+    const role = _norm(ctx.user?.role||"");
+    if(["spp","sog spv","sog","admin","commandement"].includes(role)) return true;
+
+    const perms = _getPermsForCurrentCis();
+    if(!perms) return false;
+    return !!(perms.sog || perms.admin || perms["véhicules"]);
+  }catch(_){ return false; }
+}
+function isAdmin(){
+  try{
+    const role = _norm(ctx.user?.role||"");
+    if(["admin","commandement"].includes(role)) return true;
+
+    const perms = _getPermsForCurrentCis();
+    return !!(perms && perms.admin);
+  }catch(_){ return false; }
+}
+
+/* ===== Navigation ===== */
+function goAccueil(){ window.location.href="index.html"; }
+
+/* ===== Storage ===== */
+function readReservations(){
+  const arr=JSON.parse(localStorage.getItem(ctx.keyRes)||"[]");
+  if(!Array.isArray(arr)) return [];
+  return arr.map(r=>{
+    if(!r) return r;
+    if(!r.dateDebut && r.date) r.dateDebut = r.date;
+    if(!r.dateFin && r.date)   r.dateFin   = r.date;
+    return computeTs(r);
+  });
+}
+function saveReservations(arr){ localStorage.setItem(ctx.keyRes, JSON.stringify(arr)); }
+
+/* ===== Formulaire ===== */
+function clearForm(){ 
+  document.getElementById("motif").value=""; 
+  document.getElementById("destination").value=""; 
+}
+function validateFullHour(hhmm){ const [h]=String(hhmm||"").split(":"); return h?`${h.padStart(2,"0")}:00`:"00:00"; }
+
+function submitReservation(evt){
+  if(evt&&typeof evt.preventDefault==="function") evt.preventDefault();
+  fillAgentField();
+  const agent=(document.getElementById("agentName").value||"").trim()||getDisplayName(ctx.user);
+
+  const dateDebut=document.getElementById("dateDebut").value;
+  let   dateFin  =document.getElementById("dateFin").value;
+
+  let h1=document.getElementById("heureDebut").value;
+  let h2=document.getElementById("heureFin").value;
+  h1=validateFullHour(h1); 
+  h2=validateFullHour(h2);
+  document.getElementById("heureDebut").value=h1; 
+  document.getElementById("heureFin").value=h2;
+
+  const motif=document.getElementById("motif").value.trim();
+  const dest=document.getElementById("destination").value.trim();
+
+  if(!dateDebut||!dateFin||!h1||!h2||!motif||!dest){
+    alert("Veuillez saisir toutes les informations obligatoires (dates, heures, motif, destination).");
+    return false;
+  }
+
+  const todayStr = new Date().toISOString().slice(0,10);
+  if(dateDebut < todayStr || dateFin < todayStr){
+    alert("Impossible de réserver dans le passé.");
+    return false;
+  }
+
+  if(dateFin < dateDebut){
+    alert("La date de fin doit être après (ou égale à) la date de début.");
+    return false;
+  }
+
+  const m1=toMinutes(h1), m2=toMinutes(h2);
+
+  if(dateDebut===dateFin && m2<=m1){
+    alert("Pour une réservation sur la même journée, l'heure de fin doit être après l’heure de début.");
+    return false;
+  }
+
+  const tsStart = Date.parse(dateDebut + "T" + h1);
+  const tsEnd   = Date.parse(dateFin   + "T" + h2);
+  if(isNaN(tsStart) || isNaN(tsEnd)){
+    alert("Dates ou heures invalides.");
+    return false;
+  }
+
+  const entry={ 
+    id:"res_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),
+    cis:ctx.cis,
+    vehId:"", 
+    vehicule:"",
+    agent,
+    date: dateDebut, // compat
+    dateDebut,
+    dateFin,
+    h1, h2, 
+    m1, m2,
+    tsStart, tsEnd,
+    motif, 
+    destination:dest,
+    createdTs:Date.now(), 
+    status:"pending", 
+    createdBy:ctx.user?.matricule||agent 
+  };
+
+  const all=readReservations(); 
+  all.push(entry); 
+  saveReservations(all);
+  renderRequests(); 
+  renderUpcoming(); 
+  clearForm(); 
+  alert("Demande enregistrée (En attente, véhicule à affecter)."); 
+  return false;
+}
+
+/* ===== Suivi (pending) ===== */
+function vehicleSelectHtml(selectedId, selectedLabel){
+  const vehs=JSON.parse(localStorage.getItem(ctx.keyVehs)||"[]")||[];
+  const currentId=selectedId||(selectedLabel?vehId(selectedLabel):"");
+  const opts=['<option value="">— Choisir —</option>'].concat(
+    vehs.slice().sort((a,b)=>String(a.nom||"").localeCompare(String(b.nom||""),"fr",{sensitivity:"base"}))
+      .map(v=>{ const id=vehId(v.nom); const sel=(id===currentId)?' selected':''; return `<option value="${id}" data-label="${escapeHtml(v.nom)}"${sel}>${escapeHtml(v.nom)}${v.etat?(' — '+escapeHtml(v.etat)):""}</option>`; })
+  );
+  return `<select data-role="vehsel" class="vehsel" style="padding:6px;border:1px solid #e2e8f0;border-radius:8px">${opts.join("")}</select>`;
+}
+function statusBadge(s){
+  if(s==="approved") return '<span class="badge approved">Acceptée</span>';
+  if(s==="rejected") return '<span class="badge rejected">Refusée</span>';
+  return '<span class="badge pending">En attente</span>';
+}
+function renderRequests(){
+  const tbody=document.querySelector("#reqTable tbody");
+  const rows=readReservations()
+    .filter(r=>r.status==="pending")
+    .sort((a,b)=> a.tsStart - b.tsStart);
+
+  tbody.innerHTML = rows.map(r=>{
+    const vehCell = isManager()? vehicleSelectHtml(r.vehId||"", r.vehicule||"") : (r.vehicule?escapeHtml(r.vehicule):"—");
+    const acts = isManager()
+      ? `<button class="small-btn ok" onclick="approveWithVehicle('${r.id}', this)">Accepter</button>
+         <button class="small-btn danger" onclick="setStatus('${r.id}','rejected')">Refuser</button>`
+      : "—";
+    return `<tr data-id="${r.id}">
+      <td>${fmtDateRange(getDateStart(r), getDateEnd(r))}</td>
+      <td>${r.h1}–${r.h2}</td>
+      <td>${vehCell}</td>
+      <td>${escapeHtml(r.agent)}</td>
+      <td>${escapeHtml(r.motif||"-")}</td>
+      <td>${escapeHtml(r.destination||"-")}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td class="actions">${acts}</td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="8" style="color:#666;padding:10px">Aucune demande en attente.</td></tr>`;
+}
+
+/* ===== Acceptation avec contrôle de conflit (bloquant) ===== */
+function approveWithVehicle(id, btn){
+  const tr=btn.closest("tr");
+  const sel=tr?tr.querySelector('select.vehsel'):null;
+  const vehIdSel=sel?sel.value:"";
+  if(!vehIdSel){ alert("Veuillez choisir un véhicule pour accepter la demande."); return; }
+  const label=sel.options[sel.selectedIndex]?.getAttribute('data-label')||sel.options[sel.selectedIndex]?.text||"";
+  const all=readReservations();
+  const idx=all.findIndex(r=>r.id===id); if(idx<0) return;
+  const r=computeTs(all[idx]);
+
+  const conflicts=all
+    .filter(x=> x.id!==id && x.status==="approved" && x.vehId===vehIdSel)
+    .map(x=>computeTs(x))
+    .filter(x=> overlap(r.tsStart,r.tsEnd,x.tsStart,x.tsEnd));
+
+  if(conflicts.length){
+    const details=conflicts.map(x=>
+      `• ${fmtDateRange(getDateStart(x), getDateEnd(x))} ${x.h1}–${x.h2} (${x.agent})`
+    ).join("\n");
+    alert("Ce véhicule est déjà retenu sur ce créneau :\n"+details+"\n\nChoisissez un autre véhicule.");
+    return;
+  }
+
+  all[idx].vehId=vehIdSel; 
+  all[idx].vehicule=label; 
+  all[idx].status="approved"; 
+  all[idx].statusTs=Date.now(); 
+  all[idx].statusBy=getDisplayName(ctx.user);
+  computeTs(all[idx]);
+
+  saveReservations(all);
+  renderRequests(); 
+  renderUpcoming(); 
+}
+
+/* ===== Refus ===== */
+function setStatus(id, status){
+  const all=readReservations();
+  const idx=all.findIndex(r=>r.id===id); if(idx<0) return;
+  all[idx].status=status; all[idx].statusTs=Date.now(); all[idx].statusBy=getDisplayName(ctx.user);
+  if(status==="rejected"){ all[idx].vehId=""; all[idx].vehicule=""; }
+  saveReservations(all);
+  renderRequests(); renderUpcoming();
+}
+
+/* ===== A venir (acceptées non terminées) ===== */
+function renderUpcoming(){
+  const tbody=document.querySelector("#upcomingTable tbody");
+  const now=Date.now();
+  const rows=readReservations()
+    .filter(r=> r.status==="approved" && r.tsEnd>now)
+    .sort((a,b)=> a.tsStart - b.tsStart);
+
+  tbody.innerHTML = rows.map(r=>`
+    <tr>
+      <td>${fmtDateRange(getDateStart(r), getDateEnd(r))}</td>
+      <td>${r.h1}–${r.h2}</td>
+      <td>${r.vehicule ? escapeHtml(r.vehicule) : "—"}</td>
+      <td>${escapeHtml(r.agent)}</td>
+      <td>${escapeHtml(r.motif||"-")}</td>
+      <td>${escapeHtml(r.destination||"-")}</td>
+      <td>${statusBadge(r.status)}</td>
+    </tr>
+  `).join("") || `<tr><td colspan="7" style="color:#666;padding:10px">Aucune réservation acceptée à venir.</td></tr>`;
+}
+
+/* ===== Historique (créneaux terminés, tous statuts) ===== */
+function openHistory(){
+  const m=document.getElementById("histModal"); if(!m) return;
+  document.getElementById("histFilter").value="all";
+  renderHistory();
+  m.style.display="flex"; m.setAttribute("aria-hidden","false");
+  m.onclick=(e)=>{ if(e.target===m) closeHistory(); };
+  document.addEventListener("keydown", escClose);
+}
+function closeHistory(){
+  const m=document.getElementById("histModal"); if(!m) return;
+  m.style.display="none"; m.setAttribute("aria-hidden","true");
+  document.removeEventListener("keydown", escClose);
+}
+function escClose(e){ if(e.key==="Escape") closeHistory(); }
+
+function renderHistory(){
+  const tbody=document.querySelector("#histTable tbody");
+  const filter=document.getElementById("histFilter").value;
+  const now=Date.now();
+
+  let rows=readReservations().filter(r=> r.tsEnd <= now);
+  if(filter!=="all"){ rows=rows.filter(r=>r.status===filter); }
+
+  rows.sort((a,b)=> (b.tsEnd - a.tsEnd) || (b.tsStart - a.tsStart));
+
+  tbody.innerHTML = rows.map(r=>`
+    <tr>
+      <td>${fmtDateRange(getDateStart(r), getDateEnd(r))}</td>
+      <td>${r.h1}–${r.h2}</td>
+      <td>${r.vehicule?escapeHtml(r.vehicule):"—"}</td>
+      <td>${escapeHtml(r.agent)}</td>
+      <td>${escapeHtml(r.motif||"-")}</td>
+      <td>${escapeHtml(r.destination||"-")}</td>
+      <td>${statusBadge(r.status)}</td>
+    </tr>
+  `).join("") || `<tr><td colspan="7" style="color:#666;padding:10px">Aucune réservation terminée.</td></tr>`;
+}
+
+/* ===== PURGE ADMIN ===== */
+function purgeAllReservations(){
+  if(!isAdmin()){ alert("Accès refusé : réservé aux administrateurs."); return; }
+  const all = readReservations();
+  const count = all.length;
+  if(!count){ alert("Aucune réservation à supprimer."); return; }
+
+  if(!confirm(`⚠️ Vous allez supprimer ${count} réservation(s) (passées et futures) pour le CIS “${ctx.cis}”.\n\nConfirmer ?`)) return;
+
+  if(confirm("Souhaitez-vous télécharger une sauvegarde (.json) avant suppression ?")){
+    try{
+      const backup = { cis: ctx.cis, ts: Date.now(), reservations: all };
+      const blob = new Blob([JSON.stringify(backup,null,2)], {type:"application/json"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      const stamp = new Date().toISOString().replace(/[:.]/g,"-");
+      a.download = `backup_reservations_${ctx.cis}_${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 0);
+    }catch(_){}
+  }
+
+  try{
+    localStorage.removeItem(ctx.keyRes);
+    renderRequests();
+    renderUpcoming();
+    closeHistory();
+    alert("Toutes les réservations ont été supprimées.");
+  }catch(e){
+    alert("Erreur pendant la suppression.");
+  }
+}
+
+/* ===== Init & Sync ===== */
+function loadSession(){
+  const u=robustSession();
+  if(!u){ alert("Session expirée."); try{window.location.href="login.html";}catch(_){ } return; }
+  ctx.user=u; ctx.cis=Array.isArray(u.cis)?u.cis[0]:u.cis;
+  ctx.keyVehs="vehicules_"+ctx.cis; ctx.keyRes="reservations_"+ctx.cis;
+
+  const cisLbl=document.getElementById("cisLabel"); if(cisLbl) cisLbl.textContent="Centre de Secours "+ctx.cis;
+
+  const today=new Date().toISOString().slice(0,10);
+  const dDeb=document.getElementById("dateDebut");
+  const dFin=document.getElementById("dateFin");
+
+  if(dDeb){
+    dDeb.min = today;
+    if(!dDeb.value || dDeb.value < today){
+      dDeb.value = today;
+    }
+  }
+  if(dFin){
+    dFin.min = today;
+    if(!dFin.value || dFin.value < today){
+      dFin.value = today;
+    }
+  }
+
+  if(dDeb && dFin){
+    dDeb.addEventListener("change", ()=>{
+      const start = dDeb.value || today;
+      dFin.min = start;
+      if(dFin.value && dFin.value < start){
+        dFin.value = start;
+      }
+    });
+  }
+
+  fillAgentField(true);
+
+  const btn = document.getElementById("btnPurgeAll");
+  if(btn) btn.style.display = isAdmin() ? "" : "none";
+
+  renderRequests(); renderUpcoming();
+}
+function ensureAgentSoon(){
+  let tries=0; const max=8;
+  const t=setInterval(()=>{ fillAgentField(); tries++; if(document.getElementById("agentName")?.value) clearInterval(t); if(tries>=max) clearInterval(t); },200);
+}
+window.addEventListener("storage",(e)=>{
+  try{
+    if(!e.key) return;
+    if(e.key==="csver_session"||e.key.startsWith("csver_user_")||e.key==="agents_data"){ 
+      fillAgentField(true);
+      const btn = document.getElementById("btnPurgeAll");
+      if(btn) btn.style.display = isAdmin() ? "" : "none";
+    }
+    if(!ctx.cis) return;
+    if(e.key===("reservations_"+ctx.cis)||e.key===("vehicules_"+ctx.cis)){ 
+      renderRequests(); 
+      renderUpcoming(); 
+    }
+  }catch(_){}
+});
+window.addEventListener("focus", ensureAgentSoon);
+window.addEventListener("pageshow", ensureAgentSoon);
+document.addEventListener("DOMContentLoaded", async ()=>{
+  try{
+    await syncRESERVFromCloud();
+  }catch(e){
+    console.error("syncRESERVFromCloud init error", e);
+  }
+  loadSession();
+  ensureAgentSoon();
+});
+
+</script>
+</body>
+</html>
