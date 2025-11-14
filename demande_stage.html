@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Demande de stage — CIS</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif}
+body{
+  background:linear-gradient(135deg,#1d3f73 0%,#d43d3d 100%);
+  min-height:100vh;display:flex;flex-direction:column;color:#222;
+}
+/* HEADER */
+header{
+  background:#fff;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+header img{height:60px}
+header .title{font-size:24px;color:#0d2b52;font-weight:800}
+header .subtitle{font-size:14px;color:#444;margin-top:4px}
+.acceuil-btn{
+  background:#b71c1c;color:#fff;font-weight:800;border:none;border-radius:12px;
+  padding:10px 14px;cursor:pointer;transition:.2s;font-size:14px;
+}
+.acceuil-btn:hover{background:#8b0000}
+
+/* MAIN */
+main{flex:1;max-width:900px;margin:20px auto;padding:0 16px;display:grid;gap:16px;grid-template-columns:1fr}
+.panel{background:rgba(255,255,255,.92);border-radius:16px;padding:18px;box-shadow:0 4px 10px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:14px}
+.panel h2{font-size:20px;font-weight:800;color:#0d2b52;border-left:6px solid #b71c1c;padding-left:10px}
+.help{font-size:13px;color:#444}
+
+label{font-weight:700;color:#0d2b52;font-size:14px}
+input,textarea{width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;font-size:14px}
+textarea{min-height:140px;resize:vertical}
+.form-grid{display:grid;gap:12px;grid-template-columns:repeat(6,minmax(0,1fr))}
+.col-3{grid-column:span 3}
+.col-6{grid-column:1 / -1}
+
+.btn{border:none;border-radius:10px;padding:12px 16px;cursor:pointer;color:#fff;font-size:15px;font-weight:800;box-shadow:0 3px 8px rgba(0,0,0,.12);transition:transform .2s ease}
+.btn:hover{transform:translateY(-2px)}
+.btn.primary{background:#1a73e8}
+.btn.secondary{background:#6a1b9a}
+
+/* Info destinataires dynamiques */
+.info{
+  background:#f7f9ff;border:1px solid #dfe6ff;color:#123;
+  padding:10px 12px;border-radius:10px;font-size:13px;
+}
+.info strong{color:#0d2b52}
+
+/* Responsive */
+@media (max-width:900px){.form-grid{grid-template-columns:1fr 1fr}.col-3{grid-column:span 2}}
+footer{text-align:center;color:#fff;font-size:13px;padding:20px}
+</style>
+</head>
+<body>
+<header>
+  <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png" alt="Logo SDIS 30">
+  <div>
+    <div class="title">Demande de stage</div>
+    <div class="subtitle" id="cisLabel">—</div>
+  </div>
+  <button class="acceuil-btn" onclick="goAccueil()">⟵ Accueil</button>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>✉️ Nouveau message — Demande de stage</h2>
+
+    <div class="info" id="fixedInfo">
+      Destinataires dynamiques : <em>analyse en cours…</em>
+    </div>
+
+    <p class="help">
+      Ce formulaire enverra votre demande à tous les agents du service Formation de votre CIS
+    </p>
+
+    <form id="composeForm" onsubmit="return sendMessage(event)">
+      <div class="form-grid">
+        <div class="col-3">
+          <label>De</label>
+          <input type="text" id="fromDisplay" readonly>
+        </div>
+
+        <div class="col-6">
+          <label>Objet</label>
+          <input id="subject" type="text" value="Demande de stage" required>
+        </div>
+
+        <div class="col-6">
+          <label>Message</label>
+          <textarea id="body" placeholder="Votre message…" required></textarea>
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn secondary" type="button" onclick="fillTemplate()">🧩 Pré-remplir un modèle</button>
+          </div>
+        </div>
+
+        <div class="col-6" style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn primary" type="submit">Envoyer</button>
+          <button class="btn secondary" type="button" onclick="resetComposer()">Réinitialiser</button>
+        </div>
+      </div>
+    </form>
+  </section>
+</main>
+
+<footer>© SDIS 30 — Demande de stage — 2025</footer>
+
+<!-- 🔌 Firebase + Firestore + stockage partagé -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="cloud-storage.js"></script>
+
+<script>
+/* =======================================================
+   🔁 Synchro Messages Stage <-> Firestore
+   ======================================================= */
+
+// On ne synchronise que les clés messages_<cis>
+function shouldSyncMsgKey(key){
+  return key && key.startsWith("messages_");
+}
+
+// 🔄 Cloud → Local au chargement
+async function syncStageMessagesFromCloud(){
+  try{
+    if(typeof db === "undefined"){
+      console.warn("Firestore non initialisé.");
+      return;
+    }
+    const snap = await db.collection("accueilcs").get();
+    snap.forEach(doc=>{
+      const id = doc.id;
+      if(shouldSyncMsgKey(id)){
+        try{
+          localStorage.setItem(id, JSON.stringify(doc.data()));
+        }catch(e){
+          console.error("Erreur cache local stage", id, e);
+        }
+      }
+    });
+    console.log("Stage : sync Firestore → localStorage OK");
+  }catch(e){
+    console.error("syncStageMessagesFromCloud", e);
+  }
+}
+
+// 🔄 Local → Cloud
+(function(){
+  const origSet = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, val){
+    origSet(key, val);
+    if(shouldSyncMsgKey(key)){
+      try{
+        cloudSetJSON(key, JSON.parse(val));
+      }catch(e){
+        console.error("cloudSetJSON stage", e);
+      }
+    }
+  };
+
+  const origRemove = localStorage.removeItem.bind(localStorage);
+  localStorage.removeItem = function(key){
+    if(shouldSyncMsgKey(key)){
+      try{
+        db.collection("accueilcs").doc(key).delete();
+      }catch(_){}
+    }
+    origRemove(key);
+  };
+})();
+</script>
+
+
+<script>
+/* ===== Helpers ===== */
+function escapeHtml(s){return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));}
+function normCis(x){ try{ return String(x||"").replace(/^CIS\\s*/i,"").normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').trim().toLowerCase(); }catch(_){ return String(x||"").toLowerCase().trim(); } }
+function fmtDate(ts){const d=new Date(ts);const p=n=>String(n).padStart(2,'0');return `${p(d.getDate())}-${p(d.getMonth()+1)}-${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`}
+
+/* ===== Session & Contexte ===== */
+let ctx={user:null,cis:"",keyMsg:""};
+function robustSession(){ try{const raw=localStorage.getItem("csver_session"); if(!raw) return null; const s=JSON.parse(raw); return s&&typeof s==="object"?s:null;}catch(_){return null;} }
+function getDisplayName(u){
+  const n=(((u?.prenom||"")+" "+(u?.nom||"")).trim()); if(n) return n;
+  try{const fiche=JSON.parse(localStorage.getItem("csver_user_"+(u?.matricule||""))||"null"); const n2=(((fiche?.prenom||"")+" "+(fiche?.nom||"")).trim()); if(n2) return n2;}catch(_){}
+  try{const agents=JSON.parse(localStorage.getItem("agents_data")||"[]"); const hit=agents.find(a=>a.matricule===u?.matricule); if(hit){const n3=(((hit.prenom||"")+" "+(hit.nom||"")).trim()); return n3||hit.nom||hit.prenom||u?.matricule||"Agent";}}catch(_){}
+  return u?.matricule||"Agent";
+}
+
+/* ===== Récupération des destinataires : droit "gestion_stages" sur le CIS courant ===== */
+function userBelongsToCis(u, cisName){
+  const k = normCis(cisName||"");
+  if(!k) return false;
+  if(u && u.cis){
+    if(Array.isArray(u.cis)){
+      const primary = u.cis[0]||""; const secs=(u.cis.slice(1)||[]).map(s=>String(s||""));
+      if(normCis(primary)===k) return true;
+      return secs.some(s=>normCis(s)===k);
+    }else if(typeof u.cis === "string"){
+      return normCis(u.cis)===k;
+    }else if(typeof u.cis === "object"){
+      if(normCis(u.cis.primary||"")===k) return true;
+      return (u.cis.secondaries||[]).some(s=>normCis(s.cis||"")===k);
+    }
+  }
+  return false;
+}
+function permsBlockForCis(u, cisName){
+  // Retourne l'objet permissions applicable (primary ou secondaries[cisName]) pour ce CIS
+  const perms = (u.permissions||{});
+  const primaryCis = (u.cis && u.cis.primary) ? u.cis.primary : (Array.isArray(u.cis)? u.cis[0] : u.cis);
+  if(normCis(primaryCis||"")===normCis(cisName||"")){
+    return perms.primary || {};
+  }
+  // Cherche dans secondaries avec tolérance orthographe
+  const sec = perms.secondaries || {};
+  const keys = Object.keys(sec);
+  let keyMatch = null;
+  for(const k of keys){ if(normCis(k)===normCis(cisName||"")){ keyMatch = k; break; } }
+  return keyMatch ? (sec[keyMatch]||{}) : {};
+}
+function findStageManagersForCurrentCis(){
+  const out=[];
+  const seen = new Set();
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(!key || !key.startsWith('csver_user_')) continue;
+    try{
+      const u = JSON.parse(localStorage.getItem(key)||'null');
+      if(!u) continue;
+      if(!userBelongsToCis(u, ctx.cis)) continue;
+      const p = permsBlockForCis(u, ctx.cis);
+      if(p && p.gestion_stages){
+        const matricule = u.matricule || "";
+        if(!matricule || seen.has(matricule)) continue;
+        const display = ((u.prenom||"")+" "+(u.nom||"")).trim() || matricule;
+        out.push({ matricule, display });
+        seen.add(matricule);
+      }
+    }catch(_){}
+  }
+  // Tri Nom/Prénom si dispo
+  out.sort((a,b)=> a.display.localeCompare(b.display, 'fr', {sensitivity:'base'}));
+  return out;
+}
+
+/* ===== Storage messages ===== */
+function readMessages(){const arr=JSON.parse(localStorage.getItem(ctx.keyMsg)||"[]");return Array.isArray(arr)?arr:[]}
+function saveMessages(arr){localStorage.setItem(ctx.keyMsg,JSON.stringify(arr));}
+
+/* ===== Composer ===== */
+function resetComposer(){
+  document.getElementById('subject').value='Demande de stage';
+  document.getElementById('body').value='';
+}
+
+/* Modèle de message */
+function fillTemplate(){
+  const u = ctx.user || {};
+  const nom = (u.nom||"").toUpperCase();
+  const prenom = u.prenom || "";
+  const tpl = `Bonjour,
+
+Je souhaite effectuer une demande de stage.
+
+Stage souhaité : 
+
+Commentaires complémentaires : 
+
+Merci de votre retour.
+Cordialement,
+${getDisplayName(u)}`;
+  const body = document.getElementById('body');
+  if(!body.value.trim()) body.value = tpl;
+  else body.value = body.value + "\\n\\n" + tpl;
+}
+
+/* Envoi */
+function sendMessage(evt){
+  if(evt && evt.preventDefault) evt.preventDefault();
+  const from=ctx.user; if(!from){alert('Session expirée.'); return false}
+
+  const stageManagers = findStageManagersForCurrentCis();
+  if(!stageManagers.length){
+    alert('Aucun destinataire avec le droit "gestion stages" n’a été trouvé pour votre CIS. Configurez ce droit dans l’Administration.');
+    return false;
+  }
+
+  const subject=(document.getElementById('subject').value||'').trim();
+  const body=(document.getElementById('body').value||'').trim();
+  if(!subject||!body){alert('Objet et message sont requis.'); return false}
+
+  const msgs=readMessages();
+  const msg={
+    id:'msg_'+Date.now()+"_"+Math.random().toString(36).slice(2,7),
+    cis:ctx.cis,
+    ts:Date.now(),
+    from:{matricule:from.matricule||'',display:getDisplayName(from)},
+    to:stageManagers.map(t=>({matricule:t.matricule, display:t.display})),
+    subject, body,
+    readBy:{} // matricule -> true
+  };
+  msgs.push(msg); saveMessages(msgs);
+
+  resetComposer();
+  alert('Demande envoyée aux responsables "gestion stages" de votre CIS.');
+  return false;
+}
+
+/* Navigation */
+function goAccueil(){ try{window.location.href='accueil.html'}catch(_){ } }
+
+/* Init */
+function init(){
+  const sess=robustSession(); if(!sess){ alert('Session expirée.'); try{window.location.href='login.html'}catch(_){ } return; }
+  ctx.user=sess; ctx.cis=Array.isArray(sess.cis)?sess.cis[0]:sess.cis; ctx.keyMsg='messages_'+ctx.cis;
+
+  document.getElementById('cisLabel').textContent = 'Centre de Secours '+ctx.cis;
+  document.getElementById('fromDisplay').value = getDisplayName(sess);
+
+  // Bandeau d’info destinataires (dynamiques par droit)
+  const info = document.getElementById('fixedInfo');
+  const list = findStageManagersForCurrentCis();
+  if(list.length){
+    info.innerHTML = `Destinataires (droit <strong>gestion stages</strong>) : <strong>${list.map(x=>escapeHtml(x.display)).join(', ')}</strong>`;
+  }else{
+    info.innerHTML = `Destinataires dynamiques : <strong>aucun trouvé</strong> pour votre CIS. Définissez le droit <code>gestion_stages</code> dans l’Administration.`;
+  }
+}
+
+/* Réactivité aux changements */
+window.addEventListener('DOMContentLoaded', async ()=>{
+  await syncStageMessagesFromCloud();   // 🔁 charge Firestore → localStorage
+  init();                               // puis interface
+});
+window.addEventListener('storage',(e)=>{
+  try{
+    if(e.key==='csver_session'){ init(); }
+    if(e.key && e.key.startsWith('csver_user_')){ init(); } // si droits changent dans l’admin
+  }catch(_){}
+});
+</script>
+</body>
+</html>

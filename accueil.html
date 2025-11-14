@@ -1,0 +1,1958 @@
+<!DOCTYPE html> 
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Accueil CS</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;}
+
+body{
+  background:linear-gradient(135deg,#1d3f73 0%,#d43d3d 100%);
+  min-height:100vh;display:flex;flex-direction:column;color:#222;
+}
+
+/* HEADER */
+header{
+  background:#fff;display:flex;align-items:center;justify-content:space-between;
+  padding:18px 40px;box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+header img{height:70px;}
+header .title-block{text-align:center;flex:1;}
+header h1{font-size:30px;color:#0d2b52;font-weight:700;}
+header p{font-size:15px;color:#444;margin-top:6px;font-weight:600;}
+.logout-btn{
+  background:#b71c1c;color:#fff;font-weight:600;border:none;
+  padding:10px 26px;border-radius:30px;font-size:15px;cursor:pointer;transition:.25s;
+}
+.logout-btn:hover{background:#8b0000;}
+
+/* === MENU === */
+nav.menu-bar {
+  background:#0d2b52;
+  display:flex;
+  justify-content:center;
+  position:relative;
+  box-shadow:0 4px 10px rgba(0,0,0,0.15);
+}
+nav.menu-bar ul { list-style:none; display:flex; gap:30px; flex-wrap:wrap; padding:0; }
+nav.menu-bar ul li { position:relative; }
+nav.menu-bar a {
+  display:block;color:#fff;font-weight:600;padding:14px 18px;
+  text-decoration:none;transition:0.25s;border-radius:8px;
+}
+nav.menu-bar > ul > li > a:hover { background:#b71c1c; }
+
+/* Sous-menu */
+nav.menu-bar ul li ul {
+  display:none;position:absolute;top:100%;left:0;background:#fff;
+  border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.15);
+  min-width:220px;z-index:1000;flex-direction:column;overflow:hidden;
+}
+nav.menu-bar ul li:hover ul { display:flex; }
+nav.menu-bar ul li ul li a {
+  color:#0d2b52;padding:12px 16px;border-bottom:1px solid #eee;border-radius:0;
+}
+nav.menu-bar ul li ul li:last-child a { border-bottom:none; }
+nav.menu-bar ul li ul li a:hover { background:#f4f4f4;color:#b71c1c; }
+
+/* ── Bandeau météo fin sous le menu (centré) ── */
+.meteo-banner{
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  padding:10px 16px;
+  background:rgba(255,255,255,0.9);
+  color:#0d2b52;
+  border-bottom:1px solid rgba(0,0,0,.08);
+  box-shadow:0 2px 6px rgba(0,0,0,.06) inset;
+  text-align:center;
+}
+.meteo-row{
+  display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;
+}
+.meteo-row.small{ font-size:13px; color:#0d2b52; }
+.meteo-banner .emoji{ font-size:18px; line-height:1; }
+.meteo-banner .temp{ font-size:18px; font-weight:800; }
+.meteo-banner .desc{ font-size:14px; color:#333; }
+
+/* LAYOUT — 3 colonnes : formation (gauche) + véhicules (centre) + main courante (droite) */
+main{
+  flex:1;max-width:1800px;margin:40px auto;padding:0 40px;
+  display:grid;gap:28px;
+  grid-template-columns: 380px minmax(0,1fr) 380px;
+  align-items:stretch;
+}
+@media (max-width: 1280px){
+  main{ grid-template-columns: 320px 1fr; }
+  #journal-panel{ grid-column: 1 / -1; }
+}
+@media (max-width: 980px){
+  main{ grid-template-columns: 1fr; }
+}
+
+/* SECTIONS / PANELS */
+.section,
+.panel{
+  border-radius:16px;padding:24px;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);
+  display:flex;flex-direction:column;gap:18px;
+  backdrop-filter:blur(10px);
+  color:#1e1e1e;
+  background:rgba(255,255,255,0.9);
+  min-height:0; /* important */
+}
+.section.vehicules{background:rgba(240,250,245,0.92);}
+
+.section-header{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.section h2{
+  font-size:22px;font-weight:700;margin-bottom:5px;
+  color:#0d2b52;border-left:6px solid #b71c1c;padding-left:12px;
+}
+
+/* BOUTONS */
+.grid{
+  display:grid;gap:18px;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+}
+.btn{
+  border:none;border-radius:12px;padding:18px 20px;cursor:pointer;
+  color:#fff;font-size:16px;font-weight:600;text-align:center;
+  transition:all .25s ease;background:#1a73e8;
+  box-shadow:0 3px 8px rgba(0,0,0,.12);
+}
+.btn:hover{transform:translateY(-3px);box-shadow:0 6px 14px rgba(0,0,0,.2);background:#155bb5;}
+.print-btn{
+  background:#6a1b9a;color:#fff;font-weight:600;border:none;border-radius:10px;
+  padding:8px 16px;cursor:pointer;transition:0.25s;font-size:15px;
+}
+.print-btn:hover{background:#4a0e6a;}
+
+/* VEHICULES — 4 par ligne */
+#vehicule-grid{
+  display:grid;
+  gap:14px;
+  grid-template-columns:repeat(4, minmax(0,1fr));
+  grid-auto-rows:78px;
+  align-items:stretch;
+  min-height:0;
+}
+@media (max-width:1280px){ #vehicule-grid{ grid-template-columns:repeat(3,1fr); } }
+@media (max-width:980px) { #vehicule-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:560px) { #vehicule-grid{ grid-template-columns:1fr; } }
+
+.vehicule-card{
+  border-radius:10px;
+  padding:10px 12px;
+  text-align:center;
+  color:#fff;
+  font-weight:700;
+  font-size:16px;
+  box-shadow:0 3px 8px rgba(0,0,0,.25);
+  cursor:pointer;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  line-height:1.1;
+}
+.vehicule-card small{
+  font-size:13px;
+  opacity:0.95;
+  margin-top:2px;
+  line-height:1.1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* 📘 Main courante Formation (gauche) – même look que la droite */
+#formation-panel.panel{ overflow:hidden; padding:0; }
+#formation-header{
+  padding:14px 16px;background:#0d2b52;color:#fff;font-weight:700;
+}
+#formation-list{
+  padding:12px 14px;
+  overflow:auto;max-height:100%;
+  display:flex;flex-direction:column;gap:10px;
+}
+
+/* ✅ Main courante (droite) – existant */
+#journal-panel.panel{ overflow:hidden;padding:0; }
+#journal-header{
+  padding:14px 16px;background:#0d2b52;color:#fff;font-weight:700;
+}
+#journal-list{
+  padding:12px 14px;
+  overflow:auto;max-height:100%;
+  display:flex;flex-direction:column;gap:10px;
+}
+.journal-item{
+  display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid #eee;border-radius:10px;padding:8px 10px;box-shadow:0 2px 6px rgba(0,0,0,.05);
+}
+.journal-item .icon{font-size:18px;line-height:1.2}
+.journal-item .body .title{font-weight:700;color:#0d2b52;margin-bottom:2px}
+.journal-item .body .text{color:#333;margin-bottom:4px}
+.journal-item .body .date{font-size:12px;color:#666}
+
+footer{text-align:center;color:#fff;font-size:13px;padding:25px;margin-top:auto;}
+
+/* =========================================================
+   === Structure/hauteur (inchangé)
+   ========================================================= */
+html,body{ height:100dvh; }
+body{ min-height:100dvh; display:flex; flex-direction:column; }
+
+main{
+  flex:1;
+  min-height:0;
+  margin:16px auto;
+  padding:0 16px;
+  gap:16px;
+}
+.section,.panel{ min-height:0; display:flex; flex-direction:column; }
+
+.section.vehicules{ display:flex; flex-direction:column; }
+#vehicule-grid{ flex:1; min-height:0; overflow:auto; }
+
+#journal-panel{ display:flex; flex-direction:column; }
+#journal-list{ flex:1; min-height:0; overflow:auto; }
+
+header{ padding:12px 24px; }
+nav.menu-bar a{ padding:10px 12px; }
+
+@media (max-height: 820px){
+  main{ margin:12px auto; gap:12px; }
+  #vehicule-grid{ grid-auto-rows:72px; }
+}
+
+/* ================================
+   🧾 Overlay "FMA à saisir"
+   ================================ */
+.fma-overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,.45);
+  z-index:3000; display:none; align-items:center; justify-content:center; padding:20px;
+}
+.fma-pending-card{
+  background:#fff; border-radius:14px; padding:16px 18px;
+  width:95%; max-width:720px; margin:0 auto;
+  box-shadow:0 10px 30px rgba(0,0,0,.25);
+}
+.fma-pending-card .head{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+}
+.fma-pending-card .title{ font-weight:800; color:#0d2b52; display:flex; align-items:center; gap:8px; }
+.fma-pending-card .badge{
+  display:inline-block; padding:2px 8px; border-radius:999px;
+  border:1px solid #a7e2be; background:#e6f7ec; color:#0a8a3a; font-weight:800; font-size:12px;
+}
+.fma-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.fma-btn{ border:none; border-radius:10px; padding:8px 12px; cursor:pointer; font-weight:700; }
+.fma-btn.primary{ background:#0b5bd3; color:#fff; }
+.fma-btn.ghost{ background:#eef2ff; color:#223; }
+.fma-pending-card .body{ margin-top:10px; max-height:50vh; overflow:auto; }
+.fma-pending-card table{ width:100%; border-collapse:collapse; }
+.fma-pending-card th, .fma-pending-card td{ border:1px solid #eef2fb; padding:8px 10px; text-align:left; }
+.fma-pending-card th{ background:#f7f9ff; color:#123; }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png" alt="Logo SDIS 30">
+  <div class="title-block">
+    <h1 id="cis-title">Centre de Secours</h1>
+    <p id="welcome-text">Bienvenue</p>
+  </div>
+  <button class="logout-btn" onclick="logout()">Se déconnecter</button>
+</header>
+
+<!-- ✅ MENU PRINCIPAL -->
+<nav class="menu-bar">
+  <ul>
+    <li id="menu-agent"><a href="#">Agent du centre</a>
+      <ul>
+        <li><a href="#" onclick="return openMyFma(event)">Consulter ma FMA</a></li>
+       <li><a href="#" onclick="return openLink('messagerie.html', event)">Messagerie interne</a></li>
+        <li>
+  <a href="#"
+     onclick="return composeOutlook(
+       'LOG-SAPSP-CHU@sdis30.fr;VER-PLANNING@sdis30.fr',
+       'Matériel laissé au CH',
+       'Bonjour,\n\nVeuillez trouver les informations du matériel laissé au CH\n\n* Date : \n* Heure : \n* N° Intervention : \n* Nom du matériel : \n\nBonne journée.',
+       event
+     )">
+    Matériel CHU
+  </a>
+</li>
+
+        <li><a href="#" onclick="return openLink('reservations_vehicules.html', event)">Réservation véhicule</a></li>
+        <li><a href="#" onclick="return openLink('https://gipsis.sdis30.fr/index.php?page=menu_personnels', event)">GIPSIS</a></li>
+        <li><a href="#" onclick="return openLink('http://autocsweb/autocs7/', event)">AUTO-CS Web</a></li>
+        <li><a href="#" onclick="return openLink('https://www.plateforme-apis.fr/login/index.php', event)">APIS</a></li>
+        <li><a href="#" onclick="return openLink('http://intranet/Pages/System/default.aspx', event)">Intranet</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-sog"><a href="#">SOG</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/drive/folders/1BapXSZxU9dP-UL4piwDnsLoCL0JoTamw?usp=sharing', event)">Procédures SOG</a></li>
+        <li><a href="#" onclick="return openLink('fma.html', event)">FMA</a></li>
+        <li><a href="#" onclick="return openLink('https://fastsms.novadial.fr/', event)">SMS NOVADIAL</a></li>
+        <li><a href="#" onclick="return openLink('http://outlook.com/owa/sdis30.fr/ver-ops@sdisgard.mail.onmicrosoft.com', event)">Messagerie Outlook</a></li>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/file/d/1kORIFDJmEuRhvn3WSSiTCqLg_qF4wk5g/view?usp=sharing', event)">ICP</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-formation"><a href="#">Formation</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/file/d/1baVsjzbGfXOByg2vtoAsQaOlPGuCYXZk/view?usp=sharing', event)">Calendrier stages 2026</a></li>
+       <li><a href="#" onclick="return openLink('demande_stage.html', event)">Demande de stages</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-fdf"><a href="#">FDF</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/file/d/1QDOb394zuuG1zNUJLsax1XHoaIZ_ZbFh/view?usp=sharing', event)">Ordre opération FDF 2025</a></li>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/file/d/13H5arwISXkMypijs8DNTvqyZd0JBTS2F/view?usp=sharing', event)">Prise en compte CCF FDF2</a></li>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/file/d/1rIaBifgvCf6F1HZzqLabL21FLQa3Mr4s/view?usp=sharing', event)">Prise en compte GIFF FDF3</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-pharma"><a href="#">Pharmacie</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('commande pharmacie.html', event)">Commande pharmacie</a></li>
+        <li><a href="#" onclick="return composeOutlook('SSSM-PHARMACIE@sdis30.fr', event)">Contact</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-habillement"><a href="#">Habillement</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('gestion_habillement.html', event)">Envoyer un article</a></li>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/file/d/1lKSSE6LJf12PG8Nt7uX_6zR03qXDHvHz/view?usp=sharing', event)">Compte-rendu de perte</a></li>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/file/d/1OIAaYX3NBvQeNTNkBlVoXSGCxCyC2NBU/view?usp=sharing', event)">Compte-rendu de vol</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-mnr"><a href="#">MNR</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('mnr-envoyer.html', event)">Envoyer un article</a></li>
+        <li><a href="#" onclick="return composeOutlook('GFST-MNR@sdis30.fr', event)">Contact</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-véhicules"><a href="#">Véhicules</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('suivi_vehicules.html', event)">Suivi véhicules</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-atelier"><a href="#">Atelier</a>
+      <ul>
+        <li><a href="#" onclick="return composeOutlook('GFST-ATELIER-SDIS@sdis30.fr', event)">Contact</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-magasin"><a href="#">Magasin</a>
+      <ul>
+        <li><a href="#" onclick="return composeOutlook('GFST-MAGASIN@sdis30.fr', event)">Contact</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-admin"><a href="#">Administrateur</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('admin.html', event)">Gestion des accès</a></li>
+        <li><a href="#" onclick="return purgeJournal('notes', event)">🧹 Vider la main courante (notes)</a></li>
+        <li><a href="#" onclick="return purgeJournal('all', event)">🗑️ Purge complète (notes + anomalies)</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+<!-- 🌤️ Bandeau météo fin (centré) -->
+<div class="meteo-banner" aria-label="Bandeau météo Vergèze">
+  <div class="meteo-row">
+    <span class="emoji" id="meteo-emoji">—</span>
+    <span class="temp"  id="meteo-temp">--°C</span>
+    <span class="desc"  id="meteo-desc">—</span>
+  </div>
+  <div class="meteo-row small">
+    <span>Lever&nbsp;: <strong id="meteo-sunrise">--:--</strong></span>
+    <span>Coucher&nbsp;: <strong id="meteo-sunset">--:--</strong></span>
+    <span>Rafales&nbsp;: <strong id="meteo-gust">-- km/h</strong></span>
+    <span>Humidité&nbsp;: <strong id="meteo-humidity">--%</strong></span>
+  </div>
+</div>
+
+<main>
+
+  <!-- 📘 Main courante Formation (colonne gauche) -->
+  <div id="formation-panel" class="panel">
+    <div id="formation-header">📘 Main courante — FMA</div>
+    <div id="formation-list"></div>
+  </div>
+
+  <!-- 🚘 ÉTAT DES VÉHICULES (colonne centre) -->
+  <div class="section vehicules">
+    <div class="section-header">
+      <h2>🚘 État des véhicules</h2>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button id="btn-print-anom" class="print-btn" onclick="printAnomalies()">🖨️ Imprimer anomalies</button>
+        <button id="btn-signal-anom" class="btn" onclick="openLink('vehicules.html')">Signaler une anomalie</button>
+      </div>
+    </div>
+    <div id="vehicule-grid"></div>
+  </div>
+
+  <!-- 📝 Main courante opérationnelle (colonne droite) -->
+  <div id="journal-panel" class="panel">
+    <div id="journal-header">📝 Main courante opérationnelle</div>
+    <div id="journal-list"></div>
+  </div>
+
+</main>
+
+<!-- 🧾 OVERLAY : FMA à saisir -->
+<div id="fmaOverlay" class="fma-overlay" style="display:none">
+  <div id="fmaPendingCard" class="fma-pending-card">
+    <div class="head">
+      <div class="title">📘 FMA à saisir <span class="badge" id="fmaPendingCount"></span></div>
+      <div class="fma-actions">
+        <button id="fmaGoBtn" class="fma-btn primary">Aller à la page FMA</button>
+        <button id="fmaDismissBtn" class="fma-btn ghost">OK</button>
+      </div>
+    </div>
+    <div class="body">
+      <table>
+        <thead><tr><th>Date</th><th>Thème</th><th>Formateur</th></tr></thead>
+        <tbody id="fmaPendingBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 🛎️ OVERLAY : Nouvelles demandes de réservation véhicule -->
+<div id="resOverlay" class="fma-overlay" style="display:none">
+  <div id="resPendingCard" class="fma-pending-card">
+    <div class="head">
+      <div class="title">🚘 Nouvelles demandes de réservation <span class="badge" id="resPendingCount"></span></div>
+      <div class="fma-actions">
+        <button id="resGoBtn" class="fma-btn primary">Aller à la page Réservations</button>
+        <button id="resDismissBtn" class="fma-btn ghost">OK</button>
+      </div>
+    </div>
+    <div class="body">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Heures</th><th>Agent</th><th>Motif</th><th>Destination</th>
+          </tr>
+        </thead>
+        <tbody id="resPendingBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 🧺 OVERLAY : Nouveaux dépôts habillement (AJOUT MINIMAL) -->
+<div id="habOverlay" class="fma-overlay" style="display:none">
+  <div id="habPendingCard" class="fma-pending-card">
+    <div class="head">
+      <div class="title">🧺 Nouveaux dépôts habillement <span class="badge" id="habPendingCount"></span></div>
+      <div class="fma-actions">
+        <button id="habGoBtn" class="fma-btn primary">Aller à Habillement</button>
+        <button id="habSeenBtn" class="fma-btn ghost">Marquer comme lu</button>
+      </div>
+    </div>
+    <div class="body">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Agent</th><th>Matricule</th><th>Effets</th></tr>
+        </thead>
+        <tbody id="habPendingBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 📨 OVERLAY : Nouveaux messages -->
+<div id="mailOverlay" class="fma-overlay" style="display:none">
+  <div id="mailPendingCard" class="fma-pending-card">
+    <div class="head">
+      <div class="title">📬 Nouveaux messages <span class="badge" id="mailPendingCount"></span></div>
+      <div class="fma-actions">
+        <button id="mailGoBtn" class="fma-btn primary">Ouvrir la messagerie</button>
+        <button id="mailMarkReadBtn" class="fma-btn ghost">Marquer comme lus</button>
+      </div>
+    </div>
+    <div class="body">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>De</th><th>Objet</th></tr>
+        </thead>
+        <tbody id="mailPendingBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- FIN AJOUT -->
+
+<footer>© SDIS 30 — Accueil CS — 2025</footer>
+
+<!-- 🔌 Firebase + Firestore + stockage partagé -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="cloud-storage.js"></script>
+
+<script>
+// ===============================
+//  🔁 Synchro Accueil <-> Firestore
+// ===============================
+
+// Quelles clés de localStorage on synchronise avec le cloud
+function shouldSyncKey(key){
+  if(!key) return false;
+  return key === "fma_data_v2"
+      || key === "csver_themes"
+      || key.startsWith("vehicules_")
+      || key.startsWith("journal_")
+      || key.startsWith("reservations_")
+      || key.startsWith("habillement_")
+      || key.startsWith("messages_");
+}
+
+// Cloud -> local : au chargement on ramène les données utiles
+async function syncAccueilFromCloud(){
+  try{
+    if(typeof db === "undefined"){
+      console.warn("Firestore non initialisé (accueil en mode local uniquement).");
+      return;
+    }
+    const snap = await db.collection("accueilcs").get();
+    snap.forEach(doc=>{
+      const id = doc.id;
+      if(shouldSyncKey(id)){
+        try{
+          localStorage.setItem(id, JSON.stringify(doc.data()));
+        }catch(e){
+          console.error("Erreur cache local pour", id, e);
+        }
+      }
+    });
+    console.log("Accueil : sync Firestore -> localStorage OK");
+  }catch(e){
+    console.error("syncAccueilFromCloud", e);
+  }
+}
+
+// local -> Cloud : on intercepte setItem / removeItem
+(function(){
+  const origSetItem = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, value){
+    origSetItem(key, value);
+    if(shouldSyncKey(key) && typeof cloudSetJSON === "function"){
+      try{
+        const obj = JSON.parse(value);
+        cloudSetJSON(key, obj);  // stocké dans Firestore (collection "accueilcs")
+      }catch(e){
+        console.error("cloudSetJSON error pour", key, e);
+      }
+    }
+  };
+
+  const origRemoveItem = localStorage.removeItem.bind(localStorage);
+  localStorage.removeItem = function(key){
+    if(shouldSyncKey(key) && typeof db !== "undefined"){
+      db.collection("accueilcs").doc(key).delete().catch(err=>{
+        console.warn("Suppression Firestore échouée (non bloquant)", err);
+      });
+    }
+    origRemoveItem(key);
+  };
+})();
+</script>
+
+
+
+
+<script>
+function openLink(url, evt){
+  if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
+  try{
+    const u = new URL(url, window.location.href);
+    const isHtml = /\.html?(\?|#|$)/i.test(u.pathname);
+    if (isHtml){ window.location.href = u.href; }
+    else { window.open(u.href, '_blank', 'noopener,noreferrer'); }
+  }catch(e){
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+  return false;
+}
+function composeOutlook(to,subject,body, evt){
+  if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
+  const link=`https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(subject||"")}&body=${encodeURIComponent(body||"")}`;
+  window.open(link,'_blank','noopener,noreferrer');
+  return false;
+}
+function logout(){localStorage.removeItem("csver_session");alert("Déconnexion réussie.");window.location.href="login.html";}
+
+function getEtatColor(e){
+  return({"Disponible":"#4caf50","Mineur":"#ff9800","Atelier":"#2196f3","Pret":"#9c27b0","Indispo":"#f44336"}[e]||"#5f6368");
+}
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g, m => (
+    {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]
+  ));
+}
+function normCis(x){
+  try{
+    return String(x||"").replace(/^CIS\s*/i,"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+  }catch(_){ return String(x||"").toLowerCase(); }
+}
+
+/* ✅ Ajout : récupérer les permissions applicables au CIS courant */
+function getCurrentCisPerms(){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return {};
+    const fiche   = JSON.parse(localStorage.getItem("csver_user_"+session.matricule) || "null");
+    if(!fiche || !fiche.permissions) return {};
+    const cisCur  = Array.isArray(session.cis) ? session.cis[0] : session.cis;
+
+    const same = (a,b)=> normCis(a) === normCis(b);
+
+    const cisPrimary = fiche.cis && fiche.cis.primary ? fiche.cis.primary : null;
+    const isPrimary  = cisPrimary && same(cisPrimary, cisCur);
+
+    if(isPrimary){
+      return fiche.permissions.primary || {};
+    }else{
+      const sec = fiche.permissions.secondaries || {};
+      const k = sec[cisCur] ? cisCur : (Object.keys(sec).find(x=>same(x,cisCur)) || null);
+      return (k ? sec[k] : {}) || {};
+    }
+  }catch(_){ return {}; }
+}
+
+/* ✅ Affichage sélectif des menus + boutons selon les permissions du CIS courant */
+function applyRoleMenus(roleRaw){
+  const ids = [
+    "menu-agent","menu-sog","menu-formation","menu-fdf","menu-pharma",
+    "menu-habillement","menu-mnr","menu-atelier","menu-magasin",
+    "menu-véhicules",           // 👈 ajout pour pouvoir le masquer/afficher
+    "menu-admin"
+  ];
+  const hideAll = () => ids.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display="none";
+  });
+
+  const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+  const fiche   = session ? JSON.parse(localStorage.getItem("csver_user_"+session.matricule) || "null") : null;
+  const cisCur  = Array.isArray(session?.cis) ? session.cis[0] : session?.cis;
+
+  // Récupère le bloc de permissions pertinent (principal vs secondaire)
+  let perms = null;
+  if(fiche && fiche.permissions){
+    const cisPrimary = fiche.cis && fiche.cis.primary ? fiche.cis.primary : null;
+    const isPrimary  = cisPrimary && normCis(cisPrimary) === normCis(cisCur);
+    if(isPrimary){
+      perms = fiche.permissions.primary || null;
+    }else{
+      const sec = fiche.permissions.secondaries || {};
+      perms = sec[cisCur] || sec[Object.keys(sec).find(k => normCis(k)===normCis(cisCur))] || null;
+    }
+  }
+
+  const btnPrint  = document.getElementById("btn-print-anom");
+  const btnSignal = document.getElementById("btn-signal-anom");
+  // 👇 On laisse EXACTEMENT la logique actuelle des boutons : SOG OU Admin
+  const showVehBtns = (v)=>{
+    if(btnPrint)  btnPrint.style.display  = v ? "" : "none";
+    if(btnSignal) btnSignal.style.display = v ? "" : "none";
+  };
+
+  if(perms && Object.keys(perms).length>0){
+    hideAll();
+
+    // Cas "agent seul" inchangé
+    const onlyAgent = !!perms.agent &&
+      !perms.sog && !perms.admin &&
+      !perms.formation && !perms.fdf && !perms.pharma &&
+      !perms.habillement && !perms.mnr && !perms.atelier && !perms.magasin && !perms["véhicules"];
+    if(onlyAgent){
+      ["menu-agent","menu-formation","menu-fdf","menu-habillement"].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.style.display="";
+      });
+      showVehBtns(false);
+      return;
+    }
+
+    // Raccourci SOG (comme avant) MAIS “Véhicules” dépend d’une case dédiée
+    if(perms.sog){
+      ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=""; });
+      const adminEl = document.getElementById("menu-admin"); if(adminEl) adminEl.style.display = perms.admin ? "" : "none";
+      // 👇 Masquer “Véhicules” si la case n’est pas cochée et pas admin
+      if(!perms["véhicules"] && !perms.admin){
+        const m = document.getElementById("menu-véhicules");
+        if(m) m.style.display = "none";
+      }
+      // ✅ Boutons : SOG ou Admin (inchangé)
+      showVehBtns(!!perms.sog || !!perms.admin);
+      return;
+    }
+
+    // Affichage fin par fin (on traite "véhicules" à part)
+    const map = {
+      agent:"menu-agent", sog:"menu-sog", formation:"menu-formation", fdf:"menu-fdf",
+      pharma:"menu-pharma", habillement:"menu-habillement", mnr:"menu-mnr",
+      atelier:"menu-atelier", magasin:"menu-magasin", admin:"menu-admin",
+      "véhicules":"menu-véhicules"   // 👈 mapping pour “Véhicules”
+    };
+    Object.keys(map).forEach(k=>{
+      const el = document.getElementById(map[k]);
+      if(!el) return;
+      if(k === "véhicules"){
+        // 👇 Le menu n’apparaît que si case “véhicules” ou admin
+        el.style.display = (perms["véhicules"] || perms.admin) ? "" : "none";
+      }else{
+        el.style.display = perms[k] ? "" : "none";
+      }
+    });
+
+    // ✅ Boutons : SOG ou Admin (inchangé)
+    showVehBtns(!!perms.sog || !!perms.admin);
+    return;
+  }
+
+  /* Fallback rôles anciens — inchangé */
+  const role = String(roleRaw||"").toLowerCase();
+  hideAll();
+  if(role === "agent"){
+    ["menu-agent","menu-formation","menu-habillement"].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=""; });
+  }else if(role === "sog spv"){
+    ["menu-agent","menu-sog","menu-formation","menu-habillement","menu-mnr"].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=""; });
+  }else if(role === "spp"){
+    ["menu-agent","menu-sog","menu-formation","menu-fdf","menu-pharma","menu-habillement","menu-mnr"].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=""; });
+  }else if(role === "admin" || role === "commandement"){
+    ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=""; });
+  }else{
+    ["menu-agent","menu-formation","menu-habillement"].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=""; });
+  }
+
+  // ✅ Boutons fallback : SOG/SPP/Admin/Commandement (inchangé)
+  const showVehBtnsFallback = (role === "sog spv" || role === "spp" || role === "admin" || role === "commandement");
+  showVehBtns(showVehBtnsFallback);
+}
+
+/* Chargement initial */
+let cis="",key="";
+window.addEventListener("DOMContentLoaded", async ()=>{
+  // 🔁 On commence par synchroniser avec Firestore
+  try{
+    await syncAccueilFromCloud();
+  }catch(e){
+    console.error("Erreur de synchro cloud au chargement :", e);
+  }
+
+  const user=JSON.parse(localStorage.getItem("csver_session")||"null");
+  if(!user){alert("Session expirée.");window.location.href="login.html";return;}
+  cis=Array.isArray(user.cis)?user.cis[0]:user.cis;
+  key="vehicules_"+cis;
+
+  const nomComplet=((user.prenom||"")+" "+(user.nom||"")).trim()||user.matricule;
+  document.getElementById("cis-title").textContent=`Accueil CS ${cis}`;
+  document.getElementById("welcome-text").textContent=`Bienvenue ${nomComplet}`;
+
+  applyRoleMenus(user.role);
+
+  renderVehicules(JSON.parse(localStorage.getItem(key)||"[]"));
+  renderJournal();
+  renderFormations();       // 📘 panneau gauche
+  fetchMeteoVergeze();      // 🌤️ bandeau
+  setInterval(fetchMeteoVergeze, 30*60*1000); // toutes les 30 min
+
+  // 👉 Overlay FMA au chargement
+  renderFmaPendingCard();
+});
+
+window.addEventListener("focus",()=>{
+  const vehicules=JSON.parse(localStorage.getItem(key)||"[]");
+  renderVehicules(vehicules);
+  renderJournal();
+  renderFormations();
+  fetchMeteoVergeze();
+  // 👉 Réévalue à l’arrivée sur l’onglet
+  renderFmaPendingCard();
+});
+window.addEventListener("pageshow",()=>{
+  const vehicules=JSON.parse(localStorage.getItem(key)||"[]");
+  renderVehicules(vehicules);
+  renderJournal();
+  renderFormations();
+  // 👉 Réévalue sur pageshow (Firefox/Back-Forward cache)
+  renderFmaPendingCard();
+});
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden){
+    const vehicules=JSON.parse(localStorage.getItem(key)||"[]");
+    renderVehicules(vehicules);
+    renderJournal();
+    renderFormations();
+    renderFmaPendingCard();
+  }
+});
+window.addEventListener("storage",(e)=>{
+  try{
+    if(!e.key) return;
+    const user=JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!user) return;
+    const cisSel = Array.isArray(user.cis)?user.cis[0]:user.cis;
+    if(e.key===key || e.key==="journal_"+cisSel || e.key==="fma_data_v2"){
+      renderVehicules(JSON.parse(localStorage.getItem(key)||"[]"));
+      renderJournal();
+      renderFormations();
+      renderFmaPendingCard();
+    }
+  }catch(_){}
+});
+
+/* 🌤️ Open-Meteo pour Vergèze (~43.74, 4.20) — Bandeau centré */
+async function fetchMeteoVergeze(){
+  const lat = 43.74, lon = 4.20, tz = "Europe/Paris";
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+    + `&current_weather=true`
+    + `&hourly=relative_humidity_2m,wind_gusts_10m,uv_index,precipitation_probability`
+    + `&daily=sunrise,sunset`
+    + `&timezone=${encodeURIComponent(tz)}`;
+
+  const els = {
+    emoji: document.getElementById("meteo-emoji"),
+    temp: document.getElementById("meteo-temp"),
+    desc: document.getElementById("meteo-desc"),
+    sunrise: document.getElementById("meteo-sunrise"),
+    sunset: document.getElementById("meteo-sunset"),
+    gust: document.getElementById("meteo-gust"),
+    humidity: document.getElementById("meteo-humidity"),
+  };
+
+  function codeToEmoji(code){
+    if([0].includes(code)) return "☀️";
+    if([1,2].includes(code)) return "🌤️";
+    if([3].includes(code)) return "☁️";
+    if([45,48].includes(code)) return "🌫️";
+    if([51,53,55].includes(code)) return "🌦️";
+    if([56,57,61,63,65,66,67,80,81,82].includes(code)) return "🌧️";
+    if([71,73,75,77,85,86].includes(code)) return "🌨️";
+    if([95,96,99].includes(code)) return "⛈️";
+    return "🌡️";
+  }
+  function codeToText(code){
+    const m = {
+      0:"Ciel clair",1:"Plutôt clair",2:"Partiellement nuageux",3:"Couvert",
+      45:"Brouillard",48:"Brouillard givrant",
+      51:"Bruine faible",53:"Bruine",55:"Bruine forte",
+      56:"Bruine verglaçante",57:"Bruine verglaçante forte",
+      61:"Pluie faible",63:"Pluie",65:"Pluie forte",
+      66:"Pluie verglaçante",67:"Pluie verglaçante forte",
+      71:"Neige faible",73:"Neige",75:"Neige forte",77:"Grains de neige",
+      80:"Averses faibles",81:"Averses",82:"Averses fortes",
+      85:"Averses de neige",86:"Averses de neige fortes",
+      95:"Orage",96:"Orage avec grêle",99:"Orage fort avec grêle"
+    };
+    return m[code] || "Conditions";
+  }
+  const fmtTime = s => { try{ return s.split("T")[1].slice(0,5); }catch{ return "--:--"; } };
+
+  try{
+    const res = await fetch(url, {cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const data = await res.json();
+
+    const cw = data.current_weather || {};
+    const hourly = data.hourly || {};
+    const daily = data.daily || {};
+
+    // Index de l’heure courante pour récupérer humidité/rafales
+    let idxNow = -1;
+    if (hourly.time && cw.time){
+      idxNow = hourly.time.indexOf(cw.time);
+    }
+
+    // Emoji / temp / texte
+    if(els.emoji) els.emoji.textContent = codeToEmoji(cw.weathercode);
+    if(els.temp)  els.temp.textContent  = (cw.temperature!=null? Math.round(cw.temperature)+"°C" : "--°C");
+    if(els.desc)  els.desc.textContent  = codeToText(cw.weathercode);
+
+    // Éphéméride
+    if(daily.sunrise && daily.sunset){
+      if(els.sunrise) els.sunrise.textContent = fmtTime(daily.sunrise[0]);
+      if(els.sunset)  els.sunset.textContent  = fmtTime(daily.sunset[0]);
+    }else{
+      if(els.sunrise) els.sunrise.textContent = "--:--";
+      if(els.sunset)  els.sunset.textContent  = "--:--";
+    }
+
+    // Rafales / Humidité (valeurs de l’heure actuelle si dispo)
+    let gust = null, hum = null;
+    if(idxNow >= 0){
+      if(hourly.wind_gusts_10m)      gust = hourly.wind_gusts_10m[idxNow];
+      if(hourly.relative_humidity_2m) hum  = hourly.relative_humidity_2m[idxNow];
+    }
+    if(els.gust)     els.gust.textContent     = (gust!=null ? Math.round(gust)+" km/h" : "-- km/h");
+    if(els.humidity) els.humidity.textContent = (hum!=null ? Math.round(hum)+"%" : "--%");
+
+  }catch(e){
+    if(els.desc) els.desc.textContent = "Météo indisponible.";
+    if(els.sunrise) els.sunrise.textContent = "--:--";
+    if(els.sunset)  els.sunset.textContent  = "--:--";
+    if(els.gust) els.gust.textContent = "-- km/h";
+    if(els.humidity) els.humidity.textContent = "--%";
+  }
+}
+
+/* Rendu véhicules */
+function renderVehicules(vehicules){
+  const grid=document.getElementById("vehicule-grid");
+  grid.innerHTML="";
+  if(vehicules.length===0){
+    grid.innerHTML="<p style='color:#666;text-align:center;'>Aucun véhicule enregistré.</p>";
+    return;
+  }
+  vehicules.forEach(v=>{
+    const div=document.createElement("div");
+    div.className="vehicule-card";
+    div.style.background=getEtatColor(v.etat||"Disponible");
+    let etatAffiche = escapeHtml(v.etat||"Disponible");
+    if(v.etat === "Pret" && v.pretNom){ etatAffiche += ` — <i>${escapeHtml(v.pretNom)}</i>`; }
+    div.innerHTML = `${escapeHtml(v.nom)}<small>${etatAffiche}</small>`;
+    div.addEventListener('click', ()=>openVehiculeAnomalies(v.nom));
+    grid.appendChild(div);
+  });
+}
+
+/* Impression des anomalies */
+function printAnomalies(){
+  const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+  if(!session){alert("Session expirée.");return;}
+
+  let nomComplet = ((session.prenom || "") + " " + (session.nom || "")).trim();
+  if(!nomComplet || nomComplet === "") {
+    const agents = JSON.parse(localStorage.getItem("agents_data") || "[]");
+    const agentTrouve = agents.find(a => a.matricule === session.matricule);
+    if(agentTrouve) nomComplet = agentTrouve.nom || agentTrouve.prenom || session.matricule;
+    else nomComplet = session.matricule;
+  }
+
+  const cis = Array.isArray(session.cis)?session.cis[0]:session.cis;
+  const vehs = JSON.parse(localStorage.getItem("vehicules_"+cis)||"[]");
+  let anomalies=[];
+
+  vehs.forEach(v=>{
+    (v.history||[]).filter(h=>!h.closed).forEach(h=>{
+      let agentAffiche=h.agent;
+      if(/^[0-9]+$/.test(agentAffiche)||agentAffiche.trim()==="")agentAffiche=nomComplet;
+
+      let etatAffiche = h.level;
+      if(v.pretNom && v.etat === "Pret"){ etatAffiche += " — " + v.pretNom; }
+
+      anomalies.push({vehicule:v.nom,etat:etatAffiche,desc:h.text,agent:agentAffiche});
+    });
+  });
+
+  if(anomalies.length===0){alert("Aucune anomalie à imprimer.");return;}
+
+  anomalies.sort((a,b)=>a.vehicule.localeCompare(b.vehicule,"fr",{sensitivity:"base"}));
+  const w=window.open("","_blank");
+  const date=new Date().toLocaleString("fr-FR");
+
+  w.document.write(`
+  <html><head><title>Anomalies - ${escapeHtml(cis)}</title>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+  body{font-family:'Inter',sans-serif;padding:40px 60px;color:#222;}
+  header{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #b71c1c;padding-bottom:10px;margin-bottom:30px;}
+  header img{height:65px;}
+  header h1{flex:1;text-align:center;color:#b71c1c;font-size:26px;margin:0;}
+  h2{text-align:center;color:#333;font-size:18px;font-weight:500;margin-bottom:25px;}
+  table{width:100%;border-collapse:collapse;font-size:15px;}
+  th,td{border:1px solid #ccc;padding:8px 10px;text-align:left;}
+  th{background:#f4f4f4;color:#333;}
+  tr:nth-child(even){background:#fafafa;}
+  footer{text-align:right;margin-top:40px;font-size:12px;color:#666;}
+  </style></head>
+  <body>
+  <header>
+    <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png" alt="Logo SDIS 30">
+    <h1>Anomalies en cours</h1>
+  </header>
+  <h2>Centre : ${escapeHtml(cis)}</h2>
+  <table>
+    <thead><tr><th>Véhicule</th><th>État</th><th>Anomalie</th><th>Agent</th></tr></thead>
+    <tbody>${anomalies.map(a=>`<tr><td>${escapeHtml(a.vehicule)}</td><td>${escapeHtml(a.etat)}</td><td>${escapeHtml(a.desc)}</td><td>${escapeHtml(a.agent)}</td></tr>`).join("")}</tbody>
+  </table>
+  <footer>Rapport généré le ${escapeHtml(date)}</footer>
+  <script>window.onload=()=>window.print();<\/script></body></html>`);
+  w.document.close();
+}
+
+/* 👁️ Consultation des anomalies d'un véhicule (lecture seule) */
+function openVehiculeAnomalies(vehName){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+    if(!session){ alert("Session expirée."); return; }
+    const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
+    const vehs = JSON.parse(localStorage.getItem("vehicules_"+cisSel) || "[]");
+    const veh = vehs.find(v => String(v.nom||"").toLowerCase() === String(vehName||"").toLowerCase());
+    const title = document.getElementById("anom-title");
+    const tbody = document.getElementById("anom-tbody");
+    title.textContent = "Anomalies (en cours) — " + (veh ? (veh.nom || vehName) : vehName);
+    tbody.innerHTML = "";
+
+    if(!veh || !Array.isArray(veh.history) || veh.history.length === 0){
+      tbody.innerHTML = "<tr><td colspan='5' style='padding:10px;color:#666;'>Aucune anomalie en cours pour ce véhicule.</td></tr>";
+    }else{
+      const rows = [...veh.history]
+        .filter(h => !h.closed)
+        .sort((a,b)=>{
+          const ta = a.timestamp||a.date||0, tb = b.timestamp||b.date||0;
+          return (tb - ta) || String(a.text||"").localeCompare(String(b.text||""));
+        });
+
+      if(rows.length === 0){
+        tbody.innerHTML = "<tr><td colspan='5' style='padding:10px;color:#666;'>Aucune anomalie en cours pour ce véhicule.</td></tr>";
+      }
+      rows.forEach(h=>{
+        const tr = document.createElement("tr");
+        const statut = "Ouverte";
+        const niveau = h.level || "-";
+        const desc   = h.text || "-";
+        const agent  = h.agent || "-";
+        let dateTxt = "-";
+        if(h.date){ dateTxt = h.date; }
+        else if(h.timestamp){ try{ const d = new Date(h.timestamp); dateTxt = d.toLocaleString("fr-FR"); }catch(_){ } }
+        tr.innerHTML = `
+          <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(statut)}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(niveau)}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(desc)}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(agent)}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(dateTxt)}</td>
+        `;
+        document.getElementById("anom-tbody").appendChild(tr);
+      });
+    }
+
+    const modal = document.getElementById("anom-modal");
+    if(modal){ modal.style.display = "flex"; }
+  }catch(e){
+    alert("Impossible d'afficher les anomalies de ce véhicule.");
+  }
+}
+
+/* 📝 Main courante : collecte anomalies + entrées personnalisées */
+function renderJournal(){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+    if(!session){ return; }
+    const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
+    const vehs = JSON.parse(localStorage.getItem("vehicules_"+cisSel) || "[]");
+    const custom = JSON.parse(localStorage.getItem("journal_"+cisSel) || "[]");
+
+    let entries = [];
+    vehs.forEach(v=>{
+      (v.history||[]).forEach(h=>{
+        const createdTs = h.timestamp ? Number(h.timestamp) : (Date.parse(h.date||"") || 0);
+        const closedTs  = h.closedTs ? Number(h.closedTs) : 0;
+
+        if(h.closed){
+          entries.push({
+            type: "ANOMALIE",
+            ts: closedTs || createdTs,
+            title: "Anomalie clôturée — " + (v.nom||"-"),
+            text: (h.level?("[" + h.level + "] "):"") + (h.text||"-") + (h.closedBy ? (" — clôturée par " + h.closedBy) : "")
+          });
+        }else{
+          const who = h.agent ? (" — par " + h.agent) : "";
+          entries.push({
+            type: "ANOMALIE",
+            ts: createdTs,
+            title: "Anomalie signalée — " + (v.nom||"-"),
+            text: (h.level?("[" + h.level + "] "):"") + (h.text||"-") + who
+          });
+        }
+      });
+    });
+
+    if(Array.isArray(custom)){
+      custom.forEach(e=>{
+        entries.push({
+          type: String(e.type||"NOTE").toUpperCase(),
+          ts: Number(e.ts||0),
+          title: e.title || typeToTitle(String(e.type||"NOTE")),
+          text: e.text || ""
+        });
+      });
+    }
+
+    /* ❗ Exclure les FMA de la main courante opérationnelle (affichées à gauche) */
+    entries = entries.filter(e => String(e.type||"").toUpperCase() !== "FMA");
+
+    entries.sort((a,b)=> (Number(b.ts||0) - Number(a.ts||0)) );
+
+    const list = document.getElementById("journal-list");
+    if(!list) return;
+    list.innerHTML = "";
+
+    if(entries.length === 0){
+      list.innerHTML = "<p style='color:#666'>Aucune activité récente.</p>";
+      return;
+    }
+
+    entries.slice(0, 40).forEach(e=>{
+      const wrap = document.createElement("div");
+      wrap.className = "journal-item";
+
+      const icon = document.createElement("div");
+      icon.className = "icon";
+      icon.textContent = typeToIcon(e.type);
+
+      const body = document.createElement("div");
+      body.className = "body";
+      const dateTxt = e.ts ? new Date(e.ts).toLocaleString("fr-FR") : "—";
+      body.innerHTML = `
+        <div class="title">${escapeHtml(e.title||"Activité")}</div>
+        <div class="text">${escapeHtml(e.text||"")}</div>
+        <div class="date">${escapeHtml(dateTxt)}</div>
+      `;
+
+      wrap.appendChild(icon);
+      wrap.appendChild(body);
+      list.appendChild(wrap);
+    });
+  }catch(_){}
+}
+
+/* 📘 Panneau Formation (FMA uniquement) */
+function renderFormations(){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return;
+    const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
+
+    const custom = JSON.parse(localStorage.getItem("journal_"+cisSel) || "[]");
+    const entries = (Array.isArray(custom) ? custom : [])
+      .filter(e => String(e.type||"").toUpperCase()==="FMA")
+      .map(e => ({
+        type: "FMA",
+        ts: Number(e.ts||0),
+        title: e.title || typeToTitle("FMA"),
+        text: e.text || ""
+      }))
+      .sort((a,b)=>Number(b.ts||0)-Number(a.ts||0));
+
+    const list = document.getElementById("formation-list");
+    if(!list) return;
+    list.innerHTML = "";
+
+    if(entries.length===0){
+      list.innerHTML = "<p style='color:#666'>Aucune formation enregistrée.</p>";
+      return;
+    }
+
+    entries.slice(0,40).forEach(e=>{
+      const wrap = document.createElement("div");
+      wrap.className = "journal-item";
+
+      const icon = document.createElement("div");
+      icon.className = "icon";
+      icon.textContent = "📘";
+
+      const body = document.createElement("div");
+      body.className = "body";
+      const dateTxt = e.ts ? new Date(e.ts).toLocaleString("fr-FR") : "—";
+      body.innerHTML = `
+        <div class="title">${escapeHtml(e.title||"FMA enregistrée")}</div>
+        <div class="text">${escapeHtml(e.text||"")}</div>
+        <div class="date">${escapeHtml(dateTxt)}</div>
+      `;
+
+      wrap.appendChild(icon);
+      wrap.appendChild(body);
+      list.appendChild(wrap);
+    });
+  }catch(_){}
+}
+
+function typeToIcon(t){
+  switch(String(t).toUpperCase()){
+    case "FMA": return "📘";
+    case "PHARMA": return "💊";
+    case "ANOMALIE": return "🚒";
+    case "MNR": return "🧯";
+    case "SOG": return "📣";
+    default: return "📝";
+  }
+}
+function typeToTitle(t){
+  switch(String(t).toUpperCase()){
+    case "FMA": return "FMA enregistrée";
+    case "PHARMA": return "Commande pharmacie";
+    case "ANOMALIE": return "Anomalie véhicule";
+    case "MNR": return "MNR";
+    case "SOG": return "Info SOG";
+    default: return "Note";
+  }
+}
+function logActivity(type, text, meta){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+    if(!session) return;
+    const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
+    const keyJ = "journal_"+cisSel;
+    const arr = JSON.parse(localStorage.getItem(keyJ) || "[]");
+    const entry = {
+      type: String(type||"NOTE").toUpperCase(),
+      text: String(text||""),
+      ts: Date.now(),
+      meta: meta || {},
+      title: typeToTitle(type||"NOTE")
+    };
+    arr.push(entry);
+    localStorage.setItem(keyJ, JSON.stringify(arr.slice(-500)));
+    renderJournal();
+    renderFormations(); // mise à jour immédiate du panneau FMA
+  }catch(_){}
+}
+window.addEventListener("storage",(e)=>{
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+    if(!session) return;
+    const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
+    if(e.key === "vehicules_"+cisSel || e.key === "journal_"+cisSel){
+      renderJournal();
+      renderFormations();
+    }
+  }catch(_){}
+});
+
+/* ✅ Purge MC */
+function isAdmin(){
+  try{
+    const u = JSON.parse(localStorage.getItem("csver_session")||"null");
+    const role = u && String(u.role||"").toLowerCase();
+    if(role === "admin" || role === "commandement") return true; // rôle fort
+    const perms = getCurrentCisPerms();                           // ✅ droit admin via permissions
+    return !!perms.admin;
+  }catch(_){ return false; }
+}
+function purgeJournal(scope, evt){
+  if(evt && typeof evt.preventDefault === "function") evt.preventDefault();
+  if(!isAdmin()){ alert("Accès refusé : réservé aux administrateurs."); return false; }
+
+  const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+  if(!session){ alert("Session expirée."); return false; }
+  const cisSel = Array.isArray(session.cis)?session.cis[0]:session.cis;
+
+  const keyJournal = "journal_"+cisSel;
+  const keyVehs    = "vehicules_"+cisSel;
+
+  const journal    = JSON.parse(localStorage.getItem(keyJournal)||"[]");
+  const vehs       = JSON.parse(localStorage.getItem(keyVehs)||"[]");
+
+  const countNotes = Array.isArray(journal) ? journal.length : 0;
+  const countAnom  = Array.isArray(vehs) ? vehs.reduce((n,v)=>n+((v.history||[]).length||0),0) : 0;
+
+  let msg = "";
+  if(scope === "notes"){
+    msg = `⚠️ Cette action va supprimer ${countNotes} note(s) personnalisée(s) de la main courante pour le CIS “${cisSel}”.\n\nContinuer ?`;
+  }else{
+    msg = `⚠️ PURGE COMPLÈTE\n\n- Notes personnalisées : ${countNotes}\n- Entrées d'anomalies (tous véhicules) : ${countAnom}\n\nCette action est irréversible. Confirmez pour TOUT effacer.`;
+  }
+
+  if(!confirm(msg)) return false;
+
+  if((countNotes>0 || (scope==="all" && countAnom>0)) && confirm("Souhaitez-vous télécharger une sauvegarde (.json) avant suppression ?")){
+    try{
+      const backup = { cis: cisSel, ts: Date.now(), scope, notes: journal, vehicules: vehs };
+      const blob = new Blob([JSON.stringify(backup,null,2)], {type:"application/json"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      const stamp = new Date().toISOString().replace(/[:.]/g,"-");
+      a.download = `backup_main_courante_${cisSel}_${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 0);
+    }catch(_){}
+  }
+
+  try{
+    localStorage.removeItem(keyJournal);
+    if(scope === "all" && Array.isArray(vehs)){
+      const cleaned = vehs.map(v=>{ const nv = Object.assign({}, v); nv.history = []; return nv; });
+      localStorage.setItem(keyVehs, JSON.stringify(cleaned));
+    }
+    renderJournal();
+    renderFormations();
+    renderVehicules(JSON.parse(localStorage.getItem(keyVehs)||"[]"));
+    alert(scope==="notes" ? "Main courante (notes) vidée." : "Purge complète effectuée.");
+  }catch(e){
+    alert("Erreur pendant la purge.");
+  }
+  return false;
+}
+</script>
+
+<!-- AJOUT : Script Mes FMA autonome (aucune collision) -->
+<script>
+(function(){
+  function mf_tidy(s){ return String(s||"").replace(/\s+/g," ").trim(); }
+  function mf_strip(s){ try{ return s.normalize('NFD').replace(/[\u0300-\u036f]/g,''); }catch(_){ return s; } }
+  function mf_key(raw){
+    const s = mf_strip(mf_tidy(raw).toLowerCase());
+    const p = s.split(" ").filter(Boolean);
+    if(p.length===2){ const a=p[0], b=p[1]; return [a,b].sort().join("_"); }
+    return p.join("_");
+  }
+  function mf_hhmm(min){ if(!min||isNaN(min))return ""; const h=Math.floor(min/60),m=min%60; return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0"); }
+  function mf_dFR(iso){ try{ return new Date(iso).toLocaleDateString("fr-FR"); }catch(_){ return iso||""; } }
+
+  function mf_ctx(){
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return null;
+    const userDisplay = mf_tidy(((session.prenom||"")+" "+(session.nom||"")).trim() || session.matricule || "Agent");
+    const userKey = mf_key(userDisplay);
+    const fmas = JSON.parse(localStorage.getItem("fma_data_v2")||"[]");
+    let themes = JSON.parse(localStorage.getItem("csver_themes")||"null");
+    if(!themes || !Array.isArray(themes) || !themes.length){
+      themes = ["ARI / Reconnaissance","Échelle à coulisse","Sauvetage / LSPCC","Établissements / Alimentation","Feu de véhicule","Secours routier","Manoeuvre hydraulique"];
+    }
+    return { userDisplay, userKey, fmas, themes };
+  }
+
+  function mf_filterMine(ctx){
+    const me = ctx.userKey;
+    const rows=[];
+    for(const r of ctx.fmas){
+      const isFormateur = mf_key(r.formateur||"")===me;
+      const inParticipants = Array.isArray(r.participants) && r.participants.some(p=> mf_key(p.name||"")===me);
+      if(isFormateur || inParticipants){
+        rows.push({
+          date:r.date, h1:r.h1, h2:r.h2, theme:r.theme, formateur:r.formateur||"",
+          participants:(r.participants||[]).map(p=>`${p.name}${p.role? " ("+p.role+")":""}`).join(", "),
+          role:isFormateur?"Formateur":"Participant",
+          minutes:Number(r.dureeMin||0),
+          webact:r.webact&&r.webact.done?"✅ Saisie OK":"⏳ À saisir"
+        });
+      }
+    }
+    return rows.sort((a,b)=> String(b.date||"").localeCompare(String(a.date||"")));
+  }
+
+  function mf_summary(ctx, myRows){
+    const map=new Map(); ctx.themes.forEach(t=>map.set(t,0));
+    for(const r of myRows){ if(!map.has(r.theme)) map.set(r.theme,0); map.set(r.theme,map.get(r.theme)+(r.minutes||0)); }
+    return ctx.themes.map(t=>({ theme:t, minutes:map.get(t)||0, status:(map.get(t)||0)>0?"OK":"À faire" }));
+  }
+
+  window.openMyFma = function(evt){
+    if(evt && typeof evt.preventDefault==="function") evt.preventDefault();
+
+    const ctx = mf_ctx(); if(!ctx){ alert("Session expirée."); return false; }
+    const mine = mf_filterMine(ctx);
+    const sum  = mf_summary(ctx, mine);
+
+    const u = document.getElementById("myfma-username");
+    const c = document.getElementById("myfma-count");
+    if(u) u.textContent = ctx.userDisplay;
+    if(c) c.textContent = `— ${mine.length} FMA trouvée(s)`;
+
+    const body = document.getElementById("myfma-body");
+    if(body){
+      body.innerHTML = mine.map(r=>`
+        <tr>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${mf_dFR(r.date)}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${r.h1||"--"}–${r.h2||"--"}<br><span style="color:#666;font-size:12px">${mf_hhmm(r.minutes)}</span></td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${r.theme||"-"}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${r.role}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${r.formateur||"-"}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${r.participants||"-"}<br><span style="color:#666;font-size:12px">${r.webact}</span></td>
+        </tr>`).join("") || `<tr><td colspan="6" style="padding:10px;color:#666">Aucune FMA enregistrée te concernant.</td></tr>`;
+    }
+
+    const tBody = document.getElementById("myfma-theme");
+    if(tBody){
+      tBody.innerHTML = sum.map(s=>`
+        <tr>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${s.theme}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${mf_hhmm(s.minutes)}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">
+            <span style="display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid ${s.status==="OK"?"#a7e2be":"#ffd39b"};background:${s.status==="OK"?"#e6f7ec":"#fff4e5"};color:${s.status==="OK"?"#0a8a3a":"#a36100"};font-weight:700;font-size:12px">${s.status}</span>
+          </td>
+        </tr>`).join("");
+    }
+
+    const modal = document.getElementById("myfma-modal");
+    if(modal) modal.style.display = "flex";
+    const closeBtn = document.getElementById("myfma-close");
+    if(closeBtn) closeBtn.onclick = ()=>{ modal.style.display="none"; };
+    if(modal){
+      modal.addEventListener("click",(e)=>{ if(e.target===modal){ modal.style.display="none"; } });
+      document.addEventListener("keydown", function esc(e){ if(e.key==="Escape"&&modal.style.display!=="none"){ modal.style.display="none"; document.removeEventListener("keydown", esc); } });
+    }
+    return false;
+  };
+})();
+</script>
+<!-- FIN AJOUT -->
+
+<!-- AJOUT : Modale Mes FMA (ordre inversé : Synthèse en haut, Réalisées en bas) -->
+<div id="myfma-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2100;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:14px;max-width:1100px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.25);overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#0d2b52;color:#fff;">
+      <h3 style="font-size:18px;font-weight:700;">👤 Mes FMA</h3>
+      <button id="myfma-close" style="background:#b71c1c;color:#fff;border:none;border-radius:8px;padding:6px 10px;font-weight:600;cursor:pointer;">Fermer</button>
+    </div>
+
+    <div style="padding:16px 20px;max-height:70vh;overflow:auto;">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+        <strong id="myfma-username"></strong>
+        <span id="myfma-count" style="color:#555"></span>
+      </div>
+
+      <!-- 🧭 Synthèse par thème (EN HAUT) -->
+      <h4 style="margin:10px 0 6px;color:#0d2b52">🧭 Synthèse par thème</h4>
+      <div class="myfma-scroll" style="overflow:auto">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Thème</th>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Temps réalisé</th>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Statut</th>
+            </tr>
+          </thead>
+          <tbody id="myfma-theme"></tbody>
+        </table>
+      </div>
+      <p style="margin-top:8px;color:#666;font-size:13px">Statut “À faire” = aucun enregistrement trouvé pour ce thème.</p>
+
+      <!-- 📜 Mes FMA réalisées (EN BAS) -->
+      <h4 style="margin:18px 0 6px;color:#0d2b52">📜 Mes FMA réalisées</h4>
+      <div class="myfma-scroll" style="overflow:auto">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Date</th>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Heures</th>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Thème</th>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Rôle</th>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Formateur</th>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Participants</th>
+            </tr>
+          </thead>
+          <tbody id="myfma-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- FIN AJOUT -->
+
+<!-- Modal anomalies (inchangé) -->
+<div id="anom-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:14px;max-width:900px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.25);overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#0d2b52;color:#fff;">
+      <h3 id="anom-title" style="font-size:18px;font-weight:700;">Anomalies</h3>
+      <button id="anom-close" style="background:#b71c1c;color:#fff;border:none;border-radius:8px;padding:6px 10px;font-weight:600;cursor:pointer;">Fermer</button>
+    </div>
+    <div id="anom-content" style="padding:16px 20px;max-height:65vh;overflow:auto;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Statut</th>
+            <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Niveau</th>
+            <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Description</th>
+            <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Agent</th>
+            <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Date</th>
+          </tr>
+        </thead>
+        <tbody id="anom-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const modal = document.getElementById("anom-modal");
+  const closeBtn = document.getElementById("anom-close");
+  if(closeBtn){ closeBtn.addEventListener("click", ()=>{ if(modal){ modal.style.display="none"; } }); }
+  if(modal){
+    modal.addEventListener("click",(e)=>{ if(e.target===modal){ modal.style.display="none"; } });
+    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"&&modal.style.display!=="none"){ modal.style.display="none"; } });
+  }
+})();
+</script>
+
+<!-- 🧾 LOGIQUE OVERLAY FMA A SAISIR -->
+<script>
+/* Helpers droits "Saisie FMA" + admin-like */
+function isAdminLike(){
+  try{
+    const s = JSON.parse(localStorage.getItem("csver_session")||"null");
+    const r = s && String(s.role||"").toLowerCase();
+    return r === "admin" || r === "commandement";
+  }catch(_){ return false; }
+}
+function hasSaisieFma(){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return false;
+    const fiche = JSON.parse(localStorage.getItem("csver_user_"+session.matricule) || "null");
+    if(!fiche || !fiche.permissions) return false;
+    const cisCur = Array.isArray(session.cis)?session.cis[0]:session.cis;
+
+    // Récupère le bloc de permissions pertinent (principal vs secondaire)
+    let perms = null;
+    const cisPrim = fiche.cis && fiche.cis.primary ? fiche.cis.primary : null;
+    const isPrim = cisPrim && normCis(cisPrim) === normCis(cisCur);
+    if(isPrim) perms = fiche.permissions.primary || null;
+    else{
+      const sec = fiche.permissions.secondaries || {};
+      perms = sec[cisCur] || sec[Object.keys(sec).find(k => normCis(k)===normCis(cisCur))] || null;
+    }
+    if(!perms) return false;
+
+    // Tolérant sur le nom de la clé (suivant comment tu l’as ajoutée dans l’admin)
+    return !!(perms.saisieFma || perms.saisie_fma || perms.saisiefma);
+  }catch(_){ return false; }
+}
+
+/* Récupère les FMA à saisir pour mon CIS courant */
+function getPendingForMyCis(limit=6){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return [];
+    const cisCur = Array.isArray(session.cis)?session.cis[0]:session.cis;
+    const data = JSON.parse(localStorage.getItem("fma_data_v2")||"[]");
+    const rows = (Array.isArray(data)?data:[])
+      .filter(r => !r?.webact?.done)
+      .filter(r => normCis(r?.cis||"") === normCis(cisCur||""))
+      .sort((a,b)=> String(b.date||"").localeCompare(String(a.date||"")));
+    return typeof limit==="number" ? rows.slice(0, limit) : rows;
+  }catch(_){ return []; }
+}
+
+/* Affiche/masque l’overlay et remplit le tableau */
+function renderFmaPendingCard(){
+  const maySee = hasSaisieFma() || isAdminLike();
+  const overlay = document.getElementById('fmaOverlay');
+  const card = document.getElementById('fmaPendingCard');
+  const tBody = document.getElementById('fmaPendingBody');
+  const badge = document.getElementById('fmaPendingCount');
+  if(!overlay || !card || !tBody || !badge) return;
+
+  if(!maySee){
+    overlay.style.display = 'none';
+    return;
+  }
+
+  const all = getPendingForMyCis(null);
+  if(!all.length){
+    overlay.style.display = 'none';
+    return;
+  }
+
+  // contenu
+  badge.textContent = `${all.length}`;
+  tBody.innerHTML = all.slice(0,10).map(r=>{
+    const d = (()=>{ try{ return new Date(r.date).toLocaleDateString("fr-FR"); }catch(_){ return r.date||"-"; }})();
+    return `<tr><td>${d}</td><td>${escapeHtml(r.theme||"-")}</td><td>${escapeHtml(r.formateur||"-")}</td></tr>`;
+  }).join("");
+
+  // handlers
+  const go = document.getElementById('fmaGoBtn');
+  const ok = document.getElementById('fmaDismissBtn');
+  if(go) go.onclick = (e)=>{ openLink('fma.html', e); };
+  if(ok) ok.onclick = ()=>{ overlay.style.display='none'; };
+
+  // clic arrière-plan
+  overlay.onclick = (e)=>{ if(e.target === overlay) overlay.style.display='none'; };
+
+  // échap
+  document.addEventListener('keydown', function esc(ev){
+    if(ev.key === 'Escape' && overlay.style.display !== 'none'){
+      overlay.style.display='none';
+      document.removeEventListener('keydown', esc);
+    }
+  });
+
+  // montre l’overlay
+  overlay.style.display = 'flex';
+}
+</script>
+<script>
+/* ===========================
+   🔔 Overlay "Réservations en attente" — Accueil
+   =========================== */
+
+/* 👉 Chemin de ta page réservations (même que dans ton menu) */
+const RES_PAGE_HREF = "reservations_vehicules.html";
+
+/* Rôles autorisés : SPP / SOG / Admin / Commandement, ou permission fine “véhicules” */
+function canSeeReservationsOverlay(){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return false;
+    const role = String(session.role||"").toLowerCase();
+    if(["spp","sog spv","sog","admin","commandement"].includes(role)) return true;
+
+    // Permissions fines (comme applyRoleMenus)
+    const fiche = JSON.parse(localStorage.getItem("csver_user_"+session.matricule)||"null");
+    const cisCur = Array.isArray(session.cis)?session.cis[0]:session.cis;
+    if(fiche && fiche.permissions){
+      const norm = s => String(s||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+      const cisPrim = fiche.cis && fiche.cis.primary ? fiche.cis.primary : null;
+      const isPrim  = cisPrim && (norm(cisPrim) === norm(cisCur));
+      let perms = null;
+      if(isPrim) perms = fiche.permissions.primary || null;
+      else{
+        const sec = fiche.permissions.secondaries || {};
+        const key = Object.keys(sec).find(k => norm(k) === norm(cisCur));
+        perms = sec[cisCur] || (key ? sec[key] : null);
+      }
+      if(perms && (perms["véhicules"] || perms.admin)) return true;
+    }
+  }catch(_){}
+  return false;
+}
+
+/* Lecture des demandes en attente pour le CIS courant */
+function getPendingReservations(limit = 6){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return [];
+    const cisCur = Array.isArray(session.cis)?session.cis[0]:session.cis;
+    const keyRes = "reservations_"+cisCur;
+    const rows = (JSON.parse(localStorage.getItem(keyRes)||"[]")||[])
+      .filter(r => r.status === "pending")
+      .sort((a,b)=> a.date===b.date ? a.m1-b.m1 : a.date.localeCompare(b.date));
+    return typeof limit==="number" ? rows.slice(0, limit) : rows;
+  }catch(_){ return []; }
+}
+
+/* Rendu de l’overlay — TOUJOURS afficher s’il reste des "pending" */
+function renderReservationsPendingOverlay(){
+  const maySee = canSeeReservationsOverlay();
+  const overlay = document.getElementById('resOverlay');
+  const body    = document.getElementById('resPendingBody');
+  const badge   = document.getElementById('resPendingCount');
+  const btnGo   = document.getElementById('resGoBtn');
+  const btnOk   = document.getElementById('resDismissBtn');
+  if(!overlay || !body || !badge || !btnGo || !btnOk) return;
+
+  if(!maySee){
+    overlay.style.display = 'none';
+    return;
+  }
+
+  const pending = getPendingReservations(null);
+  const count = pending.length;
+
+  if(count <= 0){
+    overlay.style.display = 'none';
+    return;
+  }
+
+  // Contenu du tableau
+  body.innerHTML = pending.slice(0,10).map(r=>{
+    const dateFR = (()=>{
+      try{ const [Y,M,D] = String(r.date||"").split("-"); return [D,M,Y].join("-"); }
+      catch(_){ return r.date||"-"; }
+    })();
+    const heures = `${r.h1||"--:--"}–${r.h2||"--:--"}`;
+    return `<tr>
+      <td>${dateFR}</td>
+      <td>${heures}</td>
+      <td>${escapeHtml(r.agent||"-")}</td>
+      <td>${escapeHtml(r.motif||"-")}</td>
+      <td>${escapeHtml(r.destination||"-")}</td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="5" style="padding:10px;color:#666">Aucune demande en attente.</td></tr>`;
+
+  badge.textContent = String(count);
+
+  // Actions
+  btnGo.onclick = (e)=>{ 
+    // va sur la page de réservations
+    if(e && typeof e.preventDefault==="function") e.preventDefault();
+    try{ openLink(RES_PAGE_HREF, e); } catch(_){ window.location.href = RES_PAGE_HREF; }
+  };
+  btnOk.onclick = ()=>{ 
+    // on ferme juste pour le moment ; il se re-montrera dès qu’on revient / refocus tant qu’il reste du pending
+    overlay.style.display='none';
+  };
+
+  // Fermer sur clic extérieur / Esc (ré-apparaîtra au prochain focus/chargement si des pending restent)
+  overlay.onclick = (e)=>{ if(e.target===overlay){ overlay.style.display='none'; } };
+  document.addEventListener('keydown', function esc(ev){
+    if(ev.key==="Escape" && overlay.style.display!=="none"){
+      overlay.style.display='none';
+      document.removeEventListener('keydown', esc);
+    }
+  });
+
+  overlay.style.display = 'flex';
+}
+
+/* Hooks */
+window.addEventListener("DOMContentLoaded", ()=>{ setTimeout(()=>renderReservationsPendingOverlay(), 250); });
+window.addEventListener("focus", ()=>renderReservationsPendingOverlay());
+window.addEventListener("pageshow", ()=>renderReservationsPendingOverlay());
+window.addEventListener("storage",(e)=>{
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return;
+    const cisCur = Array.isArray(session.cis)?session.cis[0]:session.cis;
+    if(e.key === "reservations_"+cisCur){
+      renderReservationsPendingOverlay();
+    }
+  }catch(_){}
+});
+</script>
+
+<!-- 🔔 Overlay "Dépôts habillement" — Script (AJOUT MINIMAL) -->
+<script>
+const HABILLEMENT_PAGE_HREF = "gestion_habillement.html";
+
+/* ✅ Droit explicite “gestion habillement” (tolérant sur le nom de clé) */
+function hasGestionHabillement(){
+  try{
+    const perms = getCurrentCisPerms() || {};
+    const keys = [
+      "gestion_habillement","gestionHabillement","gestion-habillement",
+      "habillement_gestion","habillementGestion"
+    ];
+    return keys.some(k => !!perms[k]);
+  }catch(_){ return false; }
+}
+
+/* ❌ Plus de dérogation admin/commandement — seul le droit ci-dessus compte */
+function canSeeHabillementOverlay(){
+  return hasGestionHabillement();
+}
+
+function habCtx(){
+  const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+  if(!session) return null;
+  const cisCur = Array.isArray(session.cis)?session.cis[0]:session.cis;
+  return {
+    session,
+    cis: cisCur,
+    dataKey: "habillement_"+cisCur,
+    seenKey: "habillement_seen_"+session.matricule+"_"+cisCur
+  };
+}
+function habReadAll(ctx){
+  try{ const a = JSON.parse(localStorage.getItem(ctx.dataKey)||"[]"); return Array.isArray(a)?a:[]; }
+  catch(_){ return []; }
+}
+function habGetSeen(ctx){
+  const v = localStorage.getItem(ctx.seenKey);
+  return v ? parseInt(v,10) : 0;
+}
+function habMaxCreatedTs(ctx){
+  let max = 0;
+  for(const r of habReadAll(ctx)){ if(r && r.createdTs && r.createdTs>max) max = r.createdTs; }
+  return max;
+}
+function habMarkSeen(ctx){
+  localStorage.setItem(ctx.seenKey, String(habMaxCreatedTs(ctx) || Date.now()));
+}
+
+function renderHabillementOverlay(){
+  const overlay = document.getElementById("habOverlay");
+  const body    = document.getElementById("habPendingBody");
+  const badge   = document.getElementById("habPendingCount");
+  const btnGo   = document.getElementById("habGoBtn");
+  const btnSeen = document.getElementById("habSeenBtn");
+  if(!overlay || !body || !badge || !btnGo || !btnSeen) return;
+
+  if(!canSeeHabillementOverlay()){
+    overlay.style.display = "none";
+    return;
+  }
+
+  const ctx = habCtx();
+  if(!ctx){ overlay.style.display="none"; return; }
+
+  const seenTs = habGetSeen(ctx);
+  const all    = habReadAll(ctx);
+
+  const news = all.filter(x => (x?.createdTs||0) > seenTs);
+
+  if(news.length === 0){
+    overlay.style.display = "none";
+    return;
+  }
+
+  news.sort((a,b)=> (String(b.date||"").localeCompare(String(a.date||""))) || ((b.createdTs||0)-(a.createdTs||0)));
+  body.innerHTML = news.slice(0,10).map(e=>{
+    const dateFR = (()=>{
+      try{ const [Y,M,D] = String(e.date||"").split("-"); return [D,M,Y].join("-"); }
+      catch(_){ return e.date||"-"; }
+    })();
+    const effets = Array.isArray(e.effets) && e.effets.length
+      ? e.effets.map(x=>`${escapeHtml(x.article||"-")} × ${x.qte||1}${x.obs? " — "+escapeHtml(x.obs):""}`).join("<br>")
+      : "-";
+    return `<tr>
+      <td>${dateFR}</td>
+      <td>${escapeHtml(e.agent||"-")}</td>
+      <td>${escapeHtml(e.matricule||"-")}</td>
+      <td>${effets}</td>
+    </tr>`;
+  }).join("");
+
+  badge.textContent = String(news.length);
+
+  btnGo.onclick   = (e)=>{ openLink(HABILLEMENT_PAGE_HREF, e); };
+  btnSeen.onclick = ()=>{ habMarkSeen(ctx); overlay.style.display="none"; };
+
+  overlay.onclick = (e)=>{ if(e.target===overlay){ overlay.style.display="none"; } };
+  document.addEventListener("keydown", function esc(ev){
+    if(ev.key==="Escape" && overlay.style.display!=="none"){
+      overlay.style.display = "none";
+      document.removeEventListener("keydown", esc);
+    }
+  });
+
+  overlay.style.display = "flex";
+}
+
+window.addEventListener("DOMContentLoaded", ()=>{ setTimeout(()=>renderHabillementOverlay(), 300); });
+window.addEventListener("focus", ()=>renderHabillementOverlay());
+window.addEventListener("pageshow", ()=>renderHabillementOverlay());
+window.addEventListener("storage",(e)=>{
+  try{
+    const ctx = habCtx(); if(!ctx) return;
+    if(e.key === ctx.dataKey){ renderHabillementOverlay(); }
+  }catch(_){}
+});
+</script>
+
+
+<script>
+/* ===========================
+   📬 Overlay "Nouveaux messages" — Accueil
+   =========================== */
+
+const MESSAGE_PAGE_HREF = "messagerie.html"; // ⬅ adapte si besoin
+
+function mailCtx(){
+  const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+  if(!session) return null;
+  const cisCur = Array.isArray(session.cis)?session.cis[0]:session.cis;
+  return {
+    session,
+    cis: cisCur,
+    key: "messages_"+cisCur
+  };
+}
+
+function fmtDateMail(ts){
+  try{
+    const d=new Date(Number(ts)||0);
+    const p=n=>String(n).padStart(2,'0');
+    return `${p(d.getDate())}-${p(d.getMonth()+1)}-${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }catch(_){ return "—"; }
+}
+
+/* Renvoie la liste des messages non lus pour l'agent courant (triés récents→anciens) */
+function getUnreadForMe(limit=10){
+  const ctx = mailCtx(); if(!ctx) return [];
+  const me = ctx.session.matricule;
+  const all = JSON.parse(localStorage.getItem(ctx.key)||"[]");
+  const rows = (Array.isArray(all)?all:[])
+    .filter(m => Array.isArray(m.to) && m.to.some(t => t.matricule===me))
+    .filter(m => !m.readBy || !m.readBy[me])
+    .sort((a,b)=> (Number(b.ts||0) - Number(a.ts||0)));
+  return typeof limit==="number" ? rows.slice(0,limit) : rows;
+}
+
+/* Marque comme lus (pour MOI) tous les messages actuellement non lus */
+function markMyMailsAsRead(){
+  const ctx = mailCtx(); if(!ctx) return;
+  const me = ctx.session.matricule;
+  const arr = JSON.parse(localStorage.getItem(ctx.key)||"[]");
+  let touched = false;
+  (Array.isArray(arr)?arr:[]).forEach(m=>{
+    const toMe = Array.isArray(m.to) && m.to.some(t=>t.matricule===me);
+    if(toMe){
+      m.readBy = m.readBy || {};
+      if(!m.readBy[me]){ m.readBy[me] = true; touched = true; }
+    }
+  });
+  if(touched){ localStorage.setItem(ctx.key, JSON.stringify(arr)); }
+}
+
+/* Rend et affiche/masque l’overlay */
+function renderMailOverlay(){
+  const overlay = document.getElementById("mailOverlay");
+  const body    = document.getElementById("mailPendingBody");
+  const badge   = document.getElementById("mailPendingCount");
+  const btnGo   = document.getElementById("mailGoBtn");
+  const btnRead = document.getElementById("mailMarkReadBtn");
+  if(!overlay || !body || !badge || !btnGo || !btnRead) return;
+
+  const ctx = mailCtx();
+  if(!ctx){ overlay.style.display="none"; return; }
+
+  const unread = getUnreadForMe(null);
+  if(unread.length === 0){
+    overlay.style.display = "none";
+    return;
+  }
+
+  // Remplissage tableau
+  badge.textContent = String(unread.length);
+  body.innerHTML = unread.slice(0,10).map(m=>`
+    <tr>
+      <td>${fmtDateMail(m.ts)}</td>
+      <td>${(m.from && m.from.display) ? m.from.display.replace(/[&<>"]/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[s])) : "-"}</td>
+      <td>${String(m.subject||"-").replace(/[&<>"]/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[s]))}</td>
+    </tr>
+  `).join("");
+
+  // Actions
+  btnGo.onclick   = (e)=>{ if(e) e.preventDefault?.(); try{ openLink(MESSAGE_PAGE_HREF, e); }catch(_){ window.location.href = MESSAGE_PAGE_HREF; } };
+  btnRead.onclick = ()=>{ markMyMailsAsRead(); overlay.style.display="none"; };
+
+  // Fermer en cliquant dehors / échappe
+  overlay.onclick = (e)=>{ if(e.target === overlay) overlay.style.display="none"; };
+  document.addEventListener("keydown", function esc(ev){
+    if(ev.key==="Escape" && overlay.style.display!=="none"){
+      overlay.style.display="none";
+      document.removeEventListener("keydown", esc);
+    }
+  });
+
+  overlay.style.display = "flex";
+}
+
+/* Hooks (mêmes moments que tes autres overlays) */
+window.addEventListener("DOMContentLoaded", ()=>{ setTimeout(()=>renderMailOverlay(), 200); });
+window.addEventListener("focus", ()=>renderMailOverlay());
+window.addEventListener("pageshow", ()=>renderMailOverlay());
+window.addEventListener("storage",(e)=>{
+  try{
+    const ctx = mailCtx(); if(!ctx) return;
+    if(e.key === ctx.key){ renderMailOverlay(); }
+  }catch(_){}
+});
+</script>
+
+<!-- FIN AJOUT -->
+
+</body>
+</html>
