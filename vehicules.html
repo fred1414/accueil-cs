@@ -337,12 +337,27 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     window.location.href="login.html";
     return;
   }
-  const cis=Array.isArray(user.cis)?user.cis[0]:user.cis;
-  document.getElementById("cis-title").textContent=`Gestion des véhicules - CS ${cis}`;
-  key="vehicules_"+cis;
-  vehicules=JSON.parse(localStorage.getItem(key)||"[]");
+    // Fonction qui normalise le CIS (évite les différences CIS Vergèze / VERGEZE / CIS VERGEZE)
+  function normCis(x){
+    if(!x) return "";
+    return String(x)
+      .replace(/^CIS\s*/i,"")               // retire "CIS "
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // supprime accents
+      .trim()
+      .toLowerCase();
+  }
+
+  const cisRaw = Array.isArray(user.cis) ? user.cis[0] : user.cis;
+  const cis = normCis(cisRaw);
+
+  document.getElementById("cis-title").textContent = `Gestion des véhicules - CS ${cisRaw}`;
+
+  key = "vehicules_" + cis;
+
+  vehicules = JSON.parse(localStorage.getItem(key) || "[]");
+
   renderVehicules();
-});
+
 
 
 function renderVehicules(){
@@ -594,3 +609,4 @@ function printAnomalies(){
 </script>
 </body>
 </html>
+
