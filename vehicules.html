@@ -356,11 +356,11 @@ window.addEventListener("DOMContentLoaded", async ()=>{
 
   vehicules = JSON.parse(localStorage.getItem(key) || "[]");
 
-  renderVehicules();
-
-
+renderVehicules();
+});   // ← fermeture manquante du init !!
 
 function renderVehicules(){
+
   const grid=document.getElementById("vehicule-grid");
   grid.innerHTML="";
   if(vehicules.length===0){
@@ -609,4 +609,5 @@ function printAnomalies(){
 </script>
 </body>
 </html>
+
 
