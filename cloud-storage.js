@@ -79,9 +79,14 @@ window.shouldSyncKey = shouldSyncKey;
 async function syncAccueilFromCloud(){
   try{
     const snap = await db.collection("accueilcs").get();
+
+    // On mémorise toutes les clés réellement présentes dans Firestore
+    const seenKeys = new Set();
+
     snap.forEach(doc=>{
       const id = doc.id;
       if(shouldSyncKey(id)){
+        seenKeys.add(id);
         try {
           const raw = doc.data();
           const val = denormalizeFromCloud(raw);
@@ -91,12 +96,24 @@ async function syncAccueilFromCloud(){
         }
       }
     });
-    console.log("ACCUEIL-CS : sync Firestore → localStorage OK");
+
+    // 🧹 Nettoyage : on supprime du localStorage les clés qui n'existent plus dans Firestore
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (shouldSyncKey(k) && !seenKeys.has(k)) {
+        // Cette clé était synchronisée mais n'existe plus dans le cloud → on la supprime localement
+        localStorage.removeItem(k);
+        i--; // car localStorage.length vient de changer
+      }
+    }
+
+    console.log("ACCUEIL-CS : sync Firestore → localStorage OK (avec nettoyage)");
   }catch(e){
     console.error("syncAccueilFromCloud", e);
   }
 }
 window.syncAccueilFromCloud = syncAccueilFromCloud;
+
 
 // 6) localStorage ➜ Cloud (interception globale)
 (function(){
@@ -124,3 +141,4 @@ window.syncAccueilFromCloud = syncAccueilFromCloud;
     origRem(key);
   };
 })();
+
