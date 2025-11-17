@@ -16,12 +16,32 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 window.db = db;
 
+// ---------- helpers pour tableaux ----------
+
+// On ne peut PAS faire set([]) directement sur Firestore.
+// On emballe les tableaux sous la forme { __type:"array", items:[...] }
+function normalizeForCloud(value) {
+  if (Array.isArray(value)) {
+    return { __type: "array", items: value };
+  }
+  return value;
+}
+
+function denormalizeFromCloud(data) {
+  if (data && data.__type === "array" && Array.isArray(data.items)) {
+    return data.items;
+  }
+  return data;
+}
+
 // 3) Fonctions Firestore simples
 async function cloudGetJSON(key, fallback) {
   try {
     const snap = await db.collection("accueilcs").doc(key).get();
     if (!snap.exists) return fallback;
-    return snap.data();
+    const raw = snap.data();
+    const val = denormalizeFromCloud(raw);
+    return val;
   } catch (e) {
     console.error("cloudGetJSON error", key, e);
     return fallback;
@@ -30,15 +50,19 @@ async function cloudGetJSON(key, fallback) {
 
 async function cloudSetJSON(key, value) {
   try {
-    await db.collection("accueilcs").doc(key).set(value);
+    const toSave = normalizeForCloud(value);
+    await db.collection("accueilcs").doc(key).set(toSave);
+    // petit log debug
+    console.log("[cloudSetJSON] PUSH", key, toSave);
   } catch (e) {
     console.error("cloudSetJSON error", key, e);
   }
 }
+
 window.cloudGetJSON  = cloudGetJSON;
 window.cloudSetJSON  = cloudSetJSON;
 
-// 4) Quelles clés on synchronise entre navigateurs / PC
+// 4) Quelles clés on synchronise
 function shouldSyncKey(key){
   if(!key) return false;
   return key === "fma_data_v2"
@@ -48,11 +72,11 @@ function shouldSyncKey(key){
       || key.startsWith("reservations_")
       || key.startsWith("habillement_")
       || key.startsWith("messages_")
-      || key.startsWith("csver_user_");   // 👈 très important pour les droits
+      || key.startsWith("csver_user_");   // droits / permissions
 }
 window.shouldSyncKey = shouldSyncKey;
 
-// 5) Cloud ➜ localStorage (à appeler au chargement de CHAQUE page)
+// 5) Cloud ➜ localStorage (appelé au chargement de CHAQUE page)
 async function syncAccueilFromCloud(){
   try{
     const snap = await db.collection("accueilcs").get();
@@ -60,7 +84,9 @@ async function syncAccueilFromCloud(){
       const id = doc.id;
       if(shouldSyncKey(id)){
         try {
-          localStorage.setItem(id, JSON.stringify(doc.data()));
+          const raw = doc.data();
+          const val = denormalizeFromCloud(raw);
+          localStorage.setItem(id, JSON.stringify(val));
         } catch(e){
           console.error("Erreur cache local pour", id, e);
         }
@@ -73,7 +99,7 @@ async function syncAccueilFromCloud(){
 }
 window.syncAccueilFromCloud = syncAccueilFromCloud;
 
-// 6) localStorage ➜ Cloud (interception globale, pour toutes les pages)
+// 6) localStorage ➜ Cloud (interception globale)
 (function(){
   const origSet = localStorage.setItem.bind(localStorage);
   const origRem = localStorage.removeItem.bind(localStorage);
@@ -81,10 +107,10 @@ window.syncAccueilFromCloud = syncAccueilFromCloud;
   localStorage.setItem = function(key, value){
     origSet(key, value);
     if(shouldSyncKey(key)){
-      try {
+      try{
         const obj = JSON.parse(value);
         cloudSetJSON(key, obj);
-      } catch(e){
+      }catch(e){
         console.error("cloudSetJSON error pour", key, e);
       }
     }
