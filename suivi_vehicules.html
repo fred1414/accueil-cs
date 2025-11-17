@@ -195,7 +195,11 @@ function hasVehiculesAccess(session){
 }
 /* ====== FIN MODIF helpers ====== */
 
-window.addEventListener("DOMContentLoaded", ()=>{
+window.addEventListener("DOMContentLoaded", async ()=>{
+  // 1️⃣ On synchronise Firestore → localStorage avant tout
+  await syncVehiculesFromCloud();
+
+  // 2️⃣ On récupère la session
   u = JSON.parse(localStorage.getItem("csver_session") || "null");
   if(!u){
     alert("⏳ Session expirée. Veuillez vous reconnecter.");
@@ -203,14 +207,14 @@ window.addEventListener("DOMContentLoaded", ()=>{
     return;
   }
 
-  /* ====== MODIF : accès admin OU permission "Véhicules" ====== */
+  // 3️⃣ Contrôle d’accès (admin ou permission « Véhicules »)
   if(!hasVehiculesAccess(u)){
     alert("❌ Accès refusé. Réservé aux administrateurs ou aux comptes ayant la permission « Véhicules ».");
     window.location.href = "index.html";
     return;
   }
-  /* ================= FIN MODIF ================= */
 
+  // 4️⃣ Clé de stockage par CIS + chargement des véhicules
   const cis = Array.isArray(u.cis) ? u.cis[0] : u.cis;
   key = "vehicules_" + cis;
   document.getElementById("cis-label").textContent = "CIS : " + cis;
@@ -220,6 +224,7 @@ window.addEventListener("DOMContentLoaded", ()=>{
   saveAll();
   render();
 });
+
 
 function ensureIds(){
   let changed=false;
@@ -455,3 +460,4 @@ async function syncVehiculesFromCloud(){
 
 </body>
 </html>
+
