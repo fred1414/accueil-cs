@@ -103,12 +103,20 @@
       if(typeof db === "undefined") return console.warn("Firestore non initialisé");
 
       const snap = await db.collection("accueilcs").get();
-      snap.forEach(doc=>{
-        const key = doc.id;
-        if(shouldSyncMNR(key)){
-          localStorage.setItem(key, JSON.stringify(doc.data()));
-        }
-      });
+snap.forEach(doc=>{
+  const key = doc.id;
+  if(shouldSyncMNR(key)){
+    let raw = doc.data();
+    // 🔁 on "dé-normalise" si c'est un tableau emballé par cloud-storage.js
+    if (typeof denormalizeFromCloud === "function") {
+      raw = denormalizeFromCloud(raw);
+    } else if (raw && raw.__type === "array" && Array.isArray(raw.items)) {
+      raw = raw.items;
+    }
+    localStorage.setItem(key, JSON.stringify(raw));
+  }
+});
+
       console.log("MNR : sync Firestore → localStorage OK");
     }catch(e){
       console.error("syncMNRFromCloud", e);
@@ -158,7 +166,29 @@
 
   // Helpers
   const saveRows = (data)=> localStorage.setItem(KEY_ROWS, JSON.stringify(data.filter(r=>r && (r.art?.trim()||r.obs?.trim()))));
-  const loadTck  = ()=> { try{ return JSON.parse(localStorage.getItem(KEY_TCK)||"[]"); }catch(_){ return []; } };
+const loadTck  = ()=> { 
+  try{ 
+    const raw = JSON.parse(localStorage.getItem(KEY_TCK)||"[]");
+
+    // Cas normal : déjà un tableau
+    if (Array.isArray(raw)) return raw;
+
+    // Cas "emballé" : { __type:"array", items:[...] }
+    if (raw && raw.__type === "array" && Array.isArray(raw.items)) {
+      return raw.items;
+    }
+
+    // Cas où c'est un objet avec des tickets en valeurs
+    if (raw && typeof raw === "object") {
+      return Object.values(raw);
+    }
+
+    return [];
+  }catch(_){ 
+    return []; 
+  } 
+};
+
   const saveTck  = (arr)=> localStorage.setItem(KEY_TCK, JSON.stringify(arr));
 
   function makeRow(r={}){
@@ -253,11 +283,12 @@
     ticketsEl.querySelectorAll("[data-print]").forEach(b=> b.addEventListener("click", ()=> openFormForTicket(b.getAttribute("data-print"), true)));
   }
   function openFormForTicket(id, autoPrint){
-    const url = new URL("formulaire-mnr.html");
-    url.searchParams.set("ticket", id);
-    if(autoPrint) url.searchParams.set("print","1");
-    window.open(url.toString(), "_blank", "noopener,noreferrer");
-  }
+  const url = new URL("formulaire-mnr.html", window.location.href);
+  url.searchParams.set("ticket", id);
+  if(autoPrint) url.searchParams.set("print","1");
+  window.open(url.toString(), "_blank", "noopener,noreferrer");
+}
+
 
   // Buttons
   document.getElementById("btn-add").addEventListener("click",()=>{
@@ -309,3 +340,4 @@
 </script>
 </body>
 </html>
+
