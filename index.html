@@ -1725,7 +1725,7 @@ function renderHabillementOverlay(){
 
  const news = all.filter(x => {
   // considère comme "traité" si une de ces propriétés est utilisée
-  const treated = x.traite === true || x.statut === "Traité" || x.status === "traite";
+  const treated = x.traite === true || x.statut === "Traité" || x.statut === "Traitée" || x.status === "traite";
   return (x?.createdTs||0) > seenTs && !treated;
 });
 
