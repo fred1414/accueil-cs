@@ -249,57 +249,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="cloud-storage.js"></script>
 
-<script>
-/* =======================================================
-     🔁 SYNCHRO VÉHICULES <-> FIRESTORE
-   ======================================================= */
 
-// On synchronise uniquement les clés véhicules_xxx
-function shouldSyncVehicules(key){
-  return key && key.startsWith("vehicules_");
-}
-
-/* 🔄 Cloud ➜ Local : au chargement */
-async function syncVehiculesFromCloud(){
-  try{
-    if(typeof db === "undefined"){
-      console.warn("Firestore non initialisé.");
-      return;
-    }
-    const snap = await db.collection("accueilcs").get();
-    snap.forEach(doc=>{
-      const k = doc.id;
-      if(shouldSyncVehicules(k)){
-        localStorage.setItem(k, JSON.stringify(doc.data()));
-      }
-    });
-    console.log("Véhicules : sync Firestore → localStorage OK");
-  }catch(e){
-    console.error("syncVehiculesFromCloud", e);
-  }
-}
-
-/* 🔄 Local ➜ Cloud : interception des setItem / removeItem */
-(function(){
-  const oldSet = localStorage.setItem.bind(localStorage);
-  localStorage.setItem = function(key, val){
-    oldSet(key, val);
-    if(shouldSyncVehicules(key)){
-      try{ cloudSetJSON(key, JSON.parse(val)); }
-      catch(_){}
-    }
-  };
-
-  const oldRemove = localStorage.removeItem.bind(localStorage);
-  localStorage.removeItem = function(key){
-    if(shouldSyncVehicules(key)){
-      try{ db.collection("accueilcs").doc(key).delete(); }
-      catch(_){}
-    }
-    oldRemove(key);
-  };
-})();
-</script>
 
 <script>
 let user=null,key="",vehicules=[],currentVehiculeIndex=null;
@@ -647,3 +597,4 @@ function printAnomalies(){
 </script>
 </body>
 </html>
+
