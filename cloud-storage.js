@@ -17,9 +17,9 @@ const db = firebase.firestore();
 window.db = db;
 
 // ---------- helpers pour tableaux ----------
+// Firestore n'accepte PAS set([]) : un doc doit être un objet.
+// On emballe les tableaux : { __type:"array", items:[...] }
 
-// On ne peut PAS faire set([]) directement sur Firestore.
-// On emballe les tableaux sous la forme { __type:"array", items:[...] }
 function normalizeForCloud(value) {
   if (Array.isArray(value)) {
     return { __type: "array", items: value };
@@ -52,8 +52,7 @@ async function cloudSetJSON(key, value) {
   try {
     const toSave = normalizeForCloud(value);
     await db.collection("accueilcs").doc(key).set(toSave);
-    // petit log debug
-    console.log("[cloudSetJSON] PUSH", key, toSave);
+    console.log("[cloudSetJSON] OK", key, toSave);
   } catch (e) {
     console.error("cloudSetJSON error", key, e);
   }
@@ -72,7 +71,7 @@ function shouldSyncKey(key){
       || key.startsWith("reservations_")
       || key.startsWith("habillement_")
       || key.startsWith("messages_")
-      || key.startsWith("csver_user_");   // droits / permissions
+      || key.startsWith("csver_user_");
 }
 window.shouldSyncKey = shouldSyncKey;
 
