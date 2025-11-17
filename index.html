@@ -360,8 +360,9 @@ nav.menu-bar a{ padding:10px 12px; }
     <li id="menu-admin"><a href="#">Administrateur</a>
       <ul>
         <li><a href="#" onclick="return openLink('admin.html', event)">Gestion des accès</a></li>
-        <li><a href="#" onclick="return purgeJournal('notes', event)">🧹 Vider la main courante (notes)</a></li>
-        <li><a href="#" onclick="return purgeJournal('all', event)">🗑️ Purge complète (notes + anomalies)</a></li>
+<li><a id="btnPurgeNotes" href="#" onclick="return purgeJournal('notes', event)">🧹 Vider la main courante (notes)</a></li>
+<li><a id="btnPurgeAll" href="#" onclick="return purgeJournal('all', event)">🗑️ Purge complète (notes + anomalies)</a></li>
+
       </ul>
     </li>
   </ul>
@@ -700,6 +701,15 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   document.getElementById("welcome-text").textContent=`Bienvenue ${nomComplet}`;
 
   applyRoleMenus(user.role);
+  // 🔐 Masquer les actions de purge pour tous sauf 1414
+if (!isSuperAdmin()) {
+    const btn1 = document.getElementById("btnPurgeNotes");
+    const btn2 = document.getElementById("btnPurgeAll");
+
+    if (btn1) btn1.style.display = "none";
+    if (btn2) btn2.style.display = "none";
+}
+
 
   renderVehicules(JSON.parse(localStorage.getItem(key)||"[]"));
   renderJournal();
@@ -1180,9 +1190,19 @@ function isAdmin(){
     return !!perms.admin;
   }catch(_){ return false; }
 }
-function purgeJournal(scope, evt){
+
+ // 🔐 Seul le matricule 1414 est super-admin
+function isSuperAdmin() {
+    const u = JSON.parse(localStorage.getItem("csver_session") || "null");
+    return u && String(u.matricule) === "1414";
+}
+ 
+function purgeJournal(scope, evt){  // 🔐 Protection super-admin (matricule 1414 uniquement)
+  if (!isSuperAdmin()) {
+      alert("Accès refusé : réservé à l'administrateur 1414.");
+      return false;
+  }
   if(evt && typeof evt.preventDefault === "function") evt.preventDefault();
-  if(!isAdmin()){ alert("Accès refusé : réservé aux administrateurs."); return false; }
 
   const session = JSON.parse(localStorage.getItem("csver_session")||"null");
   if(!session){ alert("Session expirée."); return false; }
