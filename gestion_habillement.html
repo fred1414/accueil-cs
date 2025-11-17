@@ -775,9 +775,22 @@ window.addEventListener('storage',e=>{
   }catch(_){}
 });
 document.addEventListener('DOMContentLoaded', async ()=>{
-  await syncHabillementFromCloud(); // 🔁 on synchronise Firestore avant tout
-  loadSession(); // puis on charge l’interface
+  try{
+    if (typeof syncAccueilFromCloud === "function") {
+      // 🔁 synchro globale (accueilcs) si dispo
+      await syncAccueilFromCloud();
+    } else {
+      // 🔁 sinon, fallback sur la synchro locale Habillement
+      await syncHabillementFromCloud();
+    }
+  }catch(e){
+    console.error("Erreur de synchro initiale Habillement :", e);
+  }
+
+  // Puis seulement après la synchro, on charge l’interface
+  loadSession();
 });
+
 
 </script>
 </body>
