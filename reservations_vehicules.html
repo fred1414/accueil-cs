@@ -405,20 +405,20 @@ function goAccueil(){ window.location.href="index.html"; }
 
 /* ===== Storage ===== */
 function rawToArray(raw){
-  // 1) Déjà un vrai tableau → on le garde
+  // 1) Si c’est déjà un tableau → OK
   if (Array.isArray(raw)) return raw;
 
-  // 2) Firestore : { "0": {...}, "1": {...} }
+  // 2) Si c’est un objet Firestore de type { "0": {...}, "1": {...} }
   if (raw && typeof raw === "object") {
     const keys = Object.keys(raw);
     if (keys.length && keys.every(k => /^\d+$/.test(k))) {
-      // on reconstitue le tableau dans l'ordre 0,1,2...
       return keys
-        .sort((a,b) => Number(a) - Number(b))
+        .sort((a, b) => Number(a) - Number(b))
         .map(k => raw[k]);
     }
   }
-  // 3) Sinon, on renvoie un tableau vide
+
+  // 3) Sinon → tableau vide
   return [];
 }
 
@@ -428,14 +428,13 @@ function readReservations(){
 
   return arr.map(r => {
     if (!r) return r;
+
     // compatibilité ancienne version
     if (!r.dateDebut && r.date) r.dateDebut = r.date;
     if (!r.dateFin && r.date)   r.dateFin   = r.date;
+
     return computeTs(r);
   });
-}
-function saveReservations(arr){
-  localStorage.setItem(ctx.keyRes, JSON.stringify(arr));
 }
 
 /* ===== Formulaire ===== */
@@ -815,4 +814,5 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 
 </body>
 </html>
+
 
