@@ -1723,7 +1723,12 @@ function renderHabillementOverlay(){
   const seenTs = habGetSeen(ctx);
   const all    = habReadAll(ctx);
 
-  const news = all.filter(x => (x?.createdTs||0) > seenTs);
+ const news = all.filter(x => {
+  // considère comme "traité" si une de ces propriétés est utilisée
+  const treated = x.traite === true || x.statut === "Traité" || x.status === "traite";
+  return (x?.createdTs||0) > seenTs && !treated;
+});
+
 
   if(news.length === 0){
     overlay.style.display = "none";
