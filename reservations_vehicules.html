@@ -404,13 +404,33 @@ function isAdmin(){
 function goAccueil(){ window.location.href="index.html"; }
 
 /* ===== Storage ===== */
+function rawToArray(raw){
+  // 1) Déjà un vrai tableau → on le garde
+  if (Array.isArray(raw)) return raw;
+
+  // 2) Firestore : { "0": {...}, "1": {...} }
+  if (raw && typeof raw === "object") {
+    const keys = Object.keys(raw);
+    if (keys.length && keys.every(k => /^\d+$/.test(k))) {
+      // on reconstitue le tableau dans l'ordre 0,1,2...
+      return keys
+        .sort((a,b) => Number(a) - Number(b))
+        .map(k => raw[k]);
+    }
+  }
+  // 3) Sinon, on renvoie un tableau vide
+  return [];
+}
+
 function readReservations(){
-  const arr=JSON.parse(localStorage.getItem(ctx.keyRes)||"[]");
-  if(!Array.isArray(arr)) return [];
-  return arr.map(r=>{
-    if(!r) return r;
-    if(!r.dateDebut && r.date) r.dateDebut = r.date;
-    if(!r.dateFin && r.date)   r.dateFin   = r.date;
+  const raw = JSON.parse(localStorage.getItem(ctx.keyRes) || "[]");
+  const arr = rawToArray(raw);
+
+  return arr.map(r => {
+    if (!r) return r;
+    // compatibilité ancienne version
+    if (!r.dateDebut && r.date) r.dateDebut = r.date;
+    if (!r.dateFin && r.date)   r.dateFin   = r.date;
     return computeTs(r);
   });
 }
@@ -795,3 +815,4 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 
 </body>
 </html>
+
