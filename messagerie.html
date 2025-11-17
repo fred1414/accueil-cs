@@ -241,7 +241,13 @@ async function syncMessagesFromCloud(){
       const id = doc.id;
       if(shouldSyncMsgKey(id)){
         try{
-          localStorage.setItem(id, JSON.stringify(doc.data()));
+          const data = doc.data();
+          // 🔧 Déballage du wrapper {items:[], __type:'array'}
+          let value = data;
+          if(data && data.__type === "array" && Array.isArray(data.items)){
+            value = data.items;
+          }
+          localStorage.setItem(id, JSON.stringify(value));
         }catch(e){
           console.error("Erreur cache local pour", id, e);
         }
@@ -280,9 +286,6 @@ async function syncMessagesFromCloud(){
 })();
 </script>
 
-
-
-
 <script>
 /* ===== Helpers ===== */
 function escapeHtml(s){return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));}
@@ -301,7 +304,7 @@ function getDisplayName(u){
 }
 
 /* ===== Normalisation Users (compatible Admin) ===== */
-function cisKey(x){ if(!x) return ""; try{ return String(x).replace(/^CIS\\s*/i,"").normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').trim().toLowerCase(); }catch(_){ return String(x).toLowerCase().trim(); } }
+function cisKey(x){ if(!x) return ""; try{ return String(x).replace(/^CIS\s*/i,"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase(); }catch(_){ return String(x).toLowerCase().trim(); } }
 function defaultPerms(){ return {agent:false,sog:false,formation:false,fdf:false,pharma:false,habillement:false,gestion_habillement:false,mnr:false,"véhicules":false,atelier:false,magasin:false,"saisie_fma":false,admin:false}; }
 
 function normalizeUser(u){
@@ -512,16 +515,16 @@ function openRead(id){const m=readMessages().find(x=>x.id===id); if(!m) return; 
 }
 function closeRead(){document.getElementById('readModal').style.display='none';document.getElementById('readModal').setAttribute('aria-hidden','true'); openedMsg=null;}
 
-/* >>>>>>> Correctif minimal ici (2 fonctions) <<<<<<< */
+/* >>>>>>> Correctif minimal (répondre / transférer depuis la modale) <<<<<<< */
 function replyFromModal(){
   if(!openedMsg) return;
-  const id = openedMsg.id;  // mémoriser l'id avant de fermer
+  const id = openedMsg.id;
   closeRead();
   quickReply(id);
 }
 function forwardFromModal(){
   if(!openedMsg) return;
-  const id = openedMsg.id;  // mémoriser l'id avant de fermer
+  const id = openedMsg.id;
   closeRead();
   forward(id);
 }
@@ -530,7 +533,7 @@ function forwardFromModal(){
 function deleteFromModal(){ if(!openedMsg) return; const id=openedMsg.id; closeRead(); deleteMessage(id); }
 
 function quickReply(id){const m=readMessages().find(x=>x.id===id); if(!m) return; resetComposer(); addRecipient({matricule:m.from.matricule,display:m.from.display}); document.getElementById('subject').value = m.subject.startsWith('Re: ')? m.subject : 'Re: '+m.subject; document.getElementById('body').value = `\n\n— Le ${fmtDate(m.ts)}, ${m.from.display} a écrit :\n${m.body}`; window.scrollTo({top:0,behavior:'smooth'});}
-function forward(id){const m=readMessages().find(x=>x.id===id); if(!m) return; resetComposer(); document.getElementById('subject').value = m.subject.startsWith('Tr: ')? m.subject : 'Tr: '+m.subject; document.getElementById('body').value = `${m.body}\n\n— Transféré par ${getDisplayName(ctx.user)} (${fmtDate(Date.now())})`; window.scrollTo({top:0,behavior:'smooth'});}
+function forward(id){const m=readMessages().find(x=>x.id===id); if(!m) return; resetComposer(); document.getElementById('subject').value = m.subject.startsWith('Tr: ')? m.subject : 'Tr: '+m.subject; document.getElementById('body').value = `${m.body}\n\n— Transféré par ${getDisplayName(ctx.user)} (${fmtDate(Date.now())})`; window.scrollTo({top:0,behavior:'smooth');}}
 
 /* ===== Delete ===== */
 function deleteMessage(id){ const arr=readMessages(); const idx=arr.findIndex(x=>x.id===id); if(idx<0) return; if(!confirm('Supprimer ce message ?')) return; arr.splice(idx,1); saveMessages(arr); renderInbox(); renderSent(); }
