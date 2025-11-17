@@ -119,59 +119,15 @@ footer.sticky{position:sticky;bottom:0;background:#fff;border-top:1px solid #e6e
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="cloud-storage.js"></script>
 
-<script>
-/* =======================================================
-     🔁 SYNCHRO PHARMA <-> FIRESTORE
-   ======================================================= */
 
-// On ne synchronise ici que la main courante (journal_…)
-function shouldSyncPHARMA(key){
-  return key && key.startsWith("journal_");
-}
-
-/* 🔄 Cloud ➜ Local */
-async function syncPHARMAFromCloud(){
-  try{
-    if(typeof db === "undefined") return console.warn("Firestore non initialisé");
-
-    const snap = await db.collection("accueilcs").get();
-    snap.forEach(doc=>{
-      const key = doc.id;
-      if(shouldSyncPHARMA(key)){
-        localStorage.setItem(key, JSON.stringify(doc.data()));
-      }
-    });
-    console.log("PHARMA : sync Firestore → localStorage OK");
-  }catch(e){
-    console.error("syncPHARMAFromCloud", e);
-  }
-}
-
-/* 🔄 Local ➜ Cloud */
-(function(){
-  const oldSet = localStorage.setItem.bind(localStorage);
-  localStorage.setItem = function(key, val){
-    oldSet(key, val);
-    if(shouldSyncPHARMA(key)){
-      try{ cloudSetJSON(key, JSON.parse(val)); } catch(e){}
-    }
-  };
-
-  const oldRemove = localStorage.removeItem.bind(localStorage);
-  localStorage.removeItem = function(key){
-    if(shouldSyncPHARMA(key)){
-      try{ db.collection("accueilcs").doc(key).delete(); }catch(_){}
-    }
-    oldRemove(key);
-  };
-})();
-</script>
 
 <script>
 (async function(){
 
-  // 🔄 On synchronise Firestore -> localStorage avant d'utiliser la main courante
-  await syncPHARMAFromCloud();
+  // 🔄 On synchronise Firestore -> localStorage avec le système global
+  if (typeof syncAccueilFromCloud === "function") {
+    await syncAccueilFromCloud();
+  }
 
 /* ====== LOG MAIN COURANTE (ajout) ====== */
 function logActivityToJournal(type, text) {
