@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Suivi des Véhicules - CS VER</title>
+<title>Suivi des Véhicules - CS</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 *{box-sizing:border-box;font-family:'Inter',sans-serif;margin:0;padding:0}
@@ -149,6 +149,65 @@ textarea{resize:none;height:80px;}
   </div>
 </div>
 
+<!-- 🔌 Firebase + Firestore + stockage partagé -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="cloud-storage.js"></script>
+
+<script>
+/* =======================================================
+     🔁 SYNCHRO VÉHICULES <-> FIRESTORE
+   ======================================================= */
+
+// On synchronise seulement les données véhicules
+function shouldSyncVehicules(key){
+  return key && key.startsWith("vehicules_");
+}
+
+/* 🔄 Cloud ➜ Local */
+async function syncVehiculesFromCloud(){
+  try{
+    if(typeof db === "undefined"){
+      console.warn("Firestore non initialisé");
+      return;
+    }
+    const snap = await db.collection("accueilcs").get();
+    snap.forEach(doc=>{
+      const key = doc.id;
+      if(shouldSyncVehicules(key)){
+        localStorage.setItem(key, JSON.stringify(doc.data()));
+      }
+    });
+    console.log("Véhicules : sync Firestore → localStorage OK");
+  }catch(e){
+    console.error("syncVehiculesFromCloud", e);
+  }
+}
+
+/* 🔄 Local ➜ Cloud */
+(function(){
+  const oldSet = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, val){
+    oldSet(key, val);
+    if(shouldSyncVehicules(key)){
+      try{
+        cloudSetJSON(key, JSON.parse(val));
+      }catch(_){}
+    }
+  };
+
+  const oldRemove = localStorage.removeItem.bind(localStorage);
+  localStorage.removeItem = function(key){
+    if(shouldSyncVehicules(key)){
+      try{
+        db.collection("accueilcs").doc(key).delete();
+      }catch(_){}
+    }
+    oldRemove(key);
+  };
+})();
+</script>
+
 <script>
 let vehicules = [];
 let editId = null;
@@ -156,16 +215,14 @@ let key = "";
 let u = null;
 
 /* ===========================
-   MODIF (helper permissions)
+   Helpers permissions
    =========================== */
-// normalise un libellé de CIS pour comparer proprement (sans "CIS ", accents, casse)
 function normCis(x){
   if(!x) return "";
   return String(x).replace(/^CIS\s*/i,"")
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .trim().toLowerCase();
 }
-// récupère le bloc de permissions du user pour le CIS courant
 function getVehPermsForCurrentCis(session){
   try{
     const fiche = JSON.parse(localStorage.getItem("csver_user_"+session.matricule) || "null");
@@ -183,23 +240,22 @@ function getVehPermsForCurrentCis(session){
     return hit ? sec[hit] : null;
   }catch(_){ return null; }
 }
-// vrai si admin OU permission "véhicules" (tolérance clés)
 function hasVehiculesAccess(session){
   try{
     const role = String(session.role||"").toLowerCase();
-    if(role === "admin") return true; // admin OK
+    if(role === "admin") return true;
     const perms = getVehPermsForCurrentCis(session);
     if(!perms) return false;
     return !!(perms["véhicules"] || perms["vehicules"] || perms["vehicule"] || perms.admin);
   }catch(_){ return false; }
 }
-/* ====== FIN MODIF helpers ====== */
 
+/* ====== INIT ====== */
 window.addEventListener("DOMContentLoaded", async ()=>{
-  // 1️⃣ On synchronise Firestore → localStorage avant tout
+  // 1️⃣ Sync Firestore → localStorage
   await syncVehiculesFromCloud();
 
-  // 2️⃣ On récupère la session
+  // 2️⃣ Session
   u = JSON.parse(localStorage.getItem("csver_session") || "null");
   if(!u){
     alert("⏳ Session expirée. Veuillez vous reconnecter.");
@@ -207,14 +263,14 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     return;
   }
 
-  // 3️⃣ Contrôle d’accès (admin ou permission « Véhicules »)
+  // 3️⃣ Droits d’accès
   if(!hasVehiculesAccess(u)){
     alert("❌ Accès refusé. Réservé aux administrateurs ou aux comptes ayant la permission « Véhicules ».");
     window.location.href = "index.html";
     return;
   }
 
-  // 4️⃣ Clé de stockage par CIS + chargement des véhicules
+  // 4️⃣ Clé de stockage
   const cis = Array.isArray(u.cis) ? u.cis[0] : u.cis;
   key = "vehicules_" + cis;
   document.getElementById("cis-label").textContent = "CIS : " + cis;
@@ -224,7 +280,6 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   saveAll();
   render();
 });
-
 
 function ensureIds(){
   let changed=false;
@@ -280,7 +335,7 @@ function setupDragDelegation(){
     draggingRow=handle.closest("tr");
     draggingRow.classList.add("dragging");
     e.dataTransfer.effectAllowed="move";
-    try{e.dataTransfer.setData("text/plain","");}catch{}
+    try{e.dataTransfer.setData("text/plain","");}catch(_){}
   });
   tbody.addEventListener("dragover", e=>{
     e.preventDefault();
@@ -341,7 +396,10 @@ function saveVehicule(){
   const immat=document.getElementById("immat").value.trim();
   const ctdate=document.getElementById("ctdate").value;
 
-  if(!nom){alert("Veuillez saisir un nom de véhicule.");return;}
+  if(!nom){
+    alert("Veuillez saisir un nom de véhicule.");
+    return;
+  }
 
   if(editId){
     const v=vehicules.find(x=>x.id===editId);
@@ -362,12 +420,13 @@ function saveVehicule(){
   }
   saveAll();
   render();
+  toast("✅ Véhicule enregistré");
   closeModal();
 }
 
 function editVehicule(id){
   const v=vehicules.find(x=>x.id===id);
-  if(!v)return;
+  if(!v) return;
   editId=id;
   document.getElementById("modal").style.display="flex";
   document.getElementById("modal-title").textContent="Modifier le véhicule";
@@ -385,7 +444,9 @@ function deleteVehicule(id){
   render();
 }
 
-function escapeHtml(s){return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));}
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+}
 
 function toast(msg){
   const t=document.createElement("div");
@@ -394,69 +455,6 @@ function toast(msg){
   document.body.appendChild(t);
   setTimeout(()=>t.remove(),1800);
 }
-</script>
-
-<!-- 🔌 Firebase + Firestore + stockage partagé -->
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-<script src="cloud-storage.js"></script>
-
-<script>
-/* =======================================================
-     🔁 SYNCHRO VÉHICULES <-> FIRESTORE
-   ======================================================= */
-
-// On synchronise seulement les données véhicules
-function shouldSyncVehicules(key){
-  return key && key.startsWith("vehicules_");
-}
-
-/* 🔄 Cloud ➜ Local */
-async function syncVehiculesFromCloud(){
-  try{
-    if(typeof db === "undefined"){
-      console.warn("Firestore non initialisé");
-      return;
-    }
-
-    const snap = await db.collection("accueilcs").get();
-    snap.forEach(doc=>{
-      const k = doc.id;
-      if(shouldSyncVehicules(k)){
-        localStorage.setItem(k, JSON.stringify(doc.data()));
-      }
-    });
-
-    console.log("Véhicules : sync Firestore → localStorage OK");
-
-  }catch(e){
-    console.error("syncVehiculesFromCloud", e);
-  }
-}
-
-/* 🔄 Local ➜ Cloud */
-(function(){
-  const oldSet = localStorage.setItem.bind(localStorage);
-  localStorage.setItem = function(key, val){
-    oldSet(key, val);
-
-    if(shouldSyncVehicules(key)){
-      try{
-        cloudSetJSON(key, JSON.parse(val));
-      }catch(_){}
-    }
-  };
-
-  const oldRemove = localStorage.removeItem.bind(localStorage);
-  localStorage.removeItem = function(key){
-    if(shouldSyncVehicules(key)){
-      try{
-        db.collection("accueilcs").doc(key).delete();
-      }catch(_){}
-    }
-    oldRemove(key);
-  };
-})();
 </script>
 
 </body>
