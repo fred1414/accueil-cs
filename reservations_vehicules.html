@@ -114,6 +114,7 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
   .form-grid .col-2{grid-column:span 1}
 }
 </style>
+
 <!-- 🔌 Firebase + Firestore + stockage partagé -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
@@ -253,78 +254,42 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
 </div>
 
 <footer>© SDIS 30 — Réservations véhicules — 2025</footer>
-<!-- 🔁 SYNCHRO FIRESTORE RESERVATIONS -->
-<script>
-/* =======================================================
-     🔁 SYNCHRO RESERVATIONS <-> FIRESTORE
-   ======================================================= */
 
-/* On synchronise :
-   - reservations_<CIS>
-   - vehicules_<CIS>
-   - journal_<CIS>
-*/
-function shouldSyncRESERV(key){
-  return key && (
-    key.startsWith("reservations_") ||
-    key.startsWith("vehicules_")    ||
-    key.startsWith("journal_")
-  );
-}
-
-/* 🔄 Cloud ➜ Local */
-async function syncRESERVFromCloud(){
-  try{
-    if(typeof db === "undefined"){
-      console.warn("Firestore non initialisé");
-      return;
-    }
-
-    const snap = await db.collection("accueilcs").get();
-    snap.forEach(doc=>{
-      const key = doc.id;
-      if(shouldSyncRESERV(key)){
-        localStorage.setItem(key, JSON.stringify(doc.data()));
-      }
-    });
-    console.log("RESERV : sync Firestore → localStorage OK");
-  }catch(e){
-    console.error("syncRESERVFromCloud", e);
-  }
-}
-
-/* 🔄 Local ➜ Cloud */
-(function(){
-  const oldSet = localStorage.setItem.bind(localStorage);
-  localStorage.setItem = function(key, val){
-    oldSet(key, val);
-    if(shouldSyncRESERV(key)){
-      try{
-        cloudSetJSON(key, JSON.parse(val));
-      }catch(e){}
-    }
-  };
-
-  const oldRemove = localStorage.removeItem.bind(localStorage);
-  localStorage.removeItem = function(key){
-    if(shouldSyncRESERV(key)){
-      try{
-        db.collection("accueilcs").doc(key).delete();
-      }catch(_){}
-    }
-    oldRemove(key);
-  };
-})();
-</script>
 <script>
 /* ===== Helpers ===== */
-function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;","<": "&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
-function toMinutes(hhmm){ const [h,m]=String(hhmm||"").split(":").map(x=>parseInt(x||"0",10)); return (isNaN(h)?0:h)*60+(isNaN(m)?0:m); }
-function fmtDDMMYYYY(iso){ try{ const [Y,M,D]=String(iso||"").split("-"); return [D,M,Y].join("-"); }catch(_){ return iso||""; } }
-function vehKey(name){ try{ return String(name||"").trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').toLowerCase(); }catch(_){ return String(name||"").trim().toLowerCase(); } }
-function vehId(name){ return vehKey(name).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
-function overlap(aStart,aEnd,bStart,bEnd){ return aStart < bEnd && bStart < aEnd; }
-function statusBadge(s){ if(s==="approved")return'<span class="badge approved">Acceptée</span>'; if(s==="rejected")return'<span class="badge rejected">Refusée</span>'; return'<span class="badge pending">En attente</span>'; }
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g, m => (
+    {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]
+  ));
+}
+function toMinutes(hhmm){
+  const [h,m]=String(hhmm||"").split(":").map(x=>parseInt(x||"0",10));
+  return (isNaN(h)?0:h)*60+(isNaN(m)?0:m);
+}
+function fmtDDMMYYYY(iso){
+  try{
+    const [Y,M,D]=String(iso||"").split("-");
+    return [D,M,Y].join("-");
+  }catch(_){ return iso||""; }
+}
+function vehKey(name){
+  try{
+    return String(name||"").trim()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/\s+/g,' ').toLowerCase();
+  }catch(_){ return String(name||"").trim().toLowerCase(); }
+}
+function vehId(name){
+  return vehKey(name).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+function overlap(aStart,aEnd,bStart,bEnd){
+  return aStart < bEnd && bStart < aEnd;
+}
+function statusBadge(s){
+  if(s==="approved")return'<span class="badge approved">Acceptée</span>';
+  if(s==="rejected")return'<span class="badge rejected">Refusée</span>';
+  return'<span class="badge pending">En attente</span>';
+}
 
 /* === Helpers dates multi-jours === */
 function getDateStart(r){
@@ -352,20 +317,44 @@ function computeTs(r){
 
 /* ===== Contexte ===== */
 let ctx={user:null,cis:"",keyVehs:"",keyRes:""};
-function robustSession(){ try{const raw=localStorage.getItem("csver_session");if(!raw)return null;const s=JSON.parse(raw);return s&&typeof s==="object"?s:null;}catch(_){return null;} }
+
+function robustSession(){
+  try{
+    const raw=localStorage.getItem("csver_session");
+    if(!raw) return null;
+    const s=JSON.parse(raw);
+    return s && typeof s==="object" ? s : null;
+  }catch(_){ return null; }
+}
 function getDisplayName(u){
-  const n=(((u?.prenom||"")+" "+(u?.nom||"")).trim()); if(n) return n;
-  try{ const fiche=JSON.parse(localStorage.getItem("csver_user_"+(u?.matricule||""))||"null"); const n2=(((fiche?.prenom||"")+" "+(fiche?.nom||"")).trim()); if(n2) return n2; }catch(_){}
-  try{ const agents=JSON.parse(localStorage.getItem("agents_data")||"[]"); const hit=agents.find(a=>a.matricule===u?.matricule); if(hit){ const n3=(((hit.prenom||"")+" "+(hit.nom||"")).trim()); return n3||hit.nom||hit.prenom||u?.matricule||"Agent"; } }catch(_){}
+  const n=(((u?.prenom||"")+" "+(u?.nom||"")).trim());
+  if(n) return n;
+
+  try{
+    const fiche=JSON.parse(localStorage.getItem("csver_user_"+(u?.matricule||""))||"null");
+    const n2=(((fiche?.prenom||"")+" "+(fiche?.nom||"")).trim());
+    if(n2) return n2;
+  }catch(_){}
+
+  try{
+    const agents=JSON.parse(localStorage.getItem("agents_data")||"[]");
+    const hit=agents.find(a=>a.matricule===u?.matricule);
+    if(hit){
+      const n3=(((hit.prenom||"")+" "+(hit.nom||"")).trim());
+      return n3||hit.nom||hit.prenom||u?.matricule||"Agent";
+    }
+  }catch(_){}
+
   return u?.matricule||"Agent";
 }
 function fillAgentField(force=false){
   const input=document.getElementById("agentName"); if(!input) return;
   const sess=robustSession(); const name=sess?getDisplayName(sess):"Agent";
-  if(force||!input.value) input.value=name; if(!input.value) input.value="Agent";
+  if(force||!input.value) input.value=name;
+  if(!input.value) input.value="Agent";
 }
 
-/* ===== Roles ===== */
+/* ===== Roles / permissions ===== */
 function _norm(s){
   try{
     return String(s||"")
@@ -425,14 +414,19 @@ function readReservations(){
     return computeTs(r);
   });
 }
-function saveReservations(arr){ localStorage.setItem(ctx.keyRes, JSON.stringify(arr)); }
+function saveReservations(arr){
+  localStorage.setItem(ctx.keyRes, JSON.stringify(arr));
+}
 
 /* ===== Formulaire ===== */
-function clearForm(){ 
-  document.getElementById("motif").value=""; 
-  document.getElementById("destination").value=""; 
+function clearForm(){
+  document.getElementById("motif").value="";
+  document.getElementById("destination").value="";
 }
-function validateFullHour(hhmm){ const [h]=String(hhmm||"").split(":"); return h?`${h.padStart(2,"0")}:00`:"00:00"; }
+function validateFullHour(hhmm){
+  const [h]=String(hhmm||"").split(":");
+  return h ? `${h.padStart(2,"0")}:00` : "00:00";
+}
 
 function submitReservation(evt){
   if(evt&&typeof evt.preventDefault==="function") evt.preventDefault();
@@ -444,9 +438,9 @@ function submitReservation(evt){
 
   let h1=document.getElementById("heureDebut").value;
   let h2=document.getElementById("heureFin").value;
-  h1=validateFullHour(h1); 
+  h1=validateFullHour(h1);
   h2=validateFullHour(h2);
-  document.getElementById("heureDebut").value=h1; 
+  document.getElementById("heureDebut").value=h1;
   document.getElementById("heureFin").value=h2;
 
   const motif=document.getElementById("motif").value.trim();
@@ -482,32 +476,32 @@ function submitReservation(evt){
     return false;
   }
 
-  const entry={ 
+  const entry={
     id:"res_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),
     cis:ctx.cis,
-    vehId:"", 
+    vehId:"",
     vehicule:"",
     agent,
     date: dateDebut, // compat
     dateDebut,
     dateFin,
-    h1, h2, 
+    h1, h2,
     m1, m2,
     tsStart, tsEnd,
-    motif, 
+    motif,
     destination:dest,
-    createdTs:Date.now(), 
-    status:"pending", 
-    createdBy:ctx.user?.matricule||agent 
+    createdTs:Date.now(),
+    status:"pending",
+    createdBy:ctx.user?.matricule||agent
   };
 
-  const all=readReservations(); 
-  all.push(entry); 
+  const all=readReservations();
+  all.push(entry);
   saveReservations(all);
-  renderRequests(); 
-  renderUpcoming(); 
-  clearForm(); 
-  alert("Demande enregistrée (En attente, véhicule à affecter)."); 
+  renderRequests();
+  renderUpcoming();
+  clearForm();
+  alert("Demande enregistrée (En attente, véhicule à affecter).");
   return false;
 }
 
@@ -517,14 +511,13 @@ function vehicleSelectHtml(selectedId, selectedLabel){
   const currentId=selectedId||(selectedLabel?vehId(selectedLabel):"");
   const opts=['<option value="">— Choisir —</option>'].concat(
     vehs.slice().sort((a,b)=>String(a.nom||"").localeCompare(String(b.nom||""),"fr",{sensitivity:"base"}))
-      .map(v=>{ const id=vehId(v.nom); const sel=(id===currentId)?' selected':''; return `<option value="${id}" data-label="${escapeHtml(v.nom)}"${sel}>${escapeHtml(v.nom)}${v.etat?(' — '+escapeHtml(v.etat)):""}</option>`; })
+      .map(v=>{
+        const id=vehId(v.nom);
+        const sel=(id===currentId)?' selected':'';
+        return `<option value="${id}" data-label="${escapeHtml(v.nom)}"${sel}>${escapeHtml(v.nom)}${v.etat?(' — '+escapeHtml(v.etat)):""}</option>`;
+      })
   );
   return `<select data-role="vehsel" class="vehsel" style="padding:6px;border:1px solid #e2e8f0;border-radius:8px">${opts.join("")}</select>`;
-}
-function statusBadge(s){
-  if(s==="approved") return '<span class="badge approved">Acceptée</span>';
-  if(s==="rejected") return '<span class="badge rejected">Refusée</span>';
-  return '<span class="badge pending">En attente</span>';
 }
 function renderRequests(){
   const tbody=document.querySelector("#reqTable tbody");
@@ -533,7 +526,9 @@ function renderRequests(){
     .sort((a,b)=> a.tsStart - b.tsStart);
 
   tbody.innerHTML = rows.map(r=>{
-    const vehCell = isManager()? vehicleSelectHtml(r.vehId||"", r.vehicule||"") : (r.vehicule?escapeHtml(r.vehicule):"—");
+    const vehCell = isManager()
+      ? vehicleSelectHtml(r.vehId||"", r.vehicule||"")
+      : (r.vehicule?escapeHtml(r.vehicule):"—");
     const acts = isManager()
       ? `<button class="small-btn ok" onclick="approveWithVehicle('${r.id}', this)">Accepter</button>
          <button class="small-btn danger" onclick="setStatus('${r.id}','rejected')">Refuser</button>`
@@ -551,12 +546,15 @@ function renderRequests(){
   }).join("") || `<tr><td colspan="8" style="color:#666;padding:10px">Aucune demande en attente.</td></tr>`;
 }
 
-/* ===== Acceptation avec contrôle de conflit (bloquant) ===== */
+/* ===== Acceptation avec contrôle de conflit ===== */
 function approveWithVehicle(id, btn){
   const tr=btn.closest("tr");
   const sel=tr?tr.querySelector('select.vehsel'):null;
   const vehIdSel=sel?sel.value:"";
-  if(!vehIdSel){ alert("Veuillez choisir un véhicule pour accepter la demande."); return; }
+  if(!vehIdSel){
+    alert("Veuillez choisir un véhicule pour accepter la demande.");
+    return;
+  }
   const label=sel.options[sel.selectedIndex]?.getAttribute('data-label')||sel.options[sel.selectedIndex]?.text||"";
   const all=readReservations();
   const idx=all.findIndex(r=>r.id===id); if(idx<0) return;
@@ -575,26 +573,32 @@ function approveWithVehicle(id, btn){
     return;
   }
 
-  all[idx].vehId=vehIdSel; 
-  all[idx].vehicule=label; 
-  all[idx].status="approved"; 
-  all[idx].statusTs=Date.now(); 
+  all[idx].vehId=vehIdSel;
+  all[idx].vehicule=label;
+  all[idx].status="approved";
+  all[idx].statusTs=Date.now();
   all[idx].statusBy=getDisplayName(ctx.user);
   computeTs(all[idx]);
 
   saveReservations(all);
-  renderRequests(); 
-  renderUpcoming(); 
+  renderRequests();
+  renderUpcoming();
 }
 
 /* ===== Refus ===== */
 function setStatus(id, status){
   const all=readReservations();
   const idx=all.findIndex(r=>r.id===id); if(idx<0) return;
-  all[idx].status=status; all[idx].statusTs=Date.now(); all[idx].statusBy=getDisplayName(ctx.user);
-  if(status==="rejected"){ all[idx].vehId=""; all[idx].vehicule=""; }
+  all[idx].status=status;
+  all[idx].statusTs=Date.now();
+  all[idx].statusBy=getDisplayName(ctx.user);
+  if(status==="rejected"){
+    all[idx].vehId="";
+    all[idx].vehicule="";
+  }
   saveReservations(all);
-  renderRequests(); renderUpcoming();
+  renderRequests();
+  renderUpcoming();
 }
 
 /* ===== A venir (acceptées non terminées) ===== */
@@ -618,7 +622,7 @@ function renderUpcoming(){
   `).join("") || `<tr><td colspan="7" style="color:#666;padding:10px">Aucune réservation acceptée à venir.</td></tr>`;
 }
 
-/* ===== Historique (créneaux terminés, tous statuts) ===== */
+/* ===== Historique ===== */
 function openHistory(){
   const m=document.getElementById("histModal"); if(!m) return;
   document.getElementById("histFilter").value="all";
@@ -659,10 +663,16 @@ function renderHistory(){
 
 /* ===== PURGE ADMIN ===== */
 function purgeAllReservations(){
-  if(!isAdmin()){ alert("Accès refusé : réservé aux administrateurs."); return; }
+  if(!isAdmin()){
+    alert("Accès refusé : réservé aux administrateurs.");
+    return;
+  }
   const all = readReservations();
   const count = all.length;
-  if(!count){ alert("Aucune réservation à supprimer."); return; }
+  if(!count){
+    alert("Aucune réservation à supprimer.");
+    return;
+  }
 
   if(!confirm(`⚠️ Vous allez supprimer ${count} réservation(s) (passées et futures) pour le CIS “${ctx.cis}”.\n\nConfirmer ?`)) return;
 
@@ -695,11 +705,18 @@ function purgeAllReservations(){
 /* ===== Init & Sync ===== */
 function loadSession(){
   const u=robustSession();
-  if(!u){ alert("Session expirée."); try{window.location.href="login.html";}catch(_){ } return; }
-  ctx.user=u; ctx.cis=Array.isArray(u.cis)?u.cis[0]:u.cis;
-  ctx.keyVehs="vehicules_"+ctx.cis; ctx.keyRes="reservations_"+ctx.cis;
+  if(!u){
+    alert("Session expirée.");
+    try{window.location.href="login.html";}catch(_){}
+    return;
+  }
+  ctx.user=u;
+  ctx.cis=Array.isArray(u.cis)?u.cis[0]:u.cis;
+  ctx.keyVehs="vehicules_"+ctx.cis;
+  ctx.keyRes="reservations_"+ctx.cis;
 
-  const cisLbl=document.getElementById("cisLabel"); if(cisLbl) cisLbl.textContent="Centre de Secours "+ctx.cis;
+  const cisLbl=document.getElementById("cisLabel");
+  if(cisLbl) cisLbl.textContent="Centre de Secours "+ctx.cis;
 
   const today=new Date().toISOString().slice(0,10);
   const dDeb=document.getElementById("dateDebut");
@@ -733,39 +750,48 @@ function loadSession(){
   const btn = document.getElementById("btnPurgeAll");
   if(btn) btn.style.display = isAdmin() ? "" : "none";
 
-  renderRequests(); renderUpcoming();
+  renderRequests();
+  renderUpcoming();
 }
 function ensureAgentSoon(){
   let tries=0; const max=8;
-  const t=setInterval(()=>{ fillAgentField(); tries++; if(document.getElementById("agentName")?.value) clearInterval(t); if(tries>=max) clearInterval(t); },200);
+  const t=setInterval(()=>{
+    fillAgentField();
+    tries++;
+    if(document.getElementById("agentName")?.value) clearInterval(t);
+    if(tries>=max) clearInterval(t);
+  },200);
 }
+
 window.addEventListener("storage",(e)=>{
   try{
     if(!e.key) return;
-    if(e.key==="csver_session"||e.key.startsWith("csver_user_")||e.key==="agents_data"){ 
+    if(e.key==="csver_session"||e.key.startsWith("csver_user_")||e.key==="agents_data"){
       fillAgentField(true);
       const btn = document.getElementById("btnPurgeAll");
       if(btn) btn.style.display = isAdmin() ? "" : "none";
     }
     if(!ctx.cis) return;
-    if(e.key===("reservations_"+ctx.cis)||e.key===("vehicules_"+ctx.cis)){ 
-      renderRequests(); 
-      renderUpcoming(); 
+    if(e.key===("reservations_"+ctx.cis)||e.key===("vehicules_"+ctx.cis)){
+      renderRequests();
+      renderUpcoming();
     }
   }catch(_){}
 });
 window.addEventListener("focus", ensureAgentSoon);
 window.addEventListener("pageshow", ensureAgentSoon);
+
 document.addEventListener("DOMContentLoaded", async ()=>{
   try{
-    await syncRESERVFromCloud();
+    // 🔁 Synchro globale : Firestore → localStorage pour toutes les clés partagées
+    await syncAccueilFromCloud();
   }catch(e){
-    console.error("syncRESERVFromCloud init error", e);
+    console.error("syncAccueilFromCloud init error", e);
   }
   loadSession();
   ensureAgentSoon();
 });
-
 </script>
+
 </body>
 </html>
