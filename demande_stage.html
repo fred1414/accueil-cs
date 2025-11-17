@@ -116,65 +116,6 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="cloud-storage.js"></script>
 
-<script>
-/* =======================================================
-   🔁 Synchro Messages Stage <-> Firestore
-   ======================================================= */
-
-// On ne synchronise que les clés messages_<cis>
-function shouldSyncMsgKey(key){
-  return key && key.startsWith("messages_");
-}
-
-// 🔄 Cloud → Local au chargement
-async function syncStageMessagesFromCloud(){
-  try{
-    if(typeof db === "undefined"){
-      console.warn("Firestore non initialisé.");
-      return;
-    }
-    const snap = await db.collection("accueilcs").get();
-    snap.forEach(doc=>{
-      const id = doc.id;
-      if(shouldSyncMsgKey(id)){
-        try{
-          localStorage.setItem(id, JSON.stringify(doc.data()));
-        }catch(e){
-          console.error("Erreur cache local stage", id, e);
-        }
-      }
-    });
-    console.log("Stage : sync Firestore → localStorage OK");
-  }catch(e){
-    console.error("syncStageMessagesFromCloud", e);
-  }
-}
-
-// 🔄 Local → Cloud
-(function(){
-  const origSet = localStorage.setItem.bind(localStorage);
-  localStorage.setItem = function(key, val){
-    origSet(key, val);
-    if(shouldSyncMsgKey(key)){
-      try{
-        cloudSetJSON(key, JSON.parse(val));
-      }catch(e){
-        console.error("cloudSetJSON stage", e);
-      }
-    }
-  };
-
-  const origRemove = localStorage.removeItem.bind(localStorage);
-  localStorage.removeItem = function(key){
-    if(shouldSyncMsgKey(key)){
-      try{
-        db.collection("accueilcs").doc(key).delete();
-      }catch(_){}
-    }
-    origRemove(key);
-  };
-})();
-</script>
 
 
 <script>
@@ -336,8 +277,17 @@ function init(){
 
 /* Réactivité aux changements */
 window.addEventListener('DOMContentLoaded', async ()=>{
-  await syncStageMessagesFromCloud();   // 🔁 charge Firestore → localStorage
-  init();                               // puis interface
+
+  // 🔁 Synchronisation globale Accueil ↔ Firestore (messages_, journal_, vehicules_, etc.)
+  if (typeof syncAccueilFromCloud === "function") {
+    try {
+      await syncAccueilFromCloud();
+    } catch(e) {
+      console.error("Erreur syncAccueilFromCloud :", e);
+    }
+  }
+
+  init();  // puis interface
 });
 window.addEventListener('storage',(e)=>{
   try{
@@ -348,3 +298,4 @@ window.addEventListener('storage',(e)=>{
 </script>
 </body>
 </html>
+
