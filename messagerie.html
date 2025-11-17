@@ -533,7 +533,21 @@ function forwardFromModal(){
 function deleteFromModal(){ if(!openedMsg) return; const id=openedMsg.id; closeRead(); deleteMessage(id); }
 
 function quickReply(id){const m=readMessages().find(x=>x.id===id); if(!m) return; resetComposer(); addRecipient({matricule:m.from.matricule,display:m.from.display}); document.getElementById('subject').value = m.subject.startsWith('Re: ')? m.subject : 'Re: '+m.subject; document.getElementById('body').value = `\n\n— Le ${fmtDate(m.ts)}, ${m.from.display} a écrit :\n${m.body}`; window.scrollTo({top:0,behavior:'smooth'});}
-function forward(id){const m=readMessages().find(x=>x.id===id); if(!m) return; resetComposer(); document.getElementById('subject').value = m.subject.startsWith('Tr: ')? m.subject : 'Tr: '+m.subject; document.getElementById('body').value = `${m.body}\n\n— Transféré par ${getDisplayName(ctx.user)} (${fmtDate(Date.now())})`; window.scrollTo({top:0,behavior:'smooth');}}
+function forward(id){
+  const m = readMessages().find(x => x.id === id);
+  if (!m) return;
+
+  resetComposer();
+
+  document.getElementById('subject').value =
+    m.subject.startsWith('Tr: ') ? m.subject : 'Tr: ' + m.subject;
+
+  document.getElementById('body').value =
+    `${m.body}\n\n— Transféré par ${getDisplayName(ctx.user)} (${fmtDate(Date.now())})`;
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 
 /* ===== Delete ===== */
 function deleteMessage(id){ const arr=readMessages(); const idx=arr.findIndex(x=>x.id===id); if(idx<0) return; if(!confirm('Supprimer ce message ?')) return; arr.splice(idx,1); saveMessages(arr); renderInbox(); renderSent(); }
