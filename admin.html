@@ -213,54 +213,6 @@
      Firestore automatiquement.
    =================================================== */
 
-async function syncUsersFromCloud(){
-  try{
-    if (typeof db === "undefined") {
-      console.warn("Firestore non disponible, admin en mode localStorage uniquement.");
-      return;
-    }
-    const snap = await db.collection("accueilcs").get();
-    snap.forEach(doc=>{
-      if(doc.id.startsWith("csver_user_")){
-        try{
-          localStorage.setItem(doc.id, JSON.stringify(doc.data()));
-        }catch(e){
-          console.error("Erreur lors du cache local", e);
-        }
-      }
-    });
-    console.log("Synchronisation Firestore → localStorage terminée.");
-  }catch(e){
-    console.error("syncUsersFromCloud error", e);
-  }
-}
-
-/* Interception de localStorage.setItem / removeItem
-   pour synchroniser automatiquement avec Firestore */
-(function(){
-  const origSetItem = localStorage.setItem.bind(localStorage);
-  localStorage.setItem = function(key, value){
-    origSetItem(key, value);
-    if(key.startsWith("csver_user_") && typeof cloudSetJSON === "function"){
-      try{
-        const obj = JSON.parse(value);
-        cloudSetJSON(key, obj); // envoi dans Firestore (collection "accueilcs")
-      }catch(e){
-        console.error("cloudSetJSON error", e);
-      }
-    }
-  };
-
-  const origRemoveItem = localStorage.removeItem.bind(localStorage);
-  localStorage.removeItem = function(key){
-    if(key.startsWith("csver_user_") && typeof db !== "undefined"){
-      db.collection("accueilcs").doc(key).delete().catch(err=>{
-        console.warn("Suppression Firestore échouée (non bloquant)", err);
-      });
-    }
-    origRemoveItem(key);
-  };
-})();
 
 /* ---- Liste CIS ---- */
 const cisListe = [
@@ -1042,20 +994,11 @@ function renderDirectory(){
 document.getElementById("search").addEventListener("input",e=>renderTable(e.target.value));
 
 window.addEventListener("DOMContentLoaded", async ()=>{
-  // 🔥 D'abord, on ramène toutes les fiches depuis Firestore
-  try{
-    await syncUsersFromCloud();
-  }catch(e){
-    console.error(e);
-  }
+  // 🔄 Récupération Firestore → localStorage (automatique via cloud-storage.js)
+  await syncAccueilFromCloud();
 
-  // Puis on affiche avec les données (localStorage rempli)
   populateCisPrincipal("");
   renderTable();
-
-  // construire le grid des permissions (vide par défaut)
-  document.getElementById('permPrimaryGrid').innerHTML =
-    makePermCheckboxes('primary', defaultPerms());
 });
 
 /* ============================================================
