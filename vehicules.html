@@ -309,7 +309,7 @@ let user=null,key="",vehicules=[],currentVehiculeIndex=null;
 let editingVehIndex=null, editingHistTs=null;
 const SEVERITY={ "Disponible":0,"Mineur":1,"Atelier":2,"Pret":3,"Indispo":4 };
 
-/* ====== Normalisation des données (comme sur suivi_vehicules) ====== */
+/* ====== Normalisation des données (gère le format {items:[...]} de Firestore) ====== */
 function normalizeVehicules(raw){
   if(Array.isArray(raw)) return raw;              // déjà un tableau
   if(raw && Array.isArray(raw.items)) return raw.items; // objet {items:[]}
@@ -657,5 +657,6 @@ function printAnomalies(){
   w.document.close();
 }
 </script>
+
 </body>
 </html>
