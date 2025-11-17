@@ -175,6 +175,7 @@ async function syncVehiculesFromCloud(){
     snap.forEach(doc=>{
       const key = doc.id;
       if(shouldSyncVehicules(key)){
+        // On stocke tel quel, on normalisera à la lecture
         localStorage.setItem(key, JSON.stringify(doc.data()));
       }
     });
@@ -250,6 +251,16 @@ function hasVehiculesAccess(session){
   }catch(_){ return false; }
 }
 
+/* ====== NORMALISATION DES DONNÉES ====== */
+function normalizeVehicules(raw){
+  // Cas 1 : déjà un tableau
+  if(Array.isArray(raw)) return raw;
+  // Cas 2 : format Firestore { items: [...], __type:'array' }
+  if(raw && Array.isArray(raw.items)) return raw.items;
+  // Cas 3 : rien ou format inconnu
+  return [];
+}
+
 /* ====== INIT ====== */
 window.addEventListener("DOMContentLoaded", async ()=>{
   // 1️⃣ Sync Firestore → localStorage
@@ -275,7 +286,10 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   key = "vehicules_" + cis;
   document.getElementById("cis-label").textContent = "CIS : " + cis;
 
-  vehicules = JSON.parse(localStorage.getItem(key) || "[]");
+  // 5️⃣ Chargement + normalisation
+  const raw = JSON.parse(localStorage.getItem(key) || "[]");
+  vehicules = normalizeVehicules(raw);
+
   ensureIds();
   saveAll();
   render();
@@ -445,7 +459,7 @@ function deleteVehicule(id){
 }
 
 function escapeHtml(s){
-  return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+  return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;","\">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
 }
 
 function toast(msg){
