@@ -126,7 +126,7 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
   <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png" alt="Logo SDIS 30">
   <div>
     <div class="title">Réservations véhicules</div>
-    <div class="subtitle" id="cisLabel">—</div>
+    <div class="subtitle" id="cisLabel">Centre de Secours</div>
   </div>
   <button class="acceuil-btn" onclick="goAccueil()">⟵ Accueil</button>
 </header>
@@ -202,7 +202,6 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
       <h2>⏭️ Réservations à venir</h2>
       <div class="modal-actions">
         <button class="small-btn" onclick="openHistory()">📚 Historique</button>
-        <!-- Bouton admin (affiché si isAdmin === true) -->
         <button id="btnPurgeAll" class="small-btn danger" style="display:none" onclick="purgeAllReservations()">🗑️ Purger toutes les réservations</button>
       </div>
     </div>
@@ -255,10 +254,14 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
 
 <footer>© SDIS 30 — Réservations véhicules — 2025</footer>
 
+<!-- =======================================================
+     🔁 SYNCHRO (on laisse ton cloud-storage.js faire le boulot)
+   ======================================================= -->
+
 <script>
 /* ===== Helpers ===== */
 function escapeHtml(s){
-  return String(s||"").replace(/[&<>"']/g, m => (
+  return String(s||"").replace(/[&<>"']/g,m=>(
     {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]
   ));
 }
@@ -282,9 +285,7 @@ function vehKey(name){
 function vehId(name){
   return vehKey(name).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 }
-function overlap(aStart,aEnd,bStart,bEnd){
-  return aStart < bEnd && bStart < aEnd;
-}
+function overlap(aStart,aEnd,bStart,bEnd){ return aStart < bEnd && bStart < aEnd; }
 function statusBadge(s){
   if(s==="approved")return'<span class="badge approved">Acceptée</span>';
   if(s==="rejected")return'<span class="badge rejected">Refusée</span>';
@@ -292,12 +293,8 @@ function statusBadge(s){
 }
 
 /* === Helpers dates multi-jours === */
-function getDateStart(r){
-  return r.dateDebut || r.date || "";
-}
-function getDateEnd(r){
-  return r.dateFin || r.date || "";
-}
+function getDateStart(r){ return r.dateDebut || r.date || ""; }
+function getDateEnd(r){ return r.dateFin || r.date || ""; }
 function fmtDateRange(d1,d2){
   if(!d1) return "";
   if(!d2 || d1===d2) return fmtDDMMYYYY(d1);
@@ -329,13 +326,11 @@ function robustSession(){
 function getDisplayName(u){
   const n=(((u?.prenom||"")+" "+(u?.nom||"")).trim());
   if(n) return n;
-
   try{
     const fiche=JSON.parse(localStorage.getItem("csver_user_"+(u?.matricule||""))||"null");
     const n2=(((fiche?.prenom||"")+" "+(fiche?.nom||"")).trim());
     if(n2) return n2;
   }catch(_){}
-
   try{
     const agents=JSON.parse(localStorage.getItem("agents_data")||"[]");
     const hit=agents.find(a=>a.matricule===u?.matricule);
@@ -344,17 +339,18 @@ function getDisplayName(u){
       return n3||hit.nom||hit.prenom||u?.matricule||"Agent";
     }
   }catch(_){}
-
   return u?.matricule||"Agent";
 }
 function fillAgentField(force=false){
-  const input=document.getElementById("agentName"); if(!input) return;
-  const sess=robustSession(); const name=sess?getDisplayName(sess):"Agent";
-  if(force||!input.value) input.value=name;
+  const input=document.getElementById("agentName");
+  if(!input) return;
+  const sess=robustSession();
+  const name=sess?getDisplayName(sess):"Agent";
+  if(force || !input.value) input.value=name;
   if(!input.value) input.value="Agent";
 }
 
-/* ===== Roles / permissions ===== */
+/* ===== Roles ===== */
 function _norm(s){
   try{
     return String(s||"")
@@ -384,7 +380,6 @@ function isManager(){
   try{
     const role = _norm(ctx.user?.role||"");
     if(["spp","sog spv","sog","admin","commandement"].includes(role)) return true;
-
     const perms = _getPermsForCurrentCis();
     if(!perms) return false;
     return !!(perms.sog || perms.admin || perms["véhicules"]);
@@ -394,7 +389,6 @@ function isAdmin(){
   try{
     const role = _norm(ctx.user?.role||"");
     if(["admin","commandement"].includes(role)) return true;
-
     const perms = _getPermsForCurrentCis();
     return !!(perms && perms.admin);
   }catch(_){ return false; }
@@ -403,38 +397,49 @@ function isAdmin(){
 /* ===== Navigation ===== */
 function goAccueil(){ window.location.href="index.html"; }
 
-/* ===== Storage ===== */
+/* ===== Storage (corrigé Firestore objet -> tableau) ===== */
+
 function rawToArray(raw){
-  // 1) Si c’est déjà un tableau → OK
+  // 1) déjà un vrai tableau
   if (Array.isArray(raw)) return raw;
 
-  // 2) Si c’est un objet Firestore de type { "0": {...}, "1": {...} }
+  // 2) objet type { "0": {...}, "1": {...} }
   if (raw && typeof raw === "object") {
     const keys = Object.keys(raw);
     if (keys.length && keys.every(k => /^\d+$/.test(k))) {
       return keys
-        .sort((a, b) => Number(a) - Number(b))
+        .sort((a,b)=>Number(a)-Number(b))
         .map(k => raw[k]);
     }
   }
 
-  // 3) Sinon → tableau vide
+  // 3) sinon, rien
   return [];
 }
 
 function readReservations(){
-  const raw = JSON.parse(localStorage.getItem(ctx.keyRes) || "[]");
+  const key = ctx.keyRes || "";
+  let raw;
+  try{
+    raw = JSON.parse(localStorage.getItem(key) || "[]");
+  }catch(_){
+    raw = [];
+  }
+
   const arr = rawToArray(raw);
 
-  return arr.map(r => {
-    if (!r) return r;
+  console.log("RESERV readReservations key=", key, "raw=", raw, "-> arr length", arr.length);
 
-    // compatibilité ancienne version
-    if (!r.dateDebut && r.date) r.dateDebut = r.date;
-    if (!r.dateFin && r.date)   r.dateFin   = r.date;
-
+  return arr.map(r=>{
+    if(!r) return r;
+    if(!r.dateDebut && r.date) r.dateDebut = r.date;
+    if(!r.dateFin && r.date)   r.dateFin   = r.date;
     return computeTs(r);
   });
+}
+
+function saveReservations(arr){
+  localStorage.setItem(ctx.keyRes, JSON.stringify(arr));
 }
 
 /* ===== Formulaire ===== */
@@ -453,7 +458,7 @@ function submitReservation(evt){
   const agent=(document.getElementById("agentName").value||"").trim()||getDisplayName(ctx.user);
 
   const dateDebut=document.getElementById("dateDebut").value;
-  let   dateFin  =document.getElementById("dateFin").value;
+  const dateFin  =document.getElementById("dateFin").value;
 
   let h1=document.getElementById("heureDebut").value;
   let h2=document.getElementById("heureFin").value;
@@ -475,14 +480,12 @@ function submitReservation(evt){
     alert("Impossible de réserver dans le passé.");
     return false;
   }
-
   if(dateFin < dateDebut){
     alert("La date de fin doit être après (ou égale à) la date de début.");
     return false;
   }
 
   const m1=toMinutes(h1), m2=toMinutes(h2);
-
   if(dateDebut===dateFin && m2<=m1){
     alert("Pour une réservation sur la même journée, l'heure de fin doit être après l’heure de début.");
     return false;
@@ -501,7 +504,7 @@ function submitReservation(evt){
     vehId:"",
     vehicule:"",
     agent,
-    date: dateDebut, // compat
+    date: dateDebut,
     dateDebut,
     dateFin,
     h1, h2,
@@ -538,6 +541,7 @@ function vehicleSelectHtml(selectedId, selectedLabel){
   );
   return `<select data-role="vehsel" class="vehsel" style="padding:6px;border:1px solid #e2e8f0;border-radius:8px">${opts.join("")}</select>`;
 }
+
 function renderRequests(){
   const tbody=document.querySelector("#reqTable tbody");
   const rows=readReservations()
@@ -545,9 +549,7 @@ function renderRequests(){
     .sort((a,b)=> a.tsStart - b.tsStart);
 
   tbody.innerHTML = rows.map(r=>{
-    const vehCell = isManager()
-      ? vehicleSelectHtml(r.vehId||"", r.vehicule||"")
-      : (r.vehicule?escapeHtml(r.vehicule):"—");
+    const vehCell = isManager()? vehicleSelectHtml(r.vehId||"", r.vehicule||"") : (r.vehicule?escapeHtml(r.vehicule):"—");
     const acts = isManager()
       ? `<button class="small-btn ok" onclick="approveWithVehicle('${r.id}', this)">Accepter</button>
          <button class="small-btn danger" onclick="setStatus('${r.id}','rejected')">Refuser</button>`
@@ -565,15 +567,12 @@ function renderRequests(){
   }).join("") || `<tr><td colspan="8" style="color:#666;padding:10px">Aucune demande en attente.</td></tr>`;
 }
 
-/* ===== Acceptation avec contrôle de conflit ===== */
+/* ===== Acceptation / refus ===== */
 function approveWithVehicle(id, btn){
   const tr=btn.closest("tr");
   const sel=tr?tr.querySelector('select.vehsel'):null;
   const vehIdSel=sel?sel.value:"";
-  if(!vehIdSel){
-    alert("Veuillez choisir un véhicule pour accepter la demande.");
-    return;
-  }
+  if(!vehIdSel){ alert("Veuillez choisir un véhicule pour accepter la demande."); return; }
   const label=sel.options[sel.selectedIndex]?.getAttribute('data-label')||sel.options[sel.selectedIndex]?.text||"";
   const all=readReservations();
   const idx=all.findIndex(r=>r.id===id); if(idx<0) return;
@@ -604,23 +603,18 @@ function approveWithVehicle(id, btn){
   renderUpcoming();
 }
 
-/* ===== Refus ===== */
 function setStatus(id, status){
   const all=readReservations();
   const idx=all.findIndex(r=>r.id===id); if(idx<0) return;
   all[idx].status=status;
   all[idx].statusTs=Date.now();
   all[idx].statusBy=getDisplayName(ctx.user);
-  if(status==="rejected"){
-    all[idx].vehId="";
-    all[idx].vehicule="";
-  }
+  if(status==="rejected"){ all[idx].vehId=""; all[idx].vehicule=""; }
   saveReservations(all);
-  renderRequests();
-  renderUpcoming();
+  renderRequests(); renderUpcoming();
 }
 
-/* ===== A venir (acceptées non terminées) ===== */
+/* ===== A venir & Historique ===== */
 function renderUpcoming(){
   const tbody=document.querySelector("#upcomingTable tbody");
   const now=Date.now();
@@ -641,7 +635,6 @@ function renderUpcoming(){
   `).join("") || `<tr><td colspan="7" style="color:#666;padding:10px">Aucune réservation acceptée à venir.</td></tr>`;
 }
 
-/* ===== Historique ===== */
 function openHistory(){
   const m=document.getElementById("histModal"); if(!m) return;
   document.getElementById("histFilter").value="all";
@@ -682,16 +675,10 @@ function renderHistory(){
 
 /* ===== PURGE ADMIN ===== */
 function purgeAllReservations(){
-  if(!isAdmin()){
-    alert("Accès refusé : réservé aux administrateurs.");
-    return;
-  }
+  if(!isAdmin()){ alert("Accès refusé : réservé aux administrateurs."); return; }
   const all = readReservations();
   const count = all.length;
-  if(!count){
-    alert("Aucune réservation à supprimer.");
-    return;
-  }
+  if(!count){ alert("Aucune réservation à supprimer."); return; }
 
   if(!confirm(`⚠️ Vous allez supprimer ${count} réservation(s) (passées et futures) pour le CIS “${ctx.cis}”.\n\nConfirmer ?`)) return;
 
@@ -726,7 +713,7 @@ function loadSession(){
   const u=robustSession();
   if(!u){
     alert("Session expirée.");
-    try{window.location.href="login.html";}catch(_){}
+    try{ window.location.href="login.html"; }catch(_){}
     return;
   }
   ctx.user=u;
@@ -772,6 +759,7 @@ function loadSession(){
   renderRequests();
   renderUpcoming();
 }
+
 function ensureAgentSoon(){
   let tries=0; const max=8;
   const t=setInterval(()=>{
@@ -782,6 +770,7 @@ function ensureAgentSoon(){
   },200);
 }
 
+/* Écoute les changements de storage (si autre onglet modifie) */
 window.addEventListener("storage",(e)=>{
   try{
     if(!e.key) return;
@@ -797,13 +786,16 @@ window.addEventListener("storage",(e)=>{
     }
   }catch(_){}
 });
+
 window.addEventListener("focus", ensureAgentSoon);
 window.addEventListener("pageshow", ensureAgentSoon);
 
 document.addEventListener("DOMContentLoaded", async ()=>{
   try{
-    // 🔁 Synchro globale : Firestore → localStorage pour toutes les clés partagées
-    await syncAccueilFromCloud();
+    // si tu utilises la nouvelle version de cloud-storage.js
+    if(typeof syncAccueilFromCloud === "function"){
+      await syncAccueilFromCloud();
+    }
   }catch(e){
     console.error("syncAccueilFromCloud init error", e);
   }
@@ -814,5 +806,3 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 
 </body>
 </html>
-
-
