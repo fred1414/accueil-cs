@@ -243,6 +243,7 @@
     <button class="save-btn" onclick="saveEditedAnomaly()">💾 Enregistrer</button>
   </div>
 </div>
+
 <!-- 🔌 Firebase + Firestore + stockage partagé -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
@@ -305,10 +306,26 @@ let user=null,key="",vehicules=[],currentVehiculeIndex=null;
 let editingVehIndex=null, editingHistTs=null;
 const SEVERITY={ "Disponible":0,"Mineur":1,"Atelier":2,"Pret":3,"Indispo":4 };
 
-function gravestEtat(h){let m="Disponible",s=0;h.forEach(x=>{const v=SEVERITY[x.level]??0;if(v>s){s=v;m=x.level}});return m;}
-function escapeHtml(s){return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;"," >":" &gt;","\"":"&quot;","'":"&#39;"}[m]||m));}
-function saveVehs(){localStorage.setItem(key,JSON.stringify(vehicules));}
-function getSessionAgentDisplay(u){const name=((u?.prenom||"")+" "+(u?.nom||"")).trim();return name||u?.matricule||"Agent";}
+function gravestEtat(h){
+  let m="Disponible",s=0;
+  h.forEach(x=>{
+    const v=SEVERITY[x.level]??0;
+    if(v>s){s=v;m=x.level}
+  });
+  return m;
+}
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g,m=>(
+    {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]||m
+  ));
+}
+function saveVehs(){
+  localStorage.setItem(key,JSON.stringify(vehicules));
+}
+function getSessionAgentDisplay(u){
+  const name=((u?.prenom||"")+" "+(u?.nom||"")).trim();
+  return name||u?.matricule||"Agent";
+}
 
 /* Autorisation édition: admin OU SPP */
 function canEdit(){
@@ -317,13 +334,18 @@ function canEdit(){
   return user.isAdmin===true || role==="admin" || role==="spp";
 }
 
-function getRadioValue(name){ const el=document.querySelector(`input[name="${name}"]:checked`); return el?el.value:null; }
+function getRadioValue(name){
+  const el=document.querySelector(`input[name="${name}"]:checked`);
+  return el?el.value:null;
+}
 function setRadioGroup(name,val){
   const yes=document.querySelector(`input[name="${name}"][value="oui"]`);
   const no=document.querySelector(`input[name="${name}"][value="non"]`);
-  if(yes&&no){ yes.checked=(val==="oui"); no.checked=(val==="non"); }
+  if(yes&&no){
+    yes.checked=(val==="oui");
+    no.checked=(val==="non");
+  }
 }
-
 
 /* ---- Init ---- */
 window.addEventListener("DOMContentLoaded", async ()=>{
@@ -337,30 +359,17 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     window.location.href="login.html";
     return;
   }
-    // Fonction qui normalise le CIS (évite les différences CIS Vergèze / VERGEZE / CIS VERGEZE)
-  function normCis(x){
-    if(!x) return "";
-    return String(x)
-      .replace(/^CIS\s*/i,"")               // retire "CIS "
-      .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // supprime accents
-      .trim()
-      .toLowerCase();
-  }
 
-  const cisRaw = Array.isArray(user.cis) ? user.cis[0] : user.cis;
-  const cis = normCis(cisRaw);
+  const cis = Array.isArray(user.cis) ? user.cis[0] : user.cis;
+  document.getElementById("cis-title").textContent = `Gestion des véhicules - CS ${cis}`;
 
-  document.getElementById("cis-title").textContent = `Gestion des véhicules - CS ${cisRaw}`;
-
-  key = "vehicules_" + cis;
-
+  key = "vehicules_" + cis;   // 🔑 même clé que dans suivi-vehicules.html
   vehicules = JSON.parse(localStorage.getItem(key) || "[]");
 
-renderVehicules();
-});   // ← fermeture manquante du init !!
+  renderVehicules();
+});
 
 function renderVehicules(){
-
   const grid=document.getElementById("vehicule-grid");
   grid.innerHTML="";
   if(vehicules.length===0){
@@ -370,7 +379,9 @@ function renderVehicules(){
   vehicules.forEach((v,i)=>{
     const card=document.createElement("div");
     card.className=`vehicule-card ${v.etat||"Disponible"}`;
-    let pretLabel=(v.etat==="Pret" && v.pretNom)?`<br><small>Pret — ${escapeHtml(v.pretNom)}</small>`:`<br><small>${escapeHtml(v.etat||"Disponible")}</small>`;
+    let pretLabel=(v.etat==="Pret" && v.pretNom)
+      ? `<br><small>Pret — ${escapeHtml(v.pretNom)}</small>`
+      : `<br><small>${escapeHtml(v.etat||"Disponible")}</small>`;
     card.innerHTML=`<strong>${escapeHtml(v.nom)}</strong>${pretLabel}`;
     card.onclick=()=>openModal(i);
     grid.appendChild(card);
@@ -395,7 +406,9 @@ function openModal(i){
   togglePretField();
   loadHistory(v);
 }
-function closeModal(){document.getElementById("vehiculeModal").style.display="none";}
+function closeModal(){
+  document.getElementById("vehiculeModal").style.display="none";
+}
 
 function togglePretField(){
   const etat=document.getElementById("vehiculeEtat").value;
@@ -409,7 +422,10 @@ function addAnomaly(){
   const etat=document.getElementById("vehiculeEtat").value;
   const text=document.getElementById("anomalyText").value.trim();
   const pretNom=document.getElementById("pretNom").value.trim();
-  if(etat!=="Disponible" && text===""){alert("Veuillez décrire l'anomalie.");return;}
+  if(etat!=="Disponible" && text===""){
+    alert("Veuillez décrire l'anomalie.");
+    return;
+  }
 
   v.history=v.history||[];
   v.pretNom=(etat==="Pret")?pretNom:"";
@@ -505,13 +521,19 @@ function closeAnomaly(vehIndex, ts){
 
 /* ---- ÉDITION via loupe ---- */
 function openEditAnomaly(vehIndex, ts){
-  if(!canEdit()){ alert("Accès réservé à un SPP ou à un administrateur."); return; }
+  if(!canEdit()){
+    alert("Accès réservé à un SPP ou à un administrateur.");
+    return;
+  }
   editingVehIndex=vehIndex;
   editingHistTs=ts;
 
   const v=vehicules[vehIndex];
   const idx=v.history.findIndex(h=>h.timestamp===ts);
-  if(idx===-1){ alert("Anomalie introuvable."); return; }
+  if(idx===-1){
+    alert("Anomalie introuvable.");
+    return;
+  }
   const h=v.history[idx];
 
   document.getElementById("editLevel").value = h.level || "Disponible";
@@ -538,11 +560,20 @@ function toggleEditFields(){
 }
 
 function saveEditedAnomaly(){
-  if(!canEdit()){ alert("Accès réservé à un SPP ou à un administrateur."); return; }
+  if(!canEdit()){
+    alert("Accès réservé à un SPP ou à un administrateur.");
+    return;
+  }
   const v=vehicules[editingVehIndex];
-  if(!v){ alert("Véhicule introuvable."); return; }
+  if(!v){
+    alert("Véhicule introuvable.");
+    return;
+  }
   const idx=v.history.findIndex(h=>h.timestamp===editingHistTs);
-  if(idx===-1){ alert("Anomalie introuvable."); return; }
+  if(idx===-1){
+    alert("Anomalie introuvable.");
+    return;
+  }
 
   const newLevel=document.getElementById("editLevel").value;
   const newText=(document.getElementById("editText").value||"").trim();
@@ -575,7 +606,9 @@ function saveEditedAnomaly(){
 
   saveVehs();
   renderVehicules();
-  if(currentVehiculeIndex===editingVehIndex){ loadHistory(v); }
+  if(currentVehiculeIndex===editingVehIndex){
+    loadHistory(v);
+  }
   closeEditModal();
 }
 
@@ -589,7 +622,10 @@ function printAnomalies(){
     if(v.etat==="Pret" && v.pretNom) etatAffiche+=" — "+v.pretNom;
     anomalies.push({vehicule:v.nom,etat:etatAffiche,desc:h.text,agent:h.agent,date:h.date});
   }));
-  if(anomalies.length===0){alert("Aucune anomalie en cours.");return;}
+  if(anomalies.length===0){
+    alert("Aucune anomalie en cours.");
+    return;
+  }
   anomalies.sort((a,b)=>a.vehicule.localeCompare(b.vehicule,"fr",{sensitivity:"base"}));
   const w=window.open("","_blank");
   const date=new Date().toLocaleString("fr-FR");
@@ -601,7 +637,9 @@ function printAnomalies(){
   </style></head><body>
   <h1>Anomalies en cours - ${escapeHtml(cis)}</h1>
   <table><thead><tr><th>Véhicule</th><th>État</th><th>Description</th><th>Agent</th><th>Date</th></tr></thead>
-  <tbody>${anomalies.map(a=>`<tr><td>${a.vehicule}</td><td>${a.etat}</td><td>${a.desc}</td><td>${a.agent}</td><td>${a.date}</td></tr>`).join("")}</tbody></table>
+  <tbody>${
+    anomalies.map(a=>`<tr><td>${a.vehicule}</td><td>${a.etat}</td><td>${a.desc}</td><td>${a.agent}</td><td>${a.date}</td></tr>`).join("")
+  }</tbody></table>
   <footer style='text-align:right;margin-top:40px;'>Généré le ${escapeHtml(date)}</footer>
   <script>window.onload=()=>window.print();<\/script></body></html>`);
   w.document.close();
@@ -609,5 +647,3 @@ function printAnomalies(){
 </script>
 </body>
 </html>
-
-
