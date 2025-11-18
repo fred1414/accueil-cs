@@ -256,7 +256,22 @@ function isSuperAdmin(){
   const s=getSession();
   return !!(s && (String(s.matricule)==='1414' || normalizeRole(s?.role)==='superadmin'));
 }
+/* --- Compte protégé : le super admin 1414 --- */
+function isProtectedUser(matriculeOrUser){
+  const m = (typeof matriculeOrUser === "string")
+    ? matriculeOrUser
+    : (matriculeOrUser && matriculeOrUser.matricule);
+  return String(m) === "1414";
+}
 
+function isSessionOwner(matricule){
+  const s = getSession();
+  return s && String(s.matricule) === String(matricule);
+}
+
+
+
+  
 /* Admin de CIS = rôle "Administrateur" OU droit 'admin' sur son CIS (principal OU secondaire) */
 function isAdminRole(){
   if(isSuperAdmin()) return true;
@@ -474,8 +489,23 @@ function renderTable(filter=""){
       const tr=document.createElement("tr");
       const sec=(u.cis?.secondaries||[]).map(s=>`${s.cis} (${s.statut||"-"})`).join(", ")||"-";
 
-      const isPrimaryMine = normCis(u.cis?.primary||"") === normCis(mine||"");
-      const canDelete = isSuperAdmin() || (!isCmd()) || (isCmd() && isPrimaryMine);
+            const isPrimaryMine = normCis(u.cis?.primary||"") === normCis(mine||"");
+      const protectedUser = isProtectedUser(u.matricule);
+      const ownerSession = isSessionOwner(u.matricule);
+
+      // 👉 on ne peut supprimer un compte protégé que si on est SOI-MÊME ce compte
+      const canDelete = (!protectedUser || ownerSession) &&
+        (isSuperAdmin() || (!isCmd()) || (isCmd() && isPrimaryMine));
+
+      let actionsHTML = "";
+
+      // 👉 on ne voit les boutons du superadmin 1414 que si on est connecté en 1414
+      if (!protectedUser || ownerSession) {
+        actionsHTML += `<button class="btn-edit" onclick="editUser('${u.matricule}')">✏️</button>`;
+        if (canDelete) {
+          actionsHTML += ` <button class="btn-delete" onclick="deleteUser('${u.matricule}')">🗑️</button>`;
+        }
+      }
 
       tr.innerHTML=`
         <td>${u.matricule}</td>
@@ -486,17 +516,20 @@ function renderTable(filter=""){
           <div><strong>Principal :</strong> ${u.cis?.primary||"-"}</div>
           <div><strong>Secondaires :</strong> ${sec}</div>
         </td>
-        <td>
-          <button class="btn-edit" onclick="editUser('${u.matricule}')">✏️</button>
-          ${canDelete ? `<button class="btn-delete" onclick="deleteUser('${u.matricule}')">🗑️</button>` : ``}
-        </td>
+        <td>${actionsHTML}</td>
       `;
+
       tbody.appendChild(tr);
     });
 }
 
 /* --- suppression utilisateur --- */
 function deleteUser(matricule){
+  // 🔒 Protection du super admin 1414
+  if (isProtectedUser(matricule) && !isSessionOwner(matricule)) {
+    alert("Vous n'êtes pas autorisé à supprimer ce compte protégé.");
+    return;
+  }
   const raw = localStorage.getItem("csver_user_" + matricule);
   if(!raw){ alert("Utilisateur introuvable."); return; }
 
@@ -833,6 +866,12 @@ function saveUser(){
   let matricule=fldMat.value.trim(), nom=fldNom.value.trim(), prenom=fldPre.value.trim();
   let statut=statutPrincipalSel.value, cisPrimary=cisPrincipalSel.value;
 
+    // 🔒 On ne peut pas créer ou écraser le compte 1414 si on n'est pas 1414
+  if (!editMode && isProtectedUser(matricule) && !isSessionOwner(matricule)) {
+    alert("Le matricule 1414 est réservé au super administrateur.");
+    return;
+  }
+
   if(isAdminRole() && editMode && editingOriginal && !isSuperAdmin()){
     matricule=editingOriginal.matricule;
     nom=editingOriginal.nom; prenom=editingOriginal.prenom;
@@ -896,6 +935,11 @@ function saveUser(){
 }
 
 function editUser(matricule){
+   // 🔒 Protection du super admin 1414
+  if (isProtectedUser(matricule) && !isSessionOwner(matricule)) {
+    alert("Vous n'êtes pas autorisé à modifier ce compte protégé.");
+    return;
+  }
   const raw=localStorage.getItem("csver_user_"+matricule);
   if(!raw){ alert("Utilisateur introuvable."); return; }
   const u=normalizeUser(JSON.parse(raw));
