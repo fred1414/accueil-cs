@@ -370,10 +370,20 @@ function getSession(){
 function normalizeRole(r){
   if(!r) return "";
   const x = String(r).trim().toLowerCase();
-  if(["admin","administrator","administrateur","adm"].includes(x)) return "admin";
-  if(["superadmin","super admin","root"].includes(x)) return "superadmin";
+
+  // super admin en priorité
+  if (x.includes("superadmin") || x.includes("super admin") || x.includes("root")) {
+    return "superadmin";
+  }
+
+  // tous les rôles qui contiennent "admin" ou "administrateur"
+  if (x.includes("admin") || x.includes("administrateur")) {
+    return "admin";
+  }
+
   return x;
 }
+
 function isAdmin(){
   const s = getSession();
   const r = normalizeRole(s?.role);
@@ -1046,3 +1056,4 @@ window.addEventListener("DOMContentLoaded", async ()=>{
 </script>
 </body>
 </html>
+
