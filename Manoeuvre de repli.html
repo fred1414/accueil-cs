@@ -225,9 +225,9 @@ textarea{min-height:60px;resize:vertical}
 <div class="container">
   <div class="bar">
     <div class="flex">
-  <span>📘 Manœuvre de repli</span>
-  <span class="badge" id="lockBadge">Saisie : <strong>–</strong></span>
-</div>
+      <span>📘 Manœuvre de repli</span>
+      <span class="badge" id="lockBadge">Saisie : <strong>–</strong></span>
+    </div>
     <div class="actions">
       <button class="btn-grey" id="btnPrint">🖨️ Imprimer / PDF</button>
       <button class="btn-ghost" id="btnHistory">📜 Historique</button>
@@ -305,7 +305,7 @@ textarea{min-height:60px;resize:vertical}
       </table>
     </section>
 
-    <!-- 🔎 Consultation par agent (Option B) -->
+    <!-- 🔎 Consultation par agent -->
     <section id="agentCheckSection" style="margin-top:24px">
       <h3 class="section-title">Consultation par agent</h3>
       <div class="card">
@@ -357,8 +357,8 @@ const K_REPLI = "manoeuvre_repli_v1";
 function normCis(str){
   if(!str) return "";
   return String(str)
-    .replace(/^CIS\\s*/i,"")
-    .normalize("NFD").replace(/[\\u0300-\\u036f]/g,"")
+    .replace(/^CIS\s*/i,"")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
     .trim().toLowerCase();
 }
 
@@ -369,25 +369,55 @@ function getSession(){
 function normalizeRole(r){
   if(!r) return "";
   const x = String(r).trim().toLowerCase();
-
-  // super admin en priorité
-  if (x.includes("superadmin") || x.includes("super admin") || x.includes("root")) {
-    return "superadmin";
-  }
-
-  // tous les rôles qui contiennent "admin" ou "administrateur"
-  if (x.includes("admin") || x.includes("administrateur")) {
-    return "admin";
-  }
-
+  if(["admin","administrator","administrateur","adm"].includes(x)) return "admin";
+  if(["superadmin","super admin","root"].includes(x)) return "superadmin";
   return x;
 }
 
-function isAdmin(){
+/* === Alignement avec la page d'administration pour les droits === */
+
+// Cis de la session (brut)
+function myCis(){
   const s = getSession();
-  const r = normalizeRole(s?.role);
-  return r === "admin" || r === "superadmin";
+  const c = s?.cis;
+  const first = Array.isArray(c) ? (c[0] || "") : (c || "");
+  return first || "";
 }
+
+// Utilisateur connecté dans csver_user_XXXX
+function sessionAgent(){
+  const s = getSession();
+  if(!s || !s.matricule) return null;
+  const raw = localStorage.getItem("csver_user_" + s.matricule);
+  if(!raw) return null;
+  try{ return JSON.parse(raw); }catch{ return null; }
+}
+
+// Super admin = 1414 ou rôle superadmin
+function isSuperAdmin(){
+  const s = getSession();
+  return String(s?.matricule) === "1414" || normalizeRole(s?.role) === "superadmin";
+}
+
+// Admin pour le CIS courant (même logique que isAdminRole sur admin.html)
+function isAdmin(){
+  if(isSuperAdmin()) return true;
+
+  const s = getSession();
+  if(normalizeRole(s?.role) === "admin") return true; // compat éventuelle
+
+  const u = sessionAgent();
+  const mine = myCis();
+  if(!u || !mine) return false;
+
+  // sur admin.html : cis.primary + permissions.primary/admin + permissions.secondaries[monCis]/admin
+  const isPrimarySame  = normCis(u.cis?.primary || "") === normCis(mine);
+  const adminPrimary   = !!(u.permissions?.primary?.admin);
+  const adminSecondary = !!(u.permissions?.secondaries?.[mine]?.admin);
+
+  return (isPrimarySame && adminPrimary) || adminSecondary;
+}
+
 function activeCisLabel(){
   const s = getSession();
   const cis = Array.isArray(s?.cis) ? (s.cis[0]||"") : (s?.cis||"CIS Vergèze");
@@ -445,7 +475,7 @@ function displayName(raw){
 }
 function nameKey(raw){
   return String(raw||"")
-    .normalize("NFD").replace(/[\\u0300-\\u036f]/g,"")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
     .toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
 }
 
@@ -520,7 +550,7 @@ function dFR(iso){
   catch{ return iso; }
 }
 
-/* ================== UI - SELECT AGENT & SELECTION ================== */
+/* ================== UI - SELECT AGENT & SÉLECTION ================== */
 const agentInput = document.getElementById("agentInput");
 const agentsList = document.getElementById("agentsList");
 const selectedAgentsDiv = document.getElementById("selectedAgents");
@@ -642,7 +672,7 @@ function renderAgentsTable(){
   }
 }
 
-/* ========== CONSULTATION PAR AGENT (Option B) ========== */
+/* ========== CONSULTATION PAR AGENT ========== */
 const agentCheckInput = document.getElementById("agentCheckInput");
 const agentCheckResult = document.getElementById("agentCheckResult");
 
@@ -900,17 +930,17 @@ function refreshRightsAndLockUI(){
       btnLock.title = "Cliquer pour verrouiller / déverrouiller la saisie";
     } else {
       btnLock.disabled = true;
-      btnLock.title = "Réservé aux administrateurs";
+      btnLock.title = "Réservé aux administrateurs du CIS";
     }
   }
 
-  // Bouton wipe admin-only déjà correct
+  // Bouton wipe admin-only
   const btnWipe = document.getElementById("btnWipe");
   if (btnWipe) {
     btnWipe.style.display = canAdmin ? "inline-block" : "none";
   }
 
-  // Texte de droits sous "Saisie d'une manœuvre"
+  // Texte d'information sous "Saisie d'une manœuvre"
   const rightsInfo = document.getElementById("rightsInfo");
   const who = ((s?.prenom || "") + " " + (s?.nom || "")).trim() || "Utilisateur";
 
@@ -931,7 +961,6 @@ function refreshRightsAndLockUI(){
     if (el) el.disabled = disableForm;
   });
 }
-
 
 document.getElementById("btnToggleLock").onclick = ()=>{
   if(!isAdmin()){
@@ -1064,5 +1093,3 @@ window.addEventListener("DOMContentLoaded", async ()=>{
 </script>
 </body>
 </html>
-
-
