@@ -176,9 +176,14 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
         </div>
         <div style="overflow:auto">
           <table class="table" id="outTable">
-            <thead><tr>
-              <th>Date</th><th>À</th><th>Objet</th><th>Actions</th>
-            </tr></thead>
+  <thead><tr>
+    <th>Date</th>
+    <th>À</th>
+    <th>Objet</th>
+    <th>État</th> <!-- 🔍 Loupe d'état -->
+    <th>Actions</th>
+  </tr></thead>
+
             <tbody></tbody>
           </table>
         </div>
@@ -212,6 +217,30 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
   </div>
 </div>
 
+<!-- STATUS MODAL -->
+<div id="statusModal" class="modal" aria-hidden="true">
+  <div class="modal-card" style="max-width:500px">
+    <div class="modal-head">
+      <strong>État de lecture</strong>
+      <button class="small-btn" onclick="closeStatus()">Fermer</button>
+    </div>
+    <div class="modal-body">
+      <table class="table" id="statusTable">
+        <thead>
+          <tr>
+            <th>Destinataire</th>
+            <th>État</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+
+  
 <footer>© SDIS 30 — Messagerie interne — 2025</footer>
 
 <!-- 🔌 Firebase + Firestore + stockage partagé -->
@@ -484,27 +513,76 @@ function renderInbox(){
   }).join('') || `<tr><td colspan="6" style="color:#666;padding:10px">Aucun message.</td></tr>`;
 }
 
+function openReadStatus(msgId){
+  const msg = readMessages().find(m => m.id === msgId);
+  if (!msg) return;
+
+  const tbody = document.querySelector('#statusTable tbody');
+  const readBy = msg.readBy || {};
+
+  tbody.innerHTML = msg.to.map(t => {
+    const hasRead = !!readBy[t.matricule];
+
+    const icon = hasRead ? '✔️' : '⏳';
+    const title = hasRead ? 'Message lu' : 'Pas encore lu';
+
+    return `
+      <tr>
+        <td>${escapeHtml(t.display)}</td>
+        <td><span title="${title}">${icon}</span></td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('statusModal').style.display = 'flex';
+  document.getElementById('statusModal').setAttribute('aria-hidden','false');
+}
+
+function closeStatus(){
+  document.getElementById('statusModal').style.display='none';
+  document.getElementById('statusModal').setAttribute('aria-hidden','true');
+}
+
+
 function renderSent(){
-  const q=norm(document.getElementById('outSearch').value||'');
-  const tbody=document.querySelector('#outTable tbody');
-  const rows=readMessages().filter(isFromMe)
-    .filter(m=> !q || norm(m.subject).includes(q) || norm(m.body).includes(q) || norm(m.to.map(t=>t.display).join(', ')).includes(q))
-    .sort((a,b)=>b.ts-a.ts);
-  document.getElementById('outCount').textContent = rows.length+" message(s)";
-  tbody.innerHTML = rows.map(m=>{
-    const toStr=m.to.map(t=>t.display).join(', ');
+  const q = norm(document.getElementById('outSearch').value || '');
+  const tbody = document.querySelector('#outTable tbody');
+
+  const rows = readMessages().filter(isFromMe)
+    .filter(m =>
+      !q ||
+      norm(m.subject).includes(q) ||
+      norm(m.body).includes(q) ||
+      norm(m.to.map(t => t.display).join(', ')).includes(q)
+    )
+    .sort((a, b) => b.ts - a.ts);
+
+  document.getElementById('outCount').textContent = rows.length + " message(s)";
+
+  tbody.innerHTML = rows.map(m => {
+    const toWithIcons = m.to.map(t => {
+      const hasRead = !!(m.readBy && m.readBy[t.matricule]);
+      const icon = hasRead ? '✔️' : '⏳';
+      const title = hasRead ? 'Message lu' : 'Pas encore lu';
+      return `${escapeHtml(t.display)} <span title="${title}">${icon}</span>`;
+    }).join(', ');
+
     return `<tr>
       <td>${fmtDate(m.ts)}</td>
-      <td>${escapeHtml(toStr)}</td>
+      <td>${toWithIcons}</td>
       <td>${escapeHtml(m.subject)}</td>
+      <td>
+        <button class="small-btn" title="Voir l'état du message" onclick="openReadStatus('${m.id}')">🔍</button>
+      </td>
       <td>
         <button class="small-btn" onclick="openRead('${m.id}')">Ouvrir</button>
         <button class="small-btn" onclick="forward('${m.id}')">Transférer</button>
         <button class="small-btn danger" onclick="deleteMessage('${m.id}')">Supprimer</button>
       </td>
     </tr>`;
-  }).join('') || `<tr><td colspan="4" style="color:#666;padding:10px">Aucun message envoyé.</td></tr>`;
+  }).join('') || `<tr><td colspan="5" style="color:#666;padding:10px">Aucun message envoyé.</td></tr>`;
 }
+  
+
 
 /* ===== Read modal & actions ===== */
 let openedMsg=null;
