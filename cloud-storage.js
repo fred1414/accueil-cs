@@ -66,6 +66,8 @@ function shouldSyncKey(key){
   if(!key) return false;
   return key === "fma_data_v2"
       || key === "csver_themes"
+      || key === "manoeuvre_repli_v1"     // 🔵 manœuvres de repli (tous CIS)
+      || key.startsWith("repli_lock_")    // 🔵 verrou manœuvre par CIS
       || key.startsWith("vehicules_")
       || key.startsWith("journal_")
       || key.startsWith("reservations_")
@@ -141,4 +143,3 @@ window.syncAccueilFromCloud = syncAccueilFromCloud;
     origRem(key);
   };
 })();
-
