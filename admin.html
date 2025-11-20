@@ -132,6 +132,34 @@
       </div>
     </div>
 
+    <!-- 🔵 AJOUT : bloc permis + visite médicale -->
+    <div id="medPanel" class="inline-box">
+      <div style="font-weight:700;margin-bottom:6px">Suivi médical & permis</div>
+      <div class="cis-wrap">
+        <div>
+          <label style="margin-top:0;">
+            <input type="checkbox" id="permisCTitulaire" style="width:auto;margin-right:6px;">
+            Titulaire du Permis C (poids lourd)
+          </label>
+        </div>
+        <div>
+          <label>Permis C - valide jusqu'au :</label>
+          <input type="date" id="permisCDate">
+        </div>
+      </div>
+      <div class="cis-wrap">
+        <div>
+          <label>Dernière visite médicale :</label>
+          <input type="date" id="visiteMedProchaine">
+        </div>
+      </div>
+      <div class="hint">
+        La case <strong>Titulaire du Permis C</strong> active la gestion de la date de validité.
+        Ces informations sont également visibles dans la page <strong>Mes infos</strong> de l’agent.
+      </div>
+    </div>
+    <!-- 🔵 FIN AJOUT -->
+
     <!-- 🔵 Accès menus (CIS principal) -->
     <div id="permPanel" class="inline-box">
       <div class="perm-title">Accès menus (CIS principal)</div>
@@ -206,15 +234,8 @@
 <script>
 /* ===================================================
    🔥 Intégration Firestore pour les utilisateurs
-   - au chargement : on récupère les docs Firestore
-     et on les met dans localStorage
-   - ensuite : dès qu'on fait localStorage.setItem /
-     removeItem sur "csver_user_*", on répercute dans
-     Firestore automatiquement.
    =================================================== */
 
-
-/* ---- Liste CIS ---- */
 const cisListe = [
   "Aigoual","Alès","Bagnols sur Cèze","Barjac","Beaucaire","Bessèges","CODIS","Fournès",
   "Génolhac","La Grand Combe","Le Vigan","Lédignan","Les Angles","Marguerittes",
@@ -224,10 +245,7 @@ const cisListe = [
   "Vergèze","Villeneuve les Avignon"
 ];
 
-/* ---- Session ---- */
 function getSession(){ try { return JSON.parse(localStorage.getItem("csver_session")||"null"); } catch { return null; } }
-
-/* Normaliser libellés de rôles */
 function normalizeRole(r){
   if(!r) return "";
   const x = String(r).trim().toLowerCase();
@@ -242,7 +260,6 @@ function myCis(){
   return first || "";
 }
 
-/* Récupérer la fiche agent de l'utilisateur courant (par matricule) */
 function sessionAgent(){
   const s = getSession();
   if(!s || !s.matricule) return null;
@@ -251,12 +268,10 @@ function sessionAgent(){
   try { return normalizeUser(JSON.parse(raw)); } catch { return null; }
 }
 
-/* --- Autorisations --- */
 function isSuperAdmin(){
   const s=getSession();
   return !!(s && (String(s.matricule)==='1414' || normalizeRole(s?.role)==='superadmin'));
 }
-/* --- Compte protégé : le super admin 1414 --- */
 function isProtectedUser(matriculeOrUser){
   const m = (typeof matriculeOrUser === "string")
     ? matriculeOrUser
@@ -269,10 +284,6 @@ function isSessionOwner(matricule){
   return s && String(s.matricule) === String(matricule);
 }
 
-
-
-  
-/* Admin de CIS = rôle "Administrateur" OU droit 'admin' sur son CIS (principal OU secondaire) */
 function isAdminRole(){
   if(isSuperAdmin()) return true;
   const s=getSession();
@@ -289,16 +300,13 @@ function isAdminRole(){
   return (isPrimarySame && adminPrimary) || adminSecondary;
 }
 
-/* Compat : endroits où on testait "isCmd()" */
 function isCmd(){ return isAdminRole() || isSuperAdmin(); }
 
-/* normalisation CIS pour comparaisons robustes */
 function normCis(x){
   if(!x) return "";
   return String(x).replace(/^CIS\s*/i,"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
 }
 
-/* ---- Utilitaires stockage ---- */
 function getUsers(){
   const users=[];
   for(let i=0;i<localStorage.length;i++){
@@ -310,11 +318,9 @@ function getUsers(){
   return users;
 }
 
-/* Schéma normalisé (statut + permissions) */
 function normalizeUser(u){
   const copy=JSON.parse(JSON.stringify(u||{}));
 
-  // cis structure
   if(Array.isArray(copy.cis)){
     const primary=copy.cis[0]||"";
     const rest=(copy.cis.slice(1)||[]).map(c=>({cis:c,statut:copy.statut||"SPV"}));
@@ -325,37 +331,30 @@ function normalizeUser(u){
     copy.cis=copy.cis||{primary:"",secondaries:[]};
   }
 
-  // statut
   if(!copy.statut){ copy.statut="SPV"; }
 
-  // migrate old 'role' to 'statut' if present
   if(copy.role && !copy.statut){
     const r=String(copy.role).toLowerCase();
     copy.statut = (r.includes('spp')?'SPP': (r.includes('pats')?'PATS':'SPV'));
     delete copy.role;
   }
 
-  // normalize secondaries + remove duplicates
   if(copy.cis?.secondaries){
     const seen=new Set();
     copy.cis.secondaries=copy.cis.secondaries.filter(s=>{
       if(!s||!s.cis) return false;
       const k=normCis(s.cis);
       if(seen.has(k)||k===normCis(copy.cis.primary||"")) return false;
-      // default statut if missing
       s.statut = s.statut || "SPV";
       return seen.add(k), true;
     });
   }
 
-  // permissions structure
   const defaultP = defaultPerms();
   copy.permissions = copy.permissions || { primary: defaultP, secondaries: {} };
-  // ensure shapes
   copy.permissions.primary = Object.assign({}, defaultP, copy.permissions.primary||{});
   copy.permissions.secondaries = copy.permissions.secondaries || {};
 
-  // clean keys of secondaries permissions
   const sec = {};
   Object.keys(copy.permissions.secondaries).forEach(k=>{
     const v = copy.permissions.secondaries[k]||{};
@@ -366,7 +365,7 @@ function normalizeUser(u){
   return copy;
 }
 
-/* ---- Helpers affectations ---- */
+/* Helpers affectations */
 function userHasCis(u,cisName){
   const k=normCis(cisName||"");
   if(!k) return false;
@@ -383,7 +382,6 @@ function assignSecondary(u,cisName,statutForThisCis, perms){
   const idx=secondaryIndex(nu,cisName);
   if(idx>=0){ nu.cis.secondaries[idx].statut=statutForThisCis||nu.cis.secondaries[idx].statut||"SPV"; }
   else{ nu.cis.secondaries.push({cis:cisName,statut:statutForThisCis||"SPV"}); }
-  // set permissions for this secondary
   nu.permissions.secondaries[cisName] = Object.assign({}, defaultPerms(), perms||nu.permissions.secondaries[cisName]||{});
   return nu;
 }
@@ -397,7 +395,6 @@ function removeSecondary(u,cisName){
   const nu=normalizeUser(u);
   const k=normCis(cisName||"");
   nu.cis.secondaries=(nu.cis.secondaries||[]).filter(s=>normCis(s.cis||"")!==k);
-  // also remove permissions entry
   const newSecPerms={};
   Object.keys(nu.permissions.secondaries||{}).forEach(name=>{
     if(normCis(name)!==k) newSecPerms[name]=nu.permissions.secondaries[name];
@@ -406,14 +403,12 @@ function removeSecondary(u,cisName){
   return nu;
 }
 
-/* ---- Permissions helpers ---- */
-/* >>> Ajout "gestion_habillement" + "gestion_stages" dans les clés <<< */
+/* Permissions helpers */
 const PERM_KEYS = ["agent","sog","formation","fdf","pharma","habillement","gestion_habillement","gestion_stages","mnr","véhicules","atelier","magasin","saisie_fma","admin"];
 function defaultPerms(){
   const o={}; PERM_KEYS.forEach(k=>o[k]=false); return o;
 }
 
-/* ======= REMPLACEMENT minimal : regroupement + séparateur + sous-titre ======= */
 function makePermCheckboxes(prefix, obj){
   const LABELS = {
     agent:"Agent du centre", sog:"SOG", formation:"Formation", fdf:"FDF", pharma:"Pharmacie",
@@ -458,7 +453,7 @@ function setPrimaryPermsDisabled(flag){
   }
 }
 
-/* ---- Rendu du tableau ---- */
+/* Rendu du tableau */
 function renderTable(filter=""){
   const mine=myCis();
 
@@ -489,17 +484,14 @@ function renderTable(filter=""){
       const tr=document.createElement("tr");
       const sec=(u.cis?.secondaries||[]).map(s=>`${s.cis} (${s.statut||"-"})`).join(", ")||"-";
 
-            const isPrimaryMine = normCis(u.cis?.primary||"") === normCis(mine||"");
+      const isPrimaryMine = normCis(u.cis?.primary||"") === normCis(mine||"");
       const protectedUser = isProtectedUser(u.matricule);
       const ownerSession = isSessionOwner(u.matricule);
 
-      // 👉 on ne peut supprimer un compte protégé que si on est SOI-MÊME ce compte
       const canDelete = (!protectedUser || ownerSession) &&
         (isSuperAdmin() || (!isCmd()) || (isCmd() && isPrimaryMine));
 
       let actionsHTML = "";
-
-      // 👉 on ne voit les boutons du superadmin 1414 que si on est connecté en 1414
       if (!protectedUser || ownerSession) {
         actionsHTML += `<button class="btn-edit" onclick="editUser('${u.matricule}')">✏️</button>`;
         if (canDelete) {
@@ -523,9 +515,8 @@ function renderTable(filter=""){
     });
 }
 
-/* --- suppression utilisateur --- */
+/* suppression utilisateur */
 function deleteUser(matricule){
-  // 🔒 Protection du super admin 1414
   if (isProtectedUser(matricule) && !isSessionOwner(matricule)) {
     alert("Vous n'êtes pas autorisé à supprimer ce compte protégé.");
     return;
@@ -557,7 +548,7 @@ function deleteUser(matricule){
   renderTable(document.getElementById("search").value);
 }
 
-/* ---- Formulaire ---- */
+/* Formulaire */
 let editMode=false, currentMatricule=null, editingOriginal=null;
 
 const cisPrincipalSel=document.getElementById('cisPrincipal');
@@ -568,6 +559,11 @@ const lockIdentHint=document.getElementById('lockIdentHint');
 const fldMat=document.getElementById('matricule');
 const fldNom=document.getElementById('nom');
 const fldPre=document.getElementById('prenom');
+
+// 🔵 AJOUT : références aux champs permis / visite
+const fldPermisCTitulaire=document.getElementById('permisCTitulaire');
+const fldPermisCDate=document.getElementById('permisCDate');
+const fldVisiteMedProchaine=document.getElementById('visiteMedProchaine');
 
 const mutatePanel=document.getElementById('mutatePanel');
 const mutateSel=document.getElementById('mutateCisSelect');
@@ -584,6 +580,13 @@ function populateCisSelect(sel, exclude=""){
     .map(c=>`<option value="${c}">${c}</option>`).join('');
 }
 
+/* 🔵 AJOUT : logique d’activation de la date permis C */
+function updatePermisAdminUi(){
+  if(!fldPermisCTitulaire || !fldPermisCDate) return;
+  const titulaire = !!fldPermisCTitulaire.checked;
+  fldPermisCDate.disabled = !titulaire;
+}
+
 function applyLocks(edit){
   if(isSuperAdmin()){
     statutPrincipalSel.disabled=false; cisPrincipalSel.disabled=false;
@@ -593,10 +596,8 @@ function applyLocks(edit){
     return;
   }
   const lockBase=isCmd() && edit;
-  // éditer statut si agent de mon CIS
   const canEditIfMine = lockBase && editingOriginal && (normCis(editingOriginal.cis?.primary||"")===normCis(myCis()||""));
 
-  // 👉 Admin peut éditer le statut principal si l’agent est de son CIS
   statutPrincipalSel.disabled = lockBase ? !canEditIfMine : false;
   cisPrincipalSel.disabled = lockBase;
   fldMat.disabled=lockBase; fldNom.disabled=lockBase; fldPre.disabled=lockBase;
@@ -605,7 +606,6 @@ function applyLocks(edit){
   lockCisHint.style.display  = lockBase ? 'block' : 'none';
   lockIdentHint.style.display= lockBase ? 'block' : 'none';
 
-  // 🔓 Accès menus (CIS principal) : Admin autorisé si même CIS (ou en création), Super Admin toujours
   const agentPrimary = (editingOriginal && editingOriginal.cis && editingOriginal.cis.primary) ? editingOriginal.cis.primary : '';
   const canEditPrimaryPerms =
     isSuperAdmin() || (
@@ -660,7 +660,7 @@ function refreshMyCisPanel(){
       const newPerms=readPermsFromForm('mycis');
       const raw=localStorage.getItem("csver_user_"+u.matricule); if(!raw){alert("Utilisateur introuvable.");return;}
       let upd=updateSecondaryStatut(JSON.parse(raw), mine, newStatut);
-      upd=assignSecondary(upd, mine, newStatut, newPerms); // also writes perms
+      upd=assignSecondary(upd, mine, newStatut, newPerms);
       localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(upd));
       alert("✅ Rôle secondaire & droits mis à jour.");
       cancelForm();
@@ -706,7 +706,7 @@ function refreshMyCisPanel(){
   }
 }
 
-/* 🟢 Mutation */
+/* Mutation */
 function refreshMutatePanel(){
   if(isSuperAdmin()){ mutatePanel.style.display='none'; return; }
   if(!isAdminRole() || !editMode || !editingOriginal){ mutatePanel.style.display='none'; return; }
@@ -731,7 +731,6 @@ function refreshMutatePanel(){
     data.cis.primary = newCis;
     data.cis.secondaries = (data.cis.secondaries||[])
       .filter(s => normCis(s.cis||"") !== normCis(oldMine||""));
-    // permissions: au gestionnaire de définir les perms du nouveau CIS
 
     localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(data));
     alert(`✅ Agent muté vers ${newCis}. Il est retiré de ${oldMine}.`);
@@ -740,7 +739,7 @@ function refreshMutatePanel(){
   };
 }
 
-/* 🟣 Panneau Super Admin : toutes les affectations secondaires */
+/* Panneau Super Admin : toutes les affectations secondaires */
 function refreshAllSecPanel(){
   const panel=document.getElementById('allSecPanel');
   const rows=document.getElementById('allSecRows');
@@ -759,7 +758,6 @@ function refreshAllSecPanel(){
     const left=document.createElement('div');
     const right=document.createElement('div');
 
-    // left: CIS + statut + perms
     const selCis=document.createElement('select');
     populateCisSelect(selCis, editingOriginal?.cis?.primary || "");
     selCis.value=obj.cis||'';
@@ -780,7 +778,6 @@ function refreshAllSecPanel(){
     const t=document.createElement('div'); t.className='perm-title'; t.textContent='Droits :'; left.appendChild(t);
     left.appendChild(grid);
 
-    // right: actions
     const del=document.createElement('button');
     del.className='btn-delete';
     del.textContent='Supprimer';
@@ -792,7 +789,6 @@ function refreshAllSecPanel(){
     wrap.appendChild(left); wrap.appendChild(right);
     rows.appendChild(wrap);
 
-    // store nodes for save
     wrap._cisSel = selCis;
     wrap._statSel = selStatut;
     wrap._grid = grid;
@@ -804,7 +800,7 @@ function refreshAllSecPanel(){
   addBtn.onclick=()=>makeRow();
 }
 
-/* --- Affichages / locks / panneaux --- */
+/* Affichages / locks / panneaux */
 function showForm(edit=false){
   document.getElementById("userForm").style.display="block";
   document.getElementById("formTitle").textContent=edit?"Modifier un utilisateur":"Créer un utilisateur";
@@ -815,6 +811,12 @@ function showForm(edit=false){
     statutPrincipalSel.value='SPV';
     fldMat.value=""; fldNom.value=""; fldPre.value="";
 
+    // reset champs permis & visite 🔵
+    if(fldPermisCTitulaire){ fldPermisCTitulaire.checked=false; }
+    if(fldPermisCDate){ fldPermisCDate.value=""; }
+    if(fldVisiteMedProchaine){ fldVisiteMedProchaine.value=""; }
+    updatePermisAdminUi();
+
     if (isAdminRole() && !isSuperAdmin()){
       cisPrincipalSel.disabled = true;
       lockCisHint.style.display = 'block';
@@ -824,7 +826,6 @@ function showForm(edit=false){
       lockCisHint.style.display = 'none';
     }
 
-    // Permissions par défaut (Agent du centre coché)
     document.getElementById('permPrimaryGrid').innerHTML = makePermCheckboxes('primary', defaultPerms());
     document.getElementById('primary_agent').checked = (isAdminRole() || isSuperAdmin());
     setPrimaryPermsDisabled(!(isSuperAdmin() || isAdminRole()));
@@ -842,6 +843,11 @@ function showForm(edit=false){
 function cancelForm(){
   document.getElementById("userForm").style.display="none";
   fldMat.value=""; fldNom.value=""; fldPre.value="";
+  if(fldPermisCTitulaire){ fldPermisCTitulaire.checked=false; }
+  if(fldPermisCDate){ fldPermisCDate.value=""; }
+  if(fldVisiteMedProchaine){ fldVisiteMedProchaine.value=""; }
+  updatePermisAdminUi();
+
   populateCisPrincipal("");
   document.getElementById('permPrimaryGrid').innerHTML = "";
   document.getElementById('allSecRows').innerHTML='';
@@ -866,7 +872,6 @@ function saveUser(){
   let matricule=fldMat.value.trim(), nom=fldNom.value.trim(), prenom=fldPre.value.trim();
   let statut=statutPrincipalSel.value, cisPrimary=cisPrincipalSel.value;
 
-    // 🔒 On ne peut pas créer ou écraser le compte 1414 si on n'est pas 1414
   if (!editMode && isProtectedUser(matricule) && !isSessionOwner(matricule)) {
     alert("Le matricule 1414 est réservé au super administrateur.");
     return;
@@ -880,20 +885,26 @@ function saveUser(){
     cisPrimary=editingOriginal.cis?.primary||cisPrimary;
   }
 
-  // collect primary permissions
   const primaryPerms = readPermsFromForm('primary');
+
+  // 🔵 AJOUT : lecture des champs permis / visite
+  const permisCTitulaire = fldPermisCTitulaire ? !!fldPermisCTitulaire.checked : false;
+  let permisCDate = fldPermisCDate ? (fldPermisCDate.value || "") : "";
+  const visiteMedProchaine = fldVisiteMedProchaine ? (fldVisiteMedProchaine.value || "") : "";
+
+  if(!permisCTitulaire){
+    permisCDate = "";
+  }
 
   let secondaries=[];
   let secPerms = {};
   if(isSuperAdmin()){
-    // read rows
     const rows=[...document.getElementById('allSecRows').children];
     for(const r of rows){
       const cis=r._cisSel.value;
       const st = r._statSel.value;
       if(!cis) continue;
       secondaries.push({cis, statut:st});
-      // read grid checkboxes inside r._grid
       const cb = r._grid.querySelectorAll('input[type="checkbox"]');
       const o = defaultPerms();
       cb.forEach(x=>{
@@ -913,12 +924,22 @@ function saveUser(){
     secPerms = norm.permissions?.secondaries || {};
   }
 
-  const payload={matricule,nom,prenom,statut,cis:{primary:cisPrimary,secondaries}, permissions:{ primary: primaryPerms, secondaries: secPerms }};
+  const payload={
+    matricule,
+    nom,
+    prenom,
+    statut,
+    cis:{primary:cisPrimary,secondaries},
+    permissions:{ primary: primaryPerms, secondaries: secPerms },
+    // 🔵 AJOUT : champs persos
+    permisCTitulaire,
+    permisCDate,
+    visiteMedProchaine
+  };
   const err=validateUserPayload(payload); if(err){ alert(err); return; }
 
   if(editMode){
     const existing=JSON.parse(localStorage.getItem("csver_user_"+currentMatricule)||"null");
-    // preserve auth fields if any
     ["hash","salt","iters","kdf","secret_question"].forEach(k=>{ if(existing?.[k]!=null) payload[k]=existing[k]; });
 
     if(currentMatricule!==matricule){ localStorage.removeItem("csver_user_"+currentMatricule); }
@@ -935,7 +956,6 @@ function saveUser(){
 }
 
 function editUser(matricule){
-   // 🔒 Protection du super admin 1414
   if (isProtectedUser(matricule) && !isSessionOwner(matricule)) {
     alert("Vous n'êtes pas autorisé à modifier ce compte protégé.");
     return;
@@ -945,18 +965,18 @@ function editUser(matricule){
   const u=normalizeUser(JSON.parse(raw));
   editingOriginal=JSON.parse(JSON.stringify(u));
 
-  const fldMat=document.getElementById('matricule');
-  const fldNom=document.getElementById('nom');
-  const fldPre=document.getElementById('prenom');
-
   fldMat.value=u.matricule; fldNom.value=u.nom||""; fldPre.value=u.prenom||"";
   document.getElementById('statutPrincipal').value=u.statut||"SPV"; populateCisPrincipal(u.cis?.primary||"");
   currentMatricule=matricule; editMode=true;
 
-  // Charger permissions du CIS principal
+  // 🔵 AJOUT : recharger permis / visite
+  if(fldPermisCTitulaire){ fldPermisCTitulaire.checked = !!u.permisCTitulaire; }
+  if(fldPermisCDate){ fldPermisCDate.value = u.permisCDate || ""; }
+  if(fldVisiteMedProchaine){ fldVisiteMedProchaine.value = u.visiteMedProchaine || ""; }
+  updatePermisAdminUi();
+
   document.getElementById('permPrimaryGrid').innerHTML = makePermCheckboxes('primary', u.permissions?.primary || defaultPerms());
 
-  // 🔓 Autorisations d'édition des permissions du CIS principal
   (function(){
     const agentPrimary = (u && u.cis && u.cis.primary) ? u.cis.primary : '';
     const canEditPrimaryPerms =
@@ -972,7 +992,7 @@ function editUser(matricule){
   refreshAllSecPanel();
 }
 
-/* ---- Répertoire (optionnel) ---- */
+/* Répertoire (inchangé) */
 function openDirectory(){ const m=document.getElementById('dirModal'); m.style.display='flex'; document.getElementById('dirSearch').value=''; renderDirectory(); }
 function closeDirectory(){ document.getElementById('dirModal').style.display='none'; }
 function renderDirectory(){
@@ -999,7 +1019,6 @@ function renderDirectory(){
        if(isPrimaryMine){ actionHTML='<span class="muted">Principal de mon CIS — gérable dans le formulaire.</span>'; }
        else if(alreadySecondary){ actionHTML='<span class="muted">Déjà rattaché à mon CIS — gère-le dans le formulaire.</span>'; }
        else{
-         // simple : statut + bouton; droits réglés ensuite dans la fiche
          actionHTML=`
            <div class="dir-card">
              <div class="dir-line">
@@ -1021,7 +1040,7 @@ function renderDirectory(){
            const statut=statutSel.value;
            const raw=localStorage.getItem("csver_user_"+u.matricule); if(!raw){alert("Utilisateur introuvable.");return;}
            const base = JSON.parse(raw);
-           const perms = defaultPerms(); perms.agent = true; // droits par défaut (Agent du centre)
+           const perms = defaultPerms(); perms.agent = true;
            const upd=assignSecondary(base, mine, statut, perms);
            localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(upd));
            alert("✅ Rattaché à votre CIS.");
@@ -1034,65 +1053,44 @@ function renderDirectory(){
    });
 }
 
-/* ---- Réactivité ---- */
+/* Réactivité */
 document.getElementById("search").addEventListener("input",e=>renderTable(e.target.value));
 
 window.addEventListener("DOMContentLoaded", async ()=>{
-  // 🔄 Récupération Firestore → localStorage (automatique via cloud-storage.js)
   await syncAccueilFromCloud();
-
   populateCisPrincipal("");
   renderTable();
+  // 🔵 listener Permis C
+  if(fldPermisCTitulaire){
+    fldPermisCTitulaire.addEventListener('change', updatePermisAdminUi);
+    updatePermisAdminUi();
+  }
 });
 
-/* ============================================================
-   Logique intelligente des permissions
-   - Cocher "Agent du centre" coche Formation, FDF, Habillement
-   - Cocher "SOG" coche tout, sauf Véhicules, Saisie FMA, Administrateur
-   - Toujours réversible manuellement par l’utilisateur
-   ============================================================ */
-
-/** Retourne { prefix, key } pour un id du type "<prefix>_<key>" */
+/* Permissions intelligentes (inchangé) */
 function splitId(id){
   const p = id.lastIndexOf('_');
   return { prefix: id.slice(0,p), key: id.slice(p+1) };
 }
-
-/** Coche/décoche un checkbox par (prefix,key) dans un grid donné */
 function setBox(prefix, key, value, grid){
   const el = grid.querySelector(`#${CSS.escape(prefix + '_' + key)}`);
   if (el && !el.disabled) el.checked = !!value;
 }
-
-/** Quand on coche "Agent du centre" → coche Formation, FDF, Habillement */
 function applyAgentDefaults(prefix, grid){
   setBox(prefix, 'formation', true, grid);
   setBox(prefix, 'fdf',        true, grid);
   setBox(prefix, 'habillement',true, grid);
 }
-
-/** Quand on coche "SOG" → coche tout, sauf Véhicules, Saisie FMA, Administrateur
- *  ⚠️ Laisse "gestion_habillement" et "gestion_stages" tels quels (ni forcés à true, ni à false)
- */
 function applySogDefaults(prefix, grid){
   const EXCEPT = new Set(['véhicules','saisie_fma','admin','gestion_habillement','gestion_stages']);
-
-  // coche tout sauf les exceptions
   PERM_KEYS.forEach(k=>{
     if (EXCEPT.has(k)) return;
     setBox(prefix, k, true, grid);
   });
-
-  // exceptions explicitement désactivées
   setBox(prefix, 'véhicules',  false, grid);
   setBox(prefix, 'saisie_fma', false, grid);
   setBox(prefix, 'admin',      false, grid);
-
-  // "gestion_habillement" et "gestion_stages" restent inchangés
 }
-
-
-/** Écoute déléguée : s’applique à TOUTES les grilles .perm-grid (principal & secondaires) */
 document.addEventListener('change', function(e){
   const t = e.target;
   if(!(t instanceof HTMLInputElement)) return;
@@ -1101,8 +1099,6 @@ document.addEventListener('change', function(e){
 
   const grid = t.closest('.perm-grid');
   const { prefix, key } = splitId(t.id);
-
-  // Logique seulement quand on COCHET (le décochement reste libre)
   if(!t.checked) return;
 
   if(key === 'agent'){
