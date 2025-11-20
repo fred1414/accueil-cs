@@ -1067,7 +1067,7 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   }
 });
 
-/* Permissions intelligentes (inchangé) */
+/* Permissions intelligentes */
 function splitId(id){
   const p = id.lastIndexOf('_');
   return { prefix: id.slice(0,p), key: id.slice(p+1) };
@@ -1081,16 +1081,12 @@ function applyAgentDefaults(prefix, grid){
   setBox(prefix, 'fdf',        true, grid);
   setBox(prefix, 'habillement',true, grid);
 }
+
+// ✅ SOG ne fait plus rien automatiquement
 function applySogDefaults(prefix, grid){
-  const EXCEPT = new Set(['véhicules','saisie_fma','admin','gestion_habillement','gestion_stages']);
-  PERM_KEYS.forEach(k=>{
-    if (EXCEPT.has(k)) return;
-    setBox(prefix, k, true, grid);
-  });
-  setBox(prefix, 'véhicules',  false, grid);
-  setBox(prefix, 'saisie_fma', false, grid);
-  setBox(prefix, 'admin',      false, grid);
+  // Désactivé : cocher SOG n'agit plus sur les autres cases
 }
+
 document.addEventListener('change', function(e){
   const t = e.target;
   if(!(t instanceof HTMLInputElement)) return;
@@ -1107,6 +1103,7 @@ document.addEventListener('change', function(e){
     applySogDefaults(prefix, grid);
   }
 });
+
 </script>
 
 </body>
