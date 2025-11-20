@@ -250,7 +250,6 @@ textarea{min-height:60px;resize:vertical}
         </div>
         <div class="card">
           <label>Agents ayant effectué la manœuvre</label>
-          <!-- input + datalist pour taper OU choisir -->
           <input id="agentInput" list="agentsList" placeholder="Tape un nom ou choisis dans la liste">
           <datalist id="agentsList"></datalist>
           <div class="flex" style="margin-top:8px">
@@ -376,7 +375,7 @@ function normalizeRole(r){
 
 /* === Alignement avec la page d'administration pour les droits === */
 
-// Cis de la session (brut)
+// Cis de la session
 function myCis(){
   const s = getSession();
   const c = s?.cis;
@@ -399,7 +398,7 @@ function isSuperAdmin(){
   return String(s?.matricule) === "1414" || normalizeRole(s?.role) === "superadmin";
 }
 
-// Admin pour le CIS courant (même logique que isAdminRole sur admin.html)
+// Admin pour le CIS courant
 function isAdmin(){
   if(isSuperAdmin()) return true;
 
@@ -410,10 +409,32 @@ function isAdmin(){
   const mine = myCis();
   if(!u || !mine) return false;
 
-  // sur admin.html : cis.primary + permissions.primary/admin + permissions.secondaries[monCis]/admin
-  const isPrimarySame  = normCis(u.cis?.primary || "") === normCis(mine);
-  const adminPrimary   = !!(u.permissions?.primary?.admin);
-  const adminSecondary = !!(u.permissions?.secondaries?.[mine]?.admin);
+  const uCis = u.cis || {};
+  let primaryCis = "";
+
+  if (Array.isArray(uCis)) {
+    primaryCis = uCis[0] || "";
+  } else if (typeof uCis === "string") {
+    primaryCis = uCis;
+  } else if (typeof uCis === "object") {
+    primaryCis = uCis.primary || "";
+  }
+
+  const perms = u.permissions || {};
+  const primaryPerms = perms.primary || {};
+  const secPerms = perms.secondaries || {};
+
+  const isPrimarySame  = normCis(primaryCis) === normCis(mine);
+  const adminPrimary   = !!primaryPerms.admin;
+
+  let adminSecondary = false;
+  const secKeys = Object.keys(secPerms || {});
+  for(const k of secKeys){
+    if(normCis(k) === normCis(mine) && secPerms[k]?.admin){
+      adminSecondary = true;
+      break;
+    }
+  }
 
   return (isPrimarySame && adminPrimary) || adminSecondary;
 }
