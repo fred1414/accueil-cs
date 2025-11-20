@@ -1274,7 +1274,106 @@ function purgeJournal(scope, evt){  // 🔐 Protection super-admin (matricule 14
   }
   function mf_hhmm(min){ if(!min||isNaN(min))return ""; const h=Math.floor(min/60),m=min%60; return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0"); }
   function mf_dFR(iso){ try{ return new Date(iso).toLocaleDateString("fr-FR"); }catch(_){ return iso||""; } }
+// --- Manœuvre de repli : helpers ---
+  const MF_REPLI_KEY = "manoeuvre_repli_v1";
 
+  function mf_daysSince(dateIso){
+    if(!dateIso) return null;
+    const d = new Date(dateIso + "T00:00:00");
+    if(isNaN(d.getTime())) return null;
+    const today = new Date();
+    const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const t1 = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const diffMs = t0 - t1;
+    return Math.floor(diffMs / (1000*60*60*24));
+  }
+
+  function mf_session(){
+    try{
+      return JSON.parse(localStorage.getItem("csver_session") || "null");
+    }catch(_){ return null; }
+  }
+
+  // Retourne {date, days} pour la dernière manœuvre de repli de l'agent courant, ou null
+  function mf_lastRepliForMe(){
+    const s = mf_session();
+    if(!s) return null;
+
+    const cisSess = Array.isArray(s.cis) ? (s.cis[0] || "") : (s.cis || "");
+    // clé normalisée de l'agent (même principe que pour les FMA)
+    const meKey = mf_key(((s.nom||"") + " " + (s.prenom||"")).trim() || s.matricule || "");
+
+    let all = [];
+    try{
+      all = JSON.parse(localStorage.getItem(MF_REPLI_KEY) || "[]");
+      if(!Array.isArray(all)) all = [];
+    }catch(_){ all = []; }
+
+    // filtre sur le CIS courant
+    const filtered = all.filter(r => {
+      try{
+        return normCis(r.cis) === normCis(cisSess);
+      }catch(_){
+        return false;
+      }
+    });
+
+    // On cherche la plus récente pour cet agent
+    let lastDate = null;
+    filtered.forEach(rec => {
+      (rec.agents || []).forEach(a => {
+        if(mf_key(a.name || "") === meKey){
+          if(!lastDate || String(rec.date||"") > String(lastDate)){
+            lastDate = rec.date || null;
+          }
+        }
+      });
+    });
+
+    if(!lastDate) return null;
+    const days = mf_daysSince(lastDate);
+    return { date: lastDate, days };
+  }
+
+  // Met à jour la ligne "Dernière manœuvre de repli" dans la modale Mes FMA
+  function mf_renderRepliLine(){
+    const el = document.getElementById("myfma-repli");
+    if(!el) return;
+
+    const info = mf_lastRepliForMe();
+    if(!info){
+      el.innerHTML = `<span style="color:#c62828;font-weight:600">
+        Dernière manœuvre de repli : jamais enregistrée
+      </span>`;
+      return;
+    }
+
+    const dTxt = mf_dFR(info.date);
+    const d    = info.days==null ? "?" : info.days;
+    let color  = "#c62828";
+    let label  = "≥ 15 jours";
+
+    if(info.days != null){
+      if(info.days < 10){
+        color = "#0a8a3a";
+        label = "&lt; 10 jours";
+      }else if(info.days <= 14){
+        color = "#ff9800";
+        label = "10 à 14 jours";
+      }else{
+        color = "#c62828";
+        label = "≥ 15 jours";
+      }
+    }
+
+    el.innerHTML = `
+      Dernière manœuvre de repli :
+      <strong style="color:${color}">${dTxt}</strong>
+      <span style="margin-left:6px;font-size:13px;color:${color}">
+        (${d} jour(s), ${label})
+      </span>
+    `;
+  }
   function mf_ctx(){
     const session = JSON.parse(localStorage.getItem("csver_session")||"null");
     if(!session) return null;
@@ -1358,6 +1457,10 @@ function purgeJournal(scope, evt){  // 🔐 Protection super-admin (matricule 14
       modal.addEventListener("click",(e)=>{ if(e.target===modal){ modal.style.display="none"; } });
       document.addEventListener("keydown", function esc(e){ if(e.key==="Escape"&&modal.style.display!=="none"){ modal.style.display="none"; document.removeEventListener("keydown", esc); } });
     }
+
+    // Met à jour la ligne "Dernière manœuvre de repli"
+    mf_renderRepliLine();
+    
     return false;
   };
 })();
@@ -1394,6 +1497,9 @@ function purgeJournal(scope, evt){  // 🔐 Protection super-admin (matricule 14
       </div>
       <p style="margin-top:8px;color:#666;font-size:13px">Statut “À faire” = aucun enregistrement trouvé pour ce thème.</p>
 
+<!-- 🔁 Dernière manœuvre de repli (ligne au-dessus des FMA réalisées) -->
+      <div id="myfma-repli" style="margin:12px 0 4px;font-size:13px;"></div>
+      
       <!-- 📜 Mes FMA réalisées (EN BAS) -->
       <h4 style="margin:18px 0 6px;color:#0d2b52">📜 Mes FMA réalisées</h4>
       <div class="myfma-scroll" style="overflow:auto">
