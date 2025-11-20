@@ -225,10 +225,9 @@ textarea{min-height:60px;resize:vertical}
 <div class="container">
   <div class="bar">
     <div class="flex">
-      <span>📘 Manœuvre de repli</span>
-      <label class="badge">Mode&nbsp;: <span id="roleBadge">invité</span></label>
-      <span class="badge" id="lockBadge">Saisie : <strong>–</strong></span>
-    </div>
+  <span>📘 Manœuvre de repli</span>
+  <span class="badge" id="lockBadge">Saisie : <strong>–</strong></span>
+</div>
     <div class="actions">
       <button class="btn-grey" id="btnPrint">🖨️ Imprimer / PDF</button>
       <button class="btn-ghost" id="btnHistory">📜 Historique</button>
@@ -879,51 +878,60 @@ document.getElementById("btnPrintHist").onclick = ()=>{
 /* ================== DROITS & VERROUILLAGE UI ================== */
 function refreshRightsAndLockUI(){
   const s = getSession();
-  const roleTxt = s?.role || "invité";
-  document.getElementById("roleBadge").textContent = roleTxt;
-
   const isLocked = getLockState();
   const canAdmin = isAdmin();
   const canWrite = !isLocked;
-
   const lockMeta = getLockMeta();
   const lockBadge = document.getElementById("lockBadge");
-  if(isLocked){
+
+  // Badge de verrouillage
+  if (isLocked) {
     lockBadge.innerHTML = `Saisie : <strong>verrouillée</strong>${lockMeta ? " — par "+(lockMeta.by||"") : ""}`;
-  }else{
+  } else {
     lockBadge.innerHTML = `Saisie : <strong>ouverte</strong>`;
   }
 
+  // Bouton verrouillage (admin only)
   const btnLock = document.getElementById("btnToggleLock");
-  if(btnLock){
+  if (btnLock) {
     btnLock.textContent = isLocked ? "🔓 Déverrouiller la saisie" : "🔒 Verrouiller la saisie";
-    if(canAdmin){
+    if (canAdmin) {
       btnLock.disabled = false;
       btnLock.title = "Cliquer pour verrouiller / déverrouiller la saisie";
-    }else{
+    } else {
       btnLock.disabled = true;
       btnLock.title = "Réservé aux administrateurs";
     }
   }
 
+  // Bouton wipe admin-only déjà correct
   const btnWipe = document.getElementById("btnWipe");
-  if(btnWipe){
+  if (btnWipe) {
     btnWipe.style.display = canAdmin ? "inline-block" : "none";
   }
 
+  // Texte de droits sous "Saisie d'une manœuvre"
   const rightsInfo = document.getElementById("rightsInfo");
-  if(isLocked){
-    rightsInfo.textContent = "Saisie verrouillée par un administrateur : tu peux consulter les données mais pas modifier.";
-  }else{
-    rightsInfo.textContent = "Tu peux enregistrer une manœuvre en sélectionnant la date et les agents concernés.";
+  const who = ((s?.prenom || "") + " " + (s?.nom || "")).trim() || "Utilisateur";
+
+  if (isLocked) {
+    rightsInfo.textContent = canAdmin
+      ? `${who} : la saisie est verrouillée pour tout le monde. Tu peux la déverrouiller en tant qu'administrateur.`
+      : `${who} : la saisie est actuellement verrouillée. Tu peux seulement consulter les données.`;
+  } else {
+    rightsInfo.textContent = canAdmin
+      ? `${who} : tu as les droits administrateur sur ce CIS (saisie, verrouillage, suppression globale des manœuvres).`
+      : `${who} : tu peux enregistrer une manœuvre en sélectionnant la date et les agents concernés.`;
   }
 
+  // Activation / désactivation du formulaire
   const disableForm = !canWrite;
   ["date","agentInput","btnAddAgent","btnSave","btnResetSel"].forEach(id=>{
     const el = document.getElementById(id);
-    if(el) el.disabled = disableForm;
+    if (el) el.disabled = disableForm;
   });
 }
+
 
 document.getElementById("btnToggleLock").onclick = ()=>{
   if(!isAdmin()){
@@ -1056,4 +1064,5 @@ window.addEventListener("DOMContentLoaded", async ()=>{
 </script>
 </body>
 </html>
+
 
