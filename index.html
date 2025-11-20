@@ -1342,7 +1342,7 @@ function purgeJournal(scope, evt){  // 🔐 Protection super-admin (matricule 14
 
     const info = mf_lastRepliForMe();
     if(!info){
-      el.innerHTML = `<span style="color:#c62828;font-weight:600">
+      el.innerHTML = `<span style="color:#c62828">
         Dernière manœuvre de repli : jamais enregistrée
       </span>`;
       return;
@@ -1367,10 +1367,8 @@ function purgeJournal(scope, evt){  // 🔐 Protection super-admin (matricule 14
     }
 
     el.innerHTML = `
-      Dernière manœuvre de repli :
-      <strong style="color:${color}">${dTxt}</strong>
-      <span style="margin-left:6px;font-size:13px;color:${color}">
-        (${d} jour(s), ${label})
+      <span style="color:${color}">
+        Dernière manœuvre de repli : ${dTxt} (${d} jour(s), ${label})
       </span>
     `;
   }
@@ -1498,8 +1496,8 @@ function purgeJournal(scope, evt){  // 🔐 Protection super-admin (matricule 14
       <p style="margin-top:8px;color:#666;font-size:13px">Statut “À faire” = aucun enregistrement trouvé pour ce thème.</p>
 
 <!-- 🔁 Dernière manœuvre de repli (ligne au-dessus des FMA réalisées) -->
-      <div id="myfma-repli" style="margin:12px 0 4px;font-size:13px;"></div>
-      
+      <div id="myfma-repli" style="margin:12px 0 4px;font-size:15px;font-weight:700;"></div>
+
       <!-- 📜 Mes FMA réalisées (EN BAS) -->
       <h4 style="margin:18px 0 6px;color:#0d2b52">📜 Mes FMA réalisées</h4>
       <div class="myfma-scroll" style="overflow:auto">
