@@ -113,6 +113,121 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
   .form-grid .col-3{grid-column:span 2}
   .form-grid .col-2{grid-column:span 1}
 }
+
+/* ==========================
+   HEADER centré (desktop)
+   ========================== */
+header{
+  justify-content: center;      /* on centre tout le bloc */
+  position: relative;
+  text-align: center;
+}
+
+header img{
+  margin-right: 10px;           /* petit espace logo / titre */
+}
+
+/* Titre + sous-titre centrés */
+header .title,
+header .subtitle{
+  text-align: center;
+}
+
+/* Bouton Accueil fixé à droite sur desktop */
+.acceuil-btn{
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ===========================
+   📱 Version mobile (≤ 768px)
+   =========================== */
+@media (max-width: 768px){
+
+  body{
+    padding: 12px;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+
+  main{
+    margin: 16px auto;
+    padding: 0 8px;
+  }
+
+  .panel{
+    padding: 14px;
+  }
+
+  .panel h2{
+    font-size: 18px;
+  }
+
+  /* HEADER en colonne, tout bien centré */
+  header{
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+
+  header img{
+    height: 44px;
+    margin-right: 0;
+  }
+
+  header .title,
+  header .subtitle{
+    text-align: center;
+  }
+
+  /* Bouton Accueil sous le titre, plus large */
+  .acceuil-btn{
+    position: static;
+    transform: none;
+    margin-top: 6px;
+    width: 100%;
+    max-width: 260px;
+    text-align: center;
+  }
+
+  /* Formulaire en 1 colonne */
+  .form-grid{
+    grid-template-columns: 1fr;
+  }
+  .form-grid .col-2,
+  .form-grid .col-3,
+  .form-grid .col-6{
+    grid-column: 1 / -1;
+  }
+
+  .form-actions{
+    flex-direction: column;
+  }
+
+  .btn{
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Tables : scroll horizontal, pas besoin de dézoomer */
+  .panel > div[style*="overflow:auto"]{
+    overflow-x: auto;
+  }
+
+  .table{
+    min-width: 720px;          /* évite l’écrasement des colonnes */
+    font-size: 13px;
+  }
+
+  .table th,
+  .table td{
+    padding: 6px 8px;
+  }
+}
+  
 </style>
 
 <!-- 🔌 Firebase + Firestore + stockage partagé -->
@@ -123,7 +238,7 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
 <body>
 
 <header>
-  <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png" alt="Logo SDIS 30">
+  <img src="https://i.postimg.cc/LsB40JQq/logo-cismic.png" alt="Logo SDIS 30">
   <div>
     <div class="title">Réservations véhicules</div>
     <div class="subtitle" id="cisLabel">Centre de Secours</div>
@@ -252,7 +367,7 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
   </div>
 </div>
 
-<footer>© SDIS 30 — Réservations véhicules — 2025</footer>
+<footer>© CISMIC — Réservations véhicules — 2025</footer>
 
 <!-- =======================================================
      🔁 SYNCHRO (on laisse ton cloud-storage.js faire le boulot)
@@ -806,3 +921,4 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 
 </body>
 </html>
+
