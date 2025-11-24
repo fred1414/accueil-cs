@@ -1205,6 +1205,7 @@ function renderDirectory(){
 
 /* Réactivité */
 document.getElementById("search").addEventListener("input",e=>renderTable(e.target.value));
+document.getElementById("dirSearch").addEventListener("input", () => renderDirectory());
 
 window.addEventListener("DOMContentLoaded", async ()=>{
   await syncAccueilFromCloud();
