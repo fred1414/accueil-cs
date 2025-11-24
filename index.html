@@ -252,6 +252,139 @@ nav.menu-bar a{ padding:10px 12px; }
 .fma-pending-card table{ width:100%; border-collapse:collapse; }
 .fma-pending-card th, .fma-pending-card td{ border:1px solid #eef2fb; padding:8px 10px; text-align:left; }
 .fma-pending-card th{ background:#f7f9ff; color:#123; }
+
+/* ===========================
+   📱 ADAPTATION MOBILE (≤ 768px)
+   =========================== */
+@media (max-width: 768px) {
+
+  /* Evite les bugs de 100dvh sur mobile */
+  html, body {
+    height: auto;
+  }
+  body {
+    min-height: 100vh;
+  }
+
+  /* HEADER en colonne */
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+  header img {
+    height: 50px;
+  }
+  header .title-block {
+    text-align: left;
+    width: 100%;
+  }
+  header h1 {
+    font-size: 20px;
+  }
+  header p {
+    font-size: 13px;
+  }
+  .logout-btn {
+    align-self: stretch;
+    width: 100%;
+    text-align: center;
+    padding: 8px 0;
+    font-size: 14px;
+    border-radius: 999px;
+  }
+
+  /* MENU : barre scrollable, items plus compacts */
+  nav.menu-bar {
+    overflow-x: auto;
+  }
+  nav.menu-bar ul {
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 6px 8px;
+  }
+  nav.menu-bar a {
+    padding: 8px 10px;
+    font-size: 13px;
+    white-space: nowrap; /* évite les retours bizarres dans les libellés */
+  }
+
+  /* Sous-menus : on les laisse en absolu, mais on évite trop de largeur */
+  nav.menu-bar ul li ul {
+    min-width: 180px;
+    font-size: 13px;
+  }
+
+  /* Bandeau météo : un peu plus compact */
+  .meteo-banner {
+    padding: 8px 10px;
+  }
+  .meteo-row.small {
+    font-size: 12px;
+  }
+
+  /* MAIN déjà en 1 colonne à 980px, on allège juste les marges */
+  main {
+    margin: 12px auto;
+    padding: 0 10px;
+    gap: 14px;
+  }
+
+  .section,
+  .panel {
+    padding: 16px;
+  }
+
+  .section h2 {
+    font-size: 18px;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* Groupe de boutons dans "État des véhicules" : full width */
+  .section.vehicules .section-header > div {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .section.vehicules .section-header .btn,
+  .section.vehicules .section-header .print-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Grille véhicules : tu as déjà les colonnes qui se réduisent,
+     on garde juste un peu de hauteur */
+  #vehicule-grid {
+    grid-auto-rows: 70px;
+  }
+  .vehicule-card {
+    font-size: 14px;
+    padding: 8px 10px;
+  }
+
+  /* Listes de journal / formation : texte un peu plus petit */
+  .journal-item .body .text {
+    font-size: 14px;
+  }
+  .journal-item .body .date {
+    font-size: 11px;
+  }
+
+  /* Modales : garantis un peu de marge latérale si très petit écran */
+  #anom-modal > div,
+  #myfma-modal > div,
+  .fma-pending-card {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
 </style>
 </head>
 <body>
