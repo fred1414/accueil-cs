@@ -626,13 +626,22 @@ function countPendingForActiveCis(){
 
 /* ====== Pending table ====== */
 function renderPending(){
-  const pending=fmaAll().filter(r=>!r.webact?.done);
+  const cisTarget = activeCisName();
+  const pending = fmaAll().filter(r => !r.webact?.done && normCis(r.cis) === cisTarget);
+
   const tbl=$("#pendingTable"), body=$("#pendingBody"), no=$("#noPending");
-  if(!pending.length){ tbl.style.display="none"; no.style.display="block"; return; }
-  no.style.display="none"; tbl.style.display="table";
+  if(!pending.length){
+    tbl.style.display="none";
+    no.style.display="block";
+    return;
+  }
+  no.style.display="none";
+  tbl.style.display="table";
   body.innerHTML = pending.map(r=>{
     const ppl=r.participants.map(p=>`${p.name} (${p.role||"?"})`).join(", ");
-    const badge=r.webact?.done?'<span class="pill pill-ok">Saisie OK</span>':'<span class="pill pill-wait">À saisir</span>';
+    const badge=r.webact?.done
+      ? '<span class="pill pill-ok">Saisie OK</span>'
+      : '<span class="pill pill-wait">À saisir</span>';
     return `<tr>
       <td>${dFR(r.date)}<br><span class="small">${r.h1}–${r.h2}</span></td>
       <td>${r.formateur}</td>
@@ -644,6 +653,7 @@ function renderPending(){
     </tr>`;
   }).join("");
 }
+
 function openDetail(id){
   if($("#historyModal").style.display==="flex"){ $("#historyModal").style.display="none"; }
   currentFmaId=id;
@@ -745,28 +755,49 @@ document.getElementById("btnHistory").onclick=()=>{$("#historyModal").style.disp
 document.getElementById("closeHistory").onclick=()=>{$("#historyModal").style.display="none";};
 document.getElementById("histSearch").addEventListener("input", renderHistory);
 function renderHistory(){
-  const q=$("#histSearch").value.toLowerCase();
-  const data=fmaAll();
-  const filtered=data.filter(r=>{
-    const blob=[r.formateur,r.theme,r.date,r.h1,r.h2,r.webact?.by,r.webact?.at,
-      ...r.participants.map(p=>p.name+" "+(p.role||""))].join(" ").toLowerCase();
+  const q = $("#histSearch").value.toLowerCase();
+
+  // 🔹 CIS actif de la session
+  const cisTarget = activeCisName();
+
+  // 🔹 Ne garder que les FMA de ce CIS
+  const data = fmaAll().filter(r => normCis(r.cis) === cisTarget);
+
+  const filtered = data.filter(r=>{
+    const blob = [
+      r.formateur,
+      r.theme,
+      r.date,
+      r.h1,
+      r.h2,
+      r.webact?.by,
+      r.webact?.at,
+      ...r.participants.map(p=>p.name+" "+(p.role||""))
+    ].join(" ").toLowerCase();
     return blob.includes(q);
   });
+
   $("#histCount").textContent = `${filtered.length} / ${data.length}`;
   $("#histList").innerHTML = filtered.map(r=>{
-    const badge=r.webact?.done?'<span class="pill pill-ok">Saisie OK</span>':'<span class="pill pill-wait">À saisir</span>';
-    return `<div style="border:1px solid #e6e9f2;background:#fbfcff;border-radius:12px;padding:10px 12px;margin:8px 0">
-      <div class="flex" style="justify-content:space-between">
-        <div><strong>${dFR(r.date)}</strong> — ${r.theme} — <em>${r.formateur}</em></div>
-        <div>${badge} ${r.webact?.done?`<span class="small">par ${r.webact.by} le ${r.webact.at}</span>`:""}</div>
-      </div>
-      <div class="small" style="margin-top:6px">Participants : ${r.participants.map(p=>`${p.name} (${p.role||"?"})`).join(", ")}</div>
-      <div style="text-align:right;margin-top:6px">
-        <button class="btn-grey icon-btn" onclick="openDetail('${r.id}')">🔍 Détail</button>
-      </div>
-    </div>`;
+    const badge = r.webact?.done
+      ? '<span class="pill pill-ok">Saisie OK</span>'
+      : '<span class="pill pill-wait">À saisir</span>';
+    return `
+      <div style="border:1px solid #e6e9f2;background:#fbfcff;border-radius:12px;padding:10px 12px;margin:8px 0">
+        <div class="flex" style="justify-content:space-between">
+          <div><strong>${dFR(r.date)}</strong> — ${r.theme} — <em>${r.formateur}</em></div>
+          <div>${badge} ${r.webact?.done?`<span class="small">par ${r.webact.by} le ${r.webact.at}</span>`:""}</div>
+        </div>
+        <div class="small" style="margin-top:6px">
+          Participants : ${r.participants.map(p=>`${p.name} (${p.role||"?"})`).join(", ")}
+        </div>
+        <div style="text-align:right;margin-top:6px">
+          <button class="btn-grey icon-btn" onclick="openDetail('${r.id}')">🔍 Détail</button>
+        </div>
+      </div>`;
   }).join("") || "<p class='help'>Aucun enregistrement.</p>";
 }
+
 
 /* ====== [AJOUT] Vue par agent ====== */
 const agentModal = document.getElementById('agentModal');
