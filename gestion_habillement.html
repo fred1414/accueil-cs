@@ -54,7 +54,16 @@ main{
 .tag input{width:80px;text-align:center;border:1px solid #d9e2ef;border-radius:8px;padding:4px 6px}
 .tag input[type=text]{width:200px}
 .tag button{border:none;background:transparent;cursor:pointer;font-weight:900}
-.ackline{display:flex;align-items:center;gap:6px;margin-top:0px;font-size:14px;color:#0d2b52}
+.ackline{
+  display:inline-flex;              /* ne prend que la largeur du contenu */
+  align-items:center;
+  gap:6px;                          /* espace serré entre case et texte */
+  margin-top:4px;
+  font-size:14px;
+  color:#0d2b52;
+  justify-content:flex-start !important;  /* empêche l’écartement gauche/droite */
+}
+
 .ackline input{
   transform:scale(1.1); /* ou 1.0 si tu veux la taille standard */
   margin:0;
