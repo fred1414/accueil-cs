@@ -414,6 +414,19 @@ nav.menu-bar a{ padding:10px 12px; }
     width: 100%;
     max-width: 100%;
   }
+
+  /* 📘 & 📝 Limiter la hauteur et activer le scroll interne sur mobile */
+  #formation-panel,
+  #journal-panel {
+    max-height: none;
+  }
+
+  #formation-list,
+  #journal-list {
+    max-height: 40vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 </style>
