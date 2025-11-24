@@ -80,93 +80,108 @@ input,select,textarea{width:100%;padding:10px;border:1px solid #e2e8f0;border-ra
 
   body{
     min-height:100vh;
+    padding:12px;
   }
 
-  /* HEADER en colonne, plus compact */
+  /* HEADER en colonne, tout centré */
   header{
-    flex-direction:column;
-    align-items:flex-start;
-    gap:8px;
-    padding:10px 14px;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
   }
 
   header img{
-    height:50px;
+    height: 50px;
+    margin-right: 0;     /* plus d'espace à droite en mobile */
   }
 
   header .title{
-    font-size:20px;
+    font-size: 20px;
   }
 
   header .subtitle{
-    font-size:13px;
+    font-size: 13px;
   }
 
-  /* Bouton Accueil en plein largeur */
+  /* Bouton Accueil en plein largeur sous le titre */
   .acceuil-btn{
-    align-self:stretch;
-    width:100%;
-    text-align:center;
-    padding:8px 0;
-    font-size:14px;
-    border-radius:999px;
+    position: static;          /* annule le position:absolute du desktop */
+    transform: none;
+    align-self: stretch;
+    width: 100%;
+    text-align: center;
+    padding: 8px 0;
+    font-size: 14px;
+    border-radius: 999px;
   }
 
-  /* MAIN un peu plus serré sur les côtés */
+  /* MAIN plus serré */
   main{
-    margin:16px auto;
-    padding:0 12px;
+    margin: 16px auto;
+    padding: 0 8px;
   }
 
   .panel{
-    padding:14px;
+    padding: 14px;
   }
 
   .panel h2{
-    font-size:18px;
+    font-size: 18px;
   }
 
   /* Formulaire en 1 seule colonne */
   .form-grid{
-    grid-template-columns:1fr;
-    gap:10px;
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .form-grid .col-2,
   .form-grid .col-3,
   .form-grid .col-6{
-    grid-column:1 / -1;
+    grid-column: 1 / -1;
   }
 
   /* Boutons d’action en colonne / full-width */
   .form-actions{
-    flex-direction:column;
+    flex-direction: column;
   }
 
   .btn{
-    width:100%;
-    text-align:center;
+    width: 100%;
+    text-align: center;
   }
 
   /* Tags d’effets sur toute la largeur */
   .taglist{
-    flex-direction:column;
+    flex-direction: column;
   }
 
   .tag{
-    width:100%;
+    width: 100%;
   }
 
   .tag input[type="text"]{
-    flex:1;
-    min-width:0;
+    flex: 1;
+    min-width: 0;
   }
 
-  /* Tableau un peu plus compact sur mobile */
+  /* 🔁 TABLEAUX : scroll horizontal sur mobile
+     (Déclaration, Historique, Demandes du centre) */
+  .panel > div[style*="overflow:auto"]{
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table{
+    min-width: 650px;     /* garde un tableau lisible, mais scrollable */
+    font-size: 13px;
+  }
+
   .table th,
   .table td{
-    padding:6px 8px;
-    font-size:13px;
+    padding: 6px 8px;
   }
 }
   
