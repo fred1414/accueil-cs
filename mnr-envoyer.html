@@ -248,28 +248,35 @@ snap.forEach(doc=>{
 
   // Helpers
   const saveRows = (data)=> localStorage.setItem(KEY_ROWS, JSON.stringify(data.filter(r=>r && (r.art?.trim()||r.obs?.trim()))));
-const loadTck  = ()=> { 
+const loadTck = ()=> { 
   try{ 
     const raw = JSON.parse(localStorage.getItem(KEY_TCK)||"[]");
+    let arr = [];
 
     // Cas normal : déjà un tableau
-    if (Array.isArray(raw)) return raw;
-
+    if (Array.isArray(raw)) {
+      arr = raw;
+    }
     // Cas "emballé" : { __type:"array", items:[...] }
-    if (raw && raw.__type === "array" && Array.isArray(raw.items)) {
-      return raw.items;
+    else if (raw && raw.__type === "array" && Array.isArray(raw.items)) {
+      arr = raw.items;
     }
-
     // Cas où c'est un objet avec des tickets en valeurs
-    if (raw && typeof raw === "object") {
-      return Object.values(raw);
+    else if (raw && typeof raw === "object") {
+      arr = Object.values(raw);
     }
 
-    return [];
+    // 🔍 FILTRE ici sur le centre connecté
+    if (cis) {
+      arr = arr.filter(t => t && t.cis === cis);
+    }
+
+    return arr;
   }catch(_){ 
     return []; 
   } 
 };
+
 
   const saveTck  = (arr)=> localStorage.setItem(KEY_TCK, JSON.stringify(arr));
 
@@ -422,5 +429,6 @@ const loadTck  = ()=> {
 </script>
 </body>
 </html>
+
 
 
