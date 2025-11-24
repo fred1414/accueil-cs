@@ -73,6 +73,113 @@ hr{border:none;border-top:1px solid #eef2fb;margin:10px 0}
 @media print{
   @page { size: A3 portrait; margin: 12mm; }
 }
+
+/* ===========================
+   📱 Version mobile (≤ 768px)
+   =========================== */
+@media (max-width: 768px) {
+
+  /* Moins de marges autour de la page */
+  body{
+    padding: 12px;
+  }
+
+  /* Bouton retour plein largeur en haut */
+  .btn-back-fixed{
+    left: 12px;
+    right: 12px;
+    top: 8px;
+    width: auto;
+    display: block;
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: 999px;
+  }
+
+  /* Titre un peu plus petit + décalé sous le bouton fixe */
+  h1{
+    font-size: 20px;
+    margin: 56px 0 14px;
+    text-align: center;
+    padding: 0 6px;
+  }
+
+  .container{
+    border-radius: 12px;
+  }
+
+  /* Barre du haut en colonne */
+  .bar{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .bar .actions{
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .bar .actions button{
+    flex: 1 1 48%;
+    min-width: 0;
+  }
+
+  main{
+    padding: 14px 10px;
+  }
+
+  /* Formulaire en 1 colonne */
+  .grid{
+    grid-template-columns: 1fr;
+  }
+
+  .card{
+    padding: 12px;
+  }
+
+  button{
+    font-size: 14px;
+    padding: 9px 12px;
+  }
+
+  /* Tableau FMA scrollable horizontalement si trop large */
+  .table{
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    font-size: 13px;
+  }
+  .table thead,
+  .table tbody,
+  .table tr,
+  .table th,
+  .table td{
+    white-space: nowrap;
+  }
+
+  /* Modales adaptées à la largeur du mobile */
+  .modal .content{
+    width: 100%;
+    max-width: none;
+    margin: 0 8px;
+    border-radius: 12px;
+  }
+
+  .modal .body{
+    padding: 12px;
+  }
+
+  .modal .footer{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+  
 </style>
 </head>
 <body>
