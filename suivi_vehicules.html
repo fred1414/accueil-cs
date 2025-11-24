@@ -89,6 +89,69 @@ textarea{resize:none;height:80px;}
   transition:background .2s;
 }
 .back-btn:hover{background:#b71c1c;}
+
+/* ==========================
+   📱 Version mobile (≤ 768px)
+   ========================== */
+@media (max-width:768px){
+
+  body{
+    padding:12px 10px;
+  }
+
+  h1{
+    font-size:22px;
+    margin-top:56px;      /* laisse la place au bouton retour fixé au-dessus */
+    margin-bottom:10px;
+    padding:0 8px;
+  }
+
+  h2{
+    font-size:14px;
+    margin-bottom:14px;
+    padding:0 8px;
+  }
+
+  .container{
+    padding:14px 10px;
+    margin:10px auto 20px;
+    max-width:100%;
+  }
+
+  /* Bouton + Ajouter un véhicule bien larges sur mobile */
+  .back-btn{
+    position:static;       /* on le remet dans le flux */
+    margin:8px auto 4px;
+    width:100%;
+    max-width:260px;
+    text-align:center;
+  }
+
+  .add-btn{
+    width:100%;
+    max-width:260px;
+    font-size:15px;
+  }
+
+  /* Tableau scrollable horizontalement : plus besoin de dézoomer */
+  table{
+    display:block;
+    overflow-x:auto;
+    font-size:13px;
+    min-width:720px;       /* évite que les colonnes soient tassées */
+  }
+
+  th,td{
+    padding:8px 6px;
+    white-space:nowrap;
+  }
+
+  /* Modale un peu plus compacte */
+  .modal-content{
+    padding:18px 16px;
+  }
+}
+  
 </style>
 </head>
 <body>
@@ -473,3 +536,4 @@ function toast(msg){
 
 </body>
 </html>
+
