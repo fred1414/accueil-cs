@@ -70,6 +70,149 @@ footer.sticky{position:sticky;bottom:0;background:#fff;border-top:1px solid #e6e
 /* Bouton retour */
 .back-btn{position:absolute;top:16px;right:22px;background:#d32f2f;color:#fff;border:none;border-radius:30px;padding:8px 18px;font-weight:600;cursor:pointer;transition:background .2s;z-index:1000;}
 .back-btn:hover{background:#b71c1c;}
+
+/* ===========================
+   📱 Version mobile (≤ 768px)
+   =========================== */
+@media (max-width: 768px) {
+
+  body{
+    min-height: 100vh;
+  }
+
+  /* HEADER plus compact, en colonne */
+  header{
+    padding: 10px 12px 46px 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding-right: 12px; /* on enlève le gros padding pour le bouton retour */
+  }
+
+  header h1{
+    font-size: 17px;
+  }
+
+  header .meta{
+    font-size: 11px;
+  }
+
+  /* Le bloc "Agent / date" redevient dans le flux, plus lisible */
+  header .center{
+    position: static;
+    transform: none;
+    text-align: left;
+    white-space: normal;
+    width: 100%;
+    margin-top: 2px;
+  }
+
+  /* Bouton retour un peu plus petit et rapproché du bord */
+  .back-btn{
+    top: 10px;
+    right: 10px;
+    padding: 6px 14px;
+    font-size: 13px;
+  }
+
+  /* MAIN : marges réduites */
+  main{
+    padding: 0 10px;
+    margin-top: 14px;
+  }
+
+  /* Barre d’outils en colonne, champs plein largeur */
+  .toolbar{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .toolbar input[type="search"]{
+    width: 100%;
+    min-width: 0;
+    font-size: 14px;
+  }
+
+  .toolbar .btn{
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+    padding: 9px 12px;
+  }
+
+  /* Cartes déjà en 1 colonne en dessous de 720px, on compacte un peu */
+  .grid{
+    gap: 10px;
+  }
+
+  .card h2{
+    font-size: 13px;
+    padding: 8px 9px;
+  }
+
+  .card .list{
+    padding: 4px 5px;
+  }
+
+  .card .row{
+    padding: 4px 5px;
+  }
+
+  /* Lignes produits : agencement plus souple sur petit écran */
+  .row{
+    grid-template-columns: 22px 1fr;
+    align-items: flex-start;
+    row-gap: 4px;
+  }
+
+  .row.twf{
+    grid-template-columns: 22px 1fr;
+  }
+
+  .row .badge,
+  .row input[type="number"],
+  .row .textcell{
+    justify-self: flex-start;
+  }
+
+  .row input[type="number"]{
+    width: 70px;
+  }
+
+  .row .textcell input{
+    font-size: 13px;
+    padding: 5px 6px;
+  }
+
+  /* Zone OBS : un peu moins haute */
+  textarea.obs{
+    min-height: 90px;
+    font-size: 14px;
+  }
+
+  /* Footer sticky : en colonne sur mobile */
+  footer.sticky{
+    position: static;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+
+  footer.sticky .small{
+    font-size: 12px;
+  }
+
+  footer.sticky .btn{
+    width: 100%;
+    text-align: center;
+    padding: 9px 12px;
+  }
+}
+
+  
 </style>
 </head>
 <body>
