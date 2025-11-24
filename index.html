@@ -298,6 +298,7 @@ nav.menu-bar a{ padding:10px 12px; }
   /* MENU : barre scrollable, items plus compacts */
   nav.menu-bar {
     overflow-x: auto;
+    overflow-y: visible; /* important pour que les sous-menus puissent sortir */
   }
   nav.menu-bar ul {
     flex-wrap: nowrap;
@@ -310,10 +311,40 @@ nav.menu-bar a{ padding:10px 12px; }
     white-space: nowrap; /* évite les retours bizarres dans les libellés */
   }
 
-  /* Sous-menus : on les laisse en absolu, mais on évite trop de largeur */
+  /* 🔽 GESTION DES SOUS-MENUS SUR MOBILE 🔽 */
+
+  /* On neutralise le :hover prévu pour le PC */
+  nav.menu-bar ul li:hover ul {
+    display: none;
+  }
+
+  /* Les sous-menus ne sont plus en position absolue,
+     ils poussent le contenu vers le bas (mode accordéon) */
   nav.menu-bar ul li ul {
-    min-width: 180px;
+    position: static;
+    margin-top: 4px;
+    box-shadow: none;
+    border-radius: 8px;
+    min-width: 100%;
     font-size: 13px;
+    display: none;              /* fermés par défaut */
+  }
+
+  /* Quand le <li> a la classe .open → on ouvre le sous-menu */
+  nav.menu-bar ul li.open > ul {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* On marque visuellement l'item parent ouvert */
+  nav.menu-bar ul li.open > a {
+    background: #b71c1c;
+  }
+
+  nav.menu-bar ul li ul li a {
+    font-size: 13px;
+    padding: 8px 10px;
+    white-space: normal; /* sous-menu peut retourner à la ligne */
   }
 
   /* Bandeau météo : un peu plus compact */
@@ -2151,6 +2182,48 @@ window.addEventListener("storage",(e)=>{
 });
 </script>
 
+<script>
+/* Menu mobile : ouvre/ferme les sous-menus au clic */
+(function(){
+  const nav = document.querySelector('nav.menu-bar');
+  if (!nav) return;
+
+  function isMobile() {
+    return window.matchMedia('(max-width: 768px)').matches;
+  }
+
+  nav.addEventListener('click', function(e){
+    const link = e.target.closest('li > a');
+    if (!link || !isMobile()) return;
+
+    const li = link.parentElement;
+    const submenu = li.querySelector('ul');
+    if (!submenu) {
+      // Pas de sous-menu → on laisse le lien se comporter normalement
+      return;
+    }
+
+    // Il y a un sous-menu → on ne suit pas le lien, on ouvre/ferme
+    e.preventDefault();
+
+    const alreadyOpen = li.classList.contains('open');
+
+    // Ferme les autres sous-menus
+    nav.querySelectorAll('li.open').forEach(el => {
+      if (el !== li) el.classList.remove('open');
+    });
+
+    // Bascule l'état du sous-menu cliqué
+    if (alreadyOpen) {
+      li.classList.remove('open');
+    } else {
+      li.classList.add('open');
+    }
+  });
+})();
+</script>
+
+  
 <!-- FIN AJOUT -->
 
 </body>
