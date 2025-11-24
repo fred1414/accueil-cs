@@ -535,30 +535,27 @@ function usersVerg(){
 function fullName(u){ return `${u.nom||""} ${u.prenom||""}`.trim(); }
 
 /* ====== Thèmes ====== */
-/* 🔁 Thèmes stockés par CIS, avec fallback sur l’ancienne clé globale "csver_themes" */
+/* Thèmes stockés uniquement par CIS, sans plus utiliser la clé globale "csver_themes" */
 function getThemes(){
   const key = currentThemesKey();
   let t = readJson(key, null);
 
   if(!t || !Array.isArray(t) || !t.length){
-    // On essaie d'abord l'ancienne clé globale pour compatibilité
-    let legacy = readJson("csver_themes", null);
-    if(!legacy || !Array.isArray(legacy) || !legacy.length){
-      legacy = [
-        "ARI / Reconnaissance",
-        "Échelle à coulisse",
-        "Sauvetage / LSPCC",
-        "Établissements / Alimentation",
-        "Feu de véhicule",
-        "Secours routier",
-        "Manoeuvre hydraulique"
-      ];
-    }
-    t = legacy;
+    // Liste par défaut pour un nouveau CIS
+    t = [
+      "ARI / Reconnaissance",
+      "Échelle à coulisse",
+      "Sauvetage / LSPCC",
+      "Établissements / Alimentation",
+      "Feu de véhicule",
+      "Secours routier",
+      "Manoeuvre hydraulique"
+    ];
     writeJson(key, t);
   }
   return t;
 }
+
 function renderThemesSelect(){
   const s=$("#theme"); s.innerHTML="";
   getThemes().forEach(t=>{ const o=document.createElement("option"); o.value=t; o.textContent=t; s.appendChild(o); });
