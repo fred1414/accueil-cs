@@ -54,8 +54,11 @@ main{
 .tag input{width:80px;text-align:center;border:1px solid #d9e2ef;border-radius:8px;padding:4px 6px}
 .tag input[type=text]{width:200px}
 .tag button{border:none;background:transparent;cursor:pointer;font-weight:900}
-.ackline{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:14px;color:#0d2b52}
-.ackline input{transform:scale(1.2)}
+.ackline{display:flex;align-items:center;gap:6px;margin-top:0px;font-size:14px;color:#0d2b52}
+.ackline input{
+  transform:scale(1.1); /* ou 1.0 si tu veux la taille standard */
+  margin:0;
+}
 .small{font-size:12px;color:#555}
 .help{font-size:13px;color:#444}
 .muted{color:#666;font-size:12px}
@@ -226,12 +229,13 @@ input,select,textarea{width:100%;padding:10px;border:1px solid #e2e8f0;border-ra
         </div>
         <div class="col-6"><label>Effets sélectionnés</label><div id="effetsTags" class="taglist"></div></div>
         <div class="col-6">
-          <label>Reconnaissance</label>
-          <div class="ackline">
-            <input type="checkbox" id="ack" required>
-            <span>Je reconnais avoir déposé l'article / les articles dans l'armoire <strong>propre et plié</strong>.</span>
-          </div>
-        </div>
+  <label for="ack" class="ackline">
+    <span style="font-weight:600;margin-right:6px;">Reconnaissance</span>
+    <input type="checkbox" id="ack" required>
+    <span>Je reconnais avoir déposé l'article / les articles dans l'armoire <strong>propre et plié</strong>.</span>
+  </label>
+</div>
+
         <div class="col-6 form-actions">
           <button id="submitBtn" class="btn primary" type="submit">Enregistrer le dépôt</button>
           <button class="btn ghost" type="button" onclick="clearForm()">Réinitialiser</button>
