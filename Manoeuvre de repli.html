@@ -219,6 +219,136 @@ textarea{min-height:60px;resize:vertical}
   #btnBack,#notif,.bar .actions button{display:none!important}
   .container{box-shadow:none;border-radius:0}
 }
+
+/* ===========================
+   📱 Version mobile (≤ 768px)
+   =========================== */
+@media (max-width: 768px) {
+
+  /* Hauteur & padding plus adaptés */
+  html,
+  body {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  body {
+    padding: 12px;
+  }
+
+  /* Titre plus compact */
+  h1 {
+    font-size: 20px;
+    margin-bottom: 14px;
+    padding: 0 8px;
+  }
+
+  /* Carte principale plus souple */
+  .container {
+    border-radius: 10px;
+    box-shadow: 0 8px 18px rgba(0,0,0,.18);
+  }
+
+  /* Barre supérieure en colonne */
+  .bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .bar .flex {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .bar .actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  /* Boutons de la barre : s’adaptent, voire passent à la ligne */
+  .bar .actions button {
+    flex: 1 1 48%;
+    min-width: 0;
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+
+  /* Bouton retour un peu plus petit */
+  .btn-back-fixed {
+    top: 8px;
+    right: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  /* Contenu principal plus serré */
+  main {
+    padding: 12px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;   /* 1 colonne sur mobile */
+    gap: 10px;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  label {
+    font-size: 12px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 14px;
+    padding: 8px 9px;
+  }
+
+  .flex {
+    row-gap: 6px;
+  }
+
+  /* Tableau agents : scroll horizontal si trop large */
+  .table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table table {
+    width: 100%;
+  }
+
+  .table th,
+  .table td {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /* Modale historique : pleine largeur avec hauteur contrôlée */
+  .modal .content {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 8px;
+    max-height: 90vh;
+  }
+
+  .modal .body {
+    max-height: 60vh;
+  }
+
+  /* Notification plus compacte */
+  #notif {
+    max-width: 100%;
+    font-size: 13px;
+  }
+}
+
+  
 </style>
 </head>
 <body>
@@ -1119,4 +1249,5 @@ window.addEventListener("DOMContentLoaded", async ()=>{
 </script>
 </body>
 </html>
+
 
