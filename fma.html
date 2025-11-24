@@ -206,7 +206,7 @@ hr{border:none;border-top:1px solid #eef2fb;margin:10px 0}
       <div class="grid">
         <div class="card">
           <label>Formateur</label>
-          <input id="formateur" placeholder="Ex: Dupont Jean" required>
+            <input id="formateur" placeholder="Ex: Dupont Jean" required readonly>
           <div class="help">Par défaut, ton nom de session.</div>
         </div>
         <div class="card">
@@ -1089,6 +1089,12 @@ document.getElementById("fmaForm").addEventListener("submit", (e)=>{
 
   const formateur=$("#formateur").value.trim() || userName;
   const date=$("#date").value;
+    const todayIso = new Date().toISOString().split("T")[0];
+  if (date > todayIso) {
+    alert("La date ne peut pas être dans le futur.");
+    return;
+  }
+
   const h1=$("#h1").value, h2=$("#h2").value;
   const theme=$("#theme").value;
   const parts=[...$("#participants").querySelectorAll(".participant-item")].map(div=>{
@@ -1164,6 +1170,16 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   }
 
   $("#formateur").value = userName;
+    // Empêcher de choisir une date future
+  const dateInput = document.getElementById("date");
+  const todayIso = new Date().toISOString().split("T")[0];
+  dateInput.max = todayIso;
+
+  // (optionnel) pré-remplir avec aujourd'hui si vide
+  if (!dateInput.value) {
+    dateInput.value = todayIso;
+  }
+
   renderThemesSelect();
   renderAgentSelect();
   fillQuarterDatalist();
