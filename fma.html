@@ -228,10 +228,11 @@ hr{border:none;border-top:1px solid #eef2fb;margin:10px 0}
         </div>
         <div class="card" style="grid-column:1/-1">
           <label>Participants</label>
-          <div class="flex">
-            <select id="agentSelect" style="min-width:260px"></select>
-            <button type="button" class="btn-grey icon-btn" id="btnAddPart">➕ Ajouter</button>
-          </div>
+            <div class="flex">
+    <input id="agentInput" list="agentOptions" style="min-width:260px" placeholder="Rechercher un agent…">
+    <datalist id="agentOptions"></datalist>
+    <button type="button" class="btn-grey icon-btn" id="btnAddPart">➕ Ajouter</button>
+  </div>
           <div id="participants" class="help" style="margin-top:8px">Aucun participant ajouté.</div>
         </div>
       </div>
@@ -561,10 +562,13 @@ function renderThemesSelect(){
   getThemes().forEach(t=>{ const o=document.createElement("option"); o.value=t; o.textContent=t; s.appendChild(o); });
 }
 
-/* ====== Users select ====== */
-function renderAgentSelect(){
-  const s = $("#agentSelect"); 
-  s.innerHTML = "";
+/* ====== Users autocomplete (datalist) ====== */
+function renderAgentOptions(){
+  const input = $("#agentInput");
+  const dl = $("#agentOptions");
+  if (!input || !dl) return;
+
+  dl.innerHTML = "";
 
   const meKey = (session && (session.nom || session.prenom))
     ? nameKey(`${session.nom||""} ${session.prenom||""}`)
@@ -574,25 +578,25 @@ function renderAgentSelect(){
     .filter(u => {
       if(!meKey) return true;
       const k = nameKey(`${u.nom||""} ${u.prenom||""}`);
-      return k !== meKey;
+      return k !== meKey; // on ne se propose pas soi-même
     })
     .sort((a,b)=> fullName(a).localeCompare(fullName(b),'fr',{sensitivity:'base'}));
 
   list.forEach(u=>{
-    const v = fullName(u);
-    const o = document.createElement("option");
-    o.value = v;
-    o.textContent = `${(u.nom||"").toUpperCase()} ${u.prenom||""}`.trim();
-    s.appendChild(o);
+    const disp = `${(u.nom||"").toUpperCase()} ${u.prenom||""}`.trim();
+    const opt = document.createElement("option");
+    opt.value = disp;
+    dl.appendChild(opt);
   });
 
-  $("#agentSelect").disabled = list.length===0;
+  input.disabled = list.length === 0;
 }
+
 
 /* Réactivité personnels */
 window.addEventListener("storage",(e)=>{
   if(e && e.key && e.key.startsWith("csver_user_")){
-    renderAgentSelect();
+        renderAgentOptions();
     notify("Personnel mis à jour.");
   }
 });
@@ -605,12 +609,19 @@ function renderParticipantsUI(){
   c.classList.remove("help");
 }
 function addParticipant(){
-  const name=$("#agentSelect").value;
-  if(!name){ alert("Choisis un agent."); return; }
+  const input = $("#agentInput");
+  const name = input.value.trim();
+  if(!name){
+    alert("Choisis ou saisis un agent.");
+    return;
+  }
+
   const container=$("#participants");
   if([...container.querySelectorAll(".participant-item span")].some(s=>s.textContent===name)){
-    alert("Déjà ajouté"); return;
+    alert("Déjà ajouté");
+    return;
   }
+
   const idSafe=name.replace(/[^a-z0-9]/gi,"_");
   const row=document.createElement("div");
   row.className="participant-item";
@@ -624,7 +635,11 @@ function addParticipant(){
   row.querySelector("button").onclick=()=>row.remove();
   container.appendChild(row);
   renderParticipantsUI();
+
+  // vider le champ après ajout
+  input.value = "";
 }
+
 document.getElementById("btnAddPart").addEventListener("click", addParticipant);
 
 /* ====== FMA storage & edit mode ====== */
@@ -1241,7 +1256,7 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   }
 
   renderThemesSelect();
-  renderAgentSelect();
+    renderAgentOptions();
   fillQuarterDatalist();
   renderParticipantsUI();
   renderPending();
