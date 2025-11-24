@@ -72,11 +72,109 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
 .form-grid .col-6{grid-column:1 / -1}
 input,select,textarea{width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;font-size:14px;}
 .form-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ===========================
+   📱 Version mobile (≤ 768px)
+   =========================== */
+@media (max-width: 768px) {
+
+  body{
+    min-height:100vh;
+  }
+
+  /* HEADER en colonne, plus compact */
+  header{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:8px;
+    padding:10px 14px;
+  }
+
+  header img{
+    height:50px;
+  }
+
+  header .title{
+    font-size:20px;
+  }
+
+  header .subtitle{
+    font-size:13px;
+  }
+
+  /* Bouton Accueil en plein largeur */
+  .acceuil-btn{
+    align-self:stretch;
+    width:100%;
+    text-align:center;
+    padding:8px 0;
+    font-size:14px;
+    border-radius:999px;
+  }
+
+  /* MAIN un peu plus serré sur les côtés */
+  main{
+    margin:16px auto;
+    padding:0 12px;
+  }
+
+  .panel{
+    padding:14px;
+  }
+
+  .panel h2{
+    font-size:18px;
+  }
+
+  /* Formulaire en 1 seule colonne */
+  .form-grid{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .form-grid .col-2,
+  .form-grid .col-3,
+  .form-grid .col-6{
+    grid-column:1 / -1;
+  }
+
+  /* Boutons d’action en colonne / full-width */
+  .form-actions{
+    flex-direction:column;
+  }
+
+  .btn{
+    width:100%;
+    text-align:center;
+  }
+
+  /* Tags d’effets sur toute la largeur */
+  .taglist{
+    flex-direction:column;
+  }
+
+  .tag{
+    width:100%;
+  }
+
+  .tag input[type="text"]{
+    flex:1;
+    min-width:0;
+  }
+
+  /* Tableau un peu plus compact sur mobile */
+  .table th,
+  .table td{
+    padding:6px 8px;
+    font-size:13px;
+  }
+}
+  
 </style>
 </head>
 <body>
 <header>
-  <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png" alt="Logo SDIS 30" onerror="this.src='https://via.placeholder.com/120x60?text=SDIS30'">
+  <img src="https://i.postimg.cc/LsB40JQq/logo-cismic.png" alt="Logo SDIS 30" onerror="this.src='https://via.placeholder.com/120x60?text=SDIS30'">
   <div>
     <div class="title">Gestion de l'habillement</div>
     <div class="subtitle" id="cisLabel">—</div>
@@ -164,7 +262,7 @@ input,select,textarea{width:100%;padding:10px;border:1px solid #e2e8f0;border-ra
   </section>
 </main>
 
-<footer>© SDIS 30 — Gestion habillement — 2025</footer>
+<footer>© CISMIC — Gestion habillement — 2025</footer>
 
 <!-- 🔌 Firebase + Firestore + stockage partagé -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
