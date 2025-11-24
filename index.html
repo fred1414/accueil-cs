@@ -884,7 +884,7 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   key="vehicules_"+cis;
 
   const nomComplet=((user.prenom||"")+" "+(user.nom||"")).trim()||user.matricule;
-  document.getElementById("cis-title").textContent=`Accueil CS ${cis}`;
+  document.getElementById("cis-title").textContent=`CISMIC ${cis}`;
   document.getElementById("welcome-text").textContent=`Bienvenue ${nomComplet}`;
 
   applyRoleMenus(user.role);
