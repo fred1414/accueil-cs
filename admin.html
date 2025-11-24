@@ -1145,19 +1145,32 @@ function editUser(matricule){
 /* Répertoire (inchangé) */
 function openDirectory(){ const m=document.getElementById('dirModal'); m.style.display='flex'; document.getElementById('dirSearch').value=''; renderDirectory(); }
 function closeDirectory(){ document.getElementById('dirModal').style.display='none'; }
-function renderDirectory(){
+function renderDirectory(filter){
   if(!(isAdminRole() || isSuperAdmin())){
     alert("Seuls les administrateurs du CIS peuvent affecter depuis le répertoire.");
     return;
   }
 
-  const mine=myCis(); const tbody=document.getElementById('dirList'); const q=(document.getElementById('dirSearch').value||"").toLowerCase();
-  tbody.innerHTML=""; const all=getUsers().map(normalizeUser);
+  const mine = myCis();
+  const tbody = document.getElementById('dirList');
+
+  // ⬅ si on reçoit un filtre en paramètre, on l’utilise, sinon on lit le champ
+  const q = (typeof filter === "string"
+              ? filter
+              : (document.getElementById('dirSearch').value || "")
+            ).toLowerCase();
+
+  tbody.innerHTML = "";
+  const all = getUsers().map(normalizeUser);
+
   all
-   .filter(u=>{
-     const cisNames=[u.cis?.primary||""].concat((u.cis?.secondaries||[]).map(s=>s.cis));
-     return [u.matricule||"",u.nom||"",u.prenom||"",...cisNames].join(" ").toLowerCase().includes(q);
-   })
+    .filter(u=>{
+      const cisNames=[u.cis?.primary||""].concat((u.cis?.secondaries||[]).map(s=>s.cis));
+      return [u.matricule||"",u.nom||"",u.prenom||"",...cisNames]
+        .join(" ")
+        .toLowerCase()
+        .includes(q);
+    })
    .sort((a,b)=>{const A=(a.nom||"").toLowerCase(),B=(b.nom||"").toLowerCase(); const aP=(a.prenom||"").toLowerCase(),bP=(b.prenom||"").toLowerCase(); if(A<B)return-1;if(A>B)return 1;return aP.localeCompare(bP);})
    .forEach(u=>{
      let actionHTML='';
@@ -1205,7 +1218,10 @@ function renderDirectory(){
 
 /* Réactivité */
 document.getElementById("search").addEventListener("input",e=>renderTable(e.target.value));
-document.getElementById("dirSearch").addEventListener("input", () => renderDirectory());
+document.getElementById("dirSearch").addEventListener("input", e => {
+  renderDirectory(e.target.value);
+});
+
 
 window.addEventListener("DOMContentLoaded", async ()=>{
   await syncAccueilFromCloud();
