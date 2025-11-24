@@ -39,6 +39,88 @@
   .btn{background:#1a73e8;color:#fff}
   .ghost{background:#eef2f7;color:#0d2b52}
   .muted{color:var(--muted);font-size:12px;margin-top:6px}
+
+/* ===========================
+   📱 Version mobile (≤ 768px)
+   =========================== */
+@media (max-width: 768px) {
+
+  /* Le body ne centre plus verticalement, on laisse scroller */
+  body{
+    padding: 12px;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+
+  .wrap{
+    width: 100%;
+    max-width: 100%;
+    border-radius: 12px;
+  }
+
+  /* HEADER en colonne, tout centré */
+  header{
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+
+  header img{
+    height: 40px;
+  }
+
+  /* Chip CIS passe en dessous du titre, non absolu */
+  .chip{
+    position: static;
+    transform: none;
+    margin-top: 2px;
+  }
+
+  main{
+    padding: 14px 10px;
+    overflow-x: auto;              /* permet le scroll horizontal du tableau */
+  }
+
+  /* Barre du haut : champs + boutons empilés */
+  .bar{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bar .grow{
+    width: 100%;
+  }
+
+  .bar input[type="text"]{
+    width: 100%;
+  }
+
+  /* Boutons plus confortables / pleine largeur */
+  .bar button,
+  .actions button{
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Tableau : largeur minimale + scroll horizontal */
+  table{
+    min-width: 640px;
+    font-size: 13px;
+  }
+
+  th, td{
+    padding: 8px;
+  }
+
+  /* Bouton Retour : un peu plus petit sur mobile si besoin */
+  .return-fixed{
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+}
+  
 </style>
 </head>
 <body>
@@ -47,7 +129,7 @@
 
   <div class="wrap">
     <header>
-      <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png" alt="Logo SDIS 30">
+      <img src="https://i.postimg.cc/LsB40JQq/logo-cismic.png" alt="Logo SDIS 30">
       <div style="font-size:18px">MNR — Envoyer un article</div>
       <span class="chip" id="cis-chip">CIS —</span>
     </header>
@@ -340,4 +422,5 @@ const loadTck  = ()=> {
 </script>
 </body>
 </html>
+
 
