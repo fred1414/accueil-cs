@@ -340,7 +340,11 @@ hr{border:none;border-top:1px solid #eef2fb;margin:10px 0}
 <script>
 /* ====== Session & rôle ====== */
 const K_FMA="fma_data_v2";
-const K_THEMES="csver_themes";
+/* 🔁 Thèmes par CIS : on utilise un préfixe + le nom du CIS normalisé */
+const K_THEMES_PREFIX = "csver_themes_";
+function currentThemesKey() {
+  return K_THEMES_PREFIX + activeCisName(); // ex: "csver_themes_vergeze"
+}
 
 /* (ajout minimal) Helpers d'autorisation pour détecter Administrateur du CIS */
 function getSession(){ try{ return JSON.parse(localStorage.getItem("csver_session")||"null"); }catch{ return null; } }
@@ -531,12 +535,27 @@ function usersVerg(){
 function fullName(u){ return `${u.nom||""} ${u.prenom||""}`.trim(); }
 
 /* ====== Thèmes ====== */
+/* 🔁 Thèmes stockés par CIS, avec fallback sur l’ancienne clé globale "csver_themes" */
 function getThemes(){
-  let t = readJson(K_THEMES, null);
+  const key = currentThemesKey();
+  let t = readJson(key, null);
+
   if(!t || !Array.isArray(t) || !t.length){
-    t = ["ARI / Reconnaissance","Échelle à coulisse","Sauvetage / LSPCC",
-         "Établissements / Alimentation","Feu de véhicule","Secours routier","Manoeuvre hydraulique"];
-    writeJson(K_THEMES,t);
+    // On essaie d'abord l'ancienne clé globale pour compatibilité
+    let legacy = readJson("csver_themes", null);
+    if(!legacy || !Array.isArray(legacy) || !legacy.length){
+      legacy = [
+        "ARI / Reconnaissance",
+        "Échelle à coulisse",
+        "Sauvetage / LSPCC",
+        "Établissements / Alimentation",
+        "Feu de véhicule",
+        "Secours routier",
+        "Manoeuvre hydraulique"
+      ];
+    }
+    t = legacy;
+    writeJson(key, t);
   }
   return t;
 }
@@ -962,7 +981,12 @@ document.getElementById("closeThemes").onclick=()=>{$("#themesModal").style.disp
 document.getElementById("addTheme").onclick=()=>{
   const v=$("#newTheme").value.trim(); if(!v) return;
   const list=getThemes(); if(list.includes(v)) return alert("Ce thème existe déjà.");
-  list.push(v); writeJson(K_THEMES,list); $("#newTheme").value=""; renderThemesSelect(); renderThemesAdmin(); notify("Thème ajouté.");
+  list.push(v);
+  writeJson(currentThemesKey(), list);
+  $("#newTheme").value="";
+  renderThemesSelect();
+  renderThemesAdmin();
+  notify("Thème ajouté.");
 };
 function renderThemesAdmin(){
   const list=getThemes();
@@ -979,11 +1003,19 @@ window.renameTheme=(i)=>{
   const list=getThemes(); const cur=list[i]; if(cur==null) return;
   const v=prompt("Renommer le thème :", cur); if(v==null || !v.trim()) return;
   if(list.includes(v.trim())) return alert("Existe déjà.");
-  list[i]=v.trim(); writeJson(K_THEMES,list); renderThemesSelect(); renderThemesAdmin(); notify("Thème modifié.");
+  list[i]=v.trim();
+  writeJson(currentThemesKey(), list);
+  renderThemesSelect();
+  renderThemesAdmin();
+  notify("Thème modifié.");
 };
 window.deleteTheme=(i)=>{
   const list=getThemes(); if(!confirm("Supprimer ce thème ?")) return;
-  list.splice(i,1); writeJson(K_THEMES,list); renderThemesSelect(); renderThemesAdmin(); notify("Thème supprimé.");
+  list.splice(i,1);
+  writeJson(currentThemesKey(), list);
+  renderThemesSelect();
+  renderThemesAdmin();
+  notify("Thème supprimé.");
 };
 
 /* ====== Impression ====== */
@@ -1120,7 +1152,7 @@ document.getElementById("fmaForm").addEventListener("submit", (e)=>{
 
   const formateur=$("#formateur").value.trim() || userName;
   const date=$("#date").value;
-    const todayIso = new Date().toISOString().split("T")[0];
+  const todayIso = new Date().toISOString().split("T")[0];
   if (date > todayIso) {
     alert("La date ne peut pas être dans le futur.");
     return;
@@ -1201,7 +1233,7 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   }
 
   $("#formateur").value = userName;
-    // Empêcher de choisir une date future
+  // Empêcher de choisir une date future
   const dateInput = document.getElementById("date");
   const todayIso = new Date().toISOString().split("T")[0];
   dateInput.max = todayIso;
@@ -1236,7 +1268,7 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     }
   }catch(_){}
 });
-
 </script>
+
 </body>
 </html>
