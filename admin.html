@@ -69,13 +69,142 @@
   .perm-grid .fullrow { grid-column: 1 / -1; }
   .perm-divider { border-top: 1px dashed #cfd7ff; height: 0; margin: 8px 0; }
   .perm-subtitle { font-weight: 700; color: #233; margin: 2px 0 6px; }
+
+/* ===========================
+   📱 Version mobile (≤ 768px)
+   =========================== */
+@media (max-width: 768px) {
+
+  body{
+    padding: 12px;
+  }
+
+  h1{
+    font-size: 20px;
+    margin-bottom: 12px;
+    padding: 0 8px;
+  }
+
+  .back-btn{
+    top: 10px;
+    right: 10px;
+    padding: 6px 14px;
+    font-size: 13px;
+  }
+
+  .container{
+    padding: 14px 10px;
+    border-radius: 10px;
+    overflow-x: auto; /* pour que le gros tableau puisse scroller horizontalement */
+  }
+
+  /* Barre du haut : passe en colonne */
+  .top-bar{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .top-bar h2{
+    font-size: 18px;
+  }
+
+  .right-actions{
+    width: 100%;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .search-box{
+    flex: 1;
+  }
+
+  .search-box input{
+    width: 100%;
+    font-size: 14px;
+  }
+
+  .right-actions .btn-primary,
+  .right-actions .btn-ghost{
+    flex: 0 0 auto;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  /* Tableau principal : scroll horizontal si nécessaire */
+  #userTable{
+    min-width: 700px;
+    font-size: 13px;
+  }
+  #userTable th,
+  #userTable td{
+    padding: 8px;
+  }
+
+  /* Formulaire plus compact */
+  .form-box{
+    margin-top: 18px;
+    padding: 14px 12px;
+  }
+
+  label{
+    font-size: 14px;
+  }
+
+  input,
+  select{
+    font-size: 14px;
+  }
+
+  /* Les blocs CIS passent en 1 colonne */
+  .cis-wrap{
+    grid-template-columns: 1fr;
+  }
+
+  /* Boutons Enregistrer / Annuler sur toute la largeur */
+  #userForm > div:last-child{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  #userForm > div:last-child button{
+    width: 100%;
+  }
+
+  /* Modales (répertoire…) : plein écran avec scroll interne */
+  .modal{
+    padding: 10px;
+  }
+
+  .modal .panel{
+    max-width: 100%;
+    max-height: 90vh;
+    padding: 12px 10px;
+    overflow-y: auto;
+  }
+
+  .modal .topline{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modal .search{
+    width: 100%;
+  }
+
+  #dirModal table{
+    font-size: 13px;
+  }
+}
+
+  
 </style>
 </head>
 <body>
 
 <button class="back-btn" onclick="window.location.href='index.html'">⬅ Retour</button>
 
-<h1>⚙️ Gestion des utilisateurs — Accueil CS</h1>
+<h1>⚙️ Gestion des utilisateurs — CISMIC</h1>
 
 <div class="container">
   <div class="top-bar">
@@ -198,7 +327,7 @@
   </div>
 </div>
 
-<footer>© CS VER — Administration 2025</footer>
+<footer>© CISMIC — Administration 2025</footer>
 
 <!-- Modal Répertoire (optionnel) -->
 <div id="dirModal" class="modal" aria-hidden="true">
