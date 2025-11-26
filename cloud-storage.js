@@ -62,12 +62,13 @@ window.cloudGetJSON  = cloudGetJSON;
 window.cloudSetJSON  = cloudSetJSON;
 
 // 4) Quelles clés on synchronise
-function shouldSyncKey(key){
+     function shouldSyncKey(key){
   if(!key) return false;
   return key === "fma_data_v2"
-      || key === "csver_themes"
-      || key === "manoeuvre_repli_v1"     // 🔵 manœuvres de repli (tous CIS)
-      || key.startsWith("repli_lock_")    // 🔵 verrou manœuvre par CIS
+      || key === "csver_themes"          // ancienne clé globale (tu peux la garder pour compat)
+      || key.startsWith("csver_themes_") // 🔴 NOUVEAU : thèmes par CIS
+      || key === "manoeuvre_repli_v1"    // 🔵 manœuvres de repli (tous CIS)
+      || key.startsWith("repli_lock_")   // 🔵 verrou manœuvre par CIS
       || key.startsWith("vehicules_")
       || key.startsWith("journal_")
       || key.startsWith("reservations_")
@@ -75,6 +76,7 @@ function shouldSyncKey(key){
       || key.startsWith("messages_")
       || key.startsWith("csver_user_");
 }
+
 window.shouldSyncKey = shouldSyncKey;
 
 // 5) Cloud ➜ localStorage (appelé au chargement de CHAQUE page)
@@ -143,3 +145,4 @@ window.syncAccueilFromCloud = syncAccueilFromCloud;
     origRem(key);
   };
 })();
+
