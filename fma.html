@@ -180,14 +180,19 @@ hr{border:none;border-top:1px solid #eef2fb;margin:10px 0}
   }
 }
 
-  /* Drag & drop des thèmes */
+/* Drag & drop des thèmes */
+.theme-row{
+  cursor: grab;
+}
 .theme-row.dragging{
+  cursor: grabbing;
   opacity: .6;
   border-style: dashed !important;
 }
 .theme-row.drop-target{
   outline: 2px dashed #0b5bd3;
 }
+
 
   
 </style>
@@ -1076,19 +1081,24 @@ function renderThemesAdmin(){
          style="justify-content:space-between;border:1px solid #ebeff6;background:#f9fafe;border-radius:10px;padding:8px;margin:6px 0"
          draggable="true"
          data-index="${i}">
-      <div class="theme-label">${t}</div>
-      <div class="flex">
-  <button class="btn-grey icon-btn" title="Monter" onclick="moveThemeUp(${i})">⬆</button>
-  <button class="btn-grey icon-btn" title="Descendre" onclick="moveThemeDown(${i})">⬇</button>
-  <button class="btn-grey icon-btn" onclick="renameTheme(${i})">✎</button>
-  <button class="btn-danger icon-btn" onclick="deleteTheme(${i})">🗑️</button>
-</div>
+      
+      <!-- Poignée tirer / glisser -->
+      <div class="flex" style="gap:8px;align-items:center;">
+        <span style="font-size:18px;" title="Tirer / glisser pour réordonner">⠿</span>
+        <div class="theme-label">${t}</div>
+      </div>
 
+      <!-- Boutons actions -->
+      <div class="flex">
+        <button class="btn-grey icon-btn" onclick="renameTheme(${i})">✎</button>
+        <button class="btn-danger icon-btn" onclick="deleteTheme(${i})">🗑️</button>
+      </div>
     </div>`).join("");
 
   // Active le drag & drop après avoir recréé les lignes
   enableThemeDragDrop();
 }
+
 
 function enableThemeDragDrop(){
   const listEl = document.getElementById("themesList");
@@ -1164,31 +1174,6 @@ function saveThemeOrderFromDom(){
   // On rerend la liste pour remettre les bons index dans les onclick(renameTheme(i), deleteTheme(i))
   renderThemesAdmin();
 }
-
-  window.moveThemeUp = function(i){
-  const list = getThemes();
-  if (i <= 0) return; // déjà tout en haut
-  // on échange l'élément i avec i-1
-  const tmp = list[i-1];
-  list[i-1] = list[i];
-  list[i] = tmp;
-
-  writeJson(currentThemesKey(), list);
-  renderThemesSelect();   // met à jour le <select> du formulaire
-  renderThemesAdmin();    // rerend la liste des thèmes dans la modale
-};
-
-window.moveThemeDown = function(i){
-  const list = getThemes();
-  if (i >= list.length - 1) return; // déjà tout en bas
-  const tmp = list[i+1];
-  list[i+1] = list[i];
-  list[i] = tmp;
-
-  writeJson(currentThemesKey(), list);
-  renderThemesSelect();
-  renderThemesAdmin();
-};
 
   
 window.renameTheme=(i)=>{
