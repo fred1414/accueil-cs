@@ -422,12 +422,31 @@ if (pendingSection) pendingSection.style.display = canSeePending ? 'block' : 'no
 const webactCheckWrap = document.getElementById('webactCheckWrap');
 if (webactCheckWrap) webactCheckWrap.style.display = canSeePending ? 'flex' : 'none';
 
-/* cis dynamique */
-let cis = (() => {
-  const sessCis = Array.isArray(session?.cis) ? session.cis[0] : session?.cis;
-  const label = sessCis ? String(sessCis) : "CIS Vergèze";
-  return label.startsWith("CIS") ? label : "CIS " + label;
-})();
+/* cis dynamique (corrigé) */
+function currentCisLabel() {
+  const sess = getSession();
+  const raw = sess?.cis;
+  let value = '';
+
+  if (typeof raw === 'string') {
+    // ex : "CIS Vergèze" ou "Vergèze"
+    value = raw;
+  } else if (Array.isArray(raw)) {
+    // ex : ["CIS Vergèze", "CIS Lunel"]
+    value = raw[0] || '';
+  } else if (raw && typeof raw === 'object') {
+    // ex : { primary:"CIS Vergèze", active:"CIS Lunel", ... }
+    value = raw.active || raw.current || raw.primary || '';
+  }
+
+  if (!value) value = 'CIS Vergèze'; // valeur de secours
+
+  return value.startsWith('CIS') ? value : 'CIS ' + value;
+}
+
+// Libellé humain du CIS courant, ex : "CIS Vergèze"
+let cis = currentCisLabel();
+
 
 /* ====== Utils ====== */
 const $=sel=>document.querySelector(sel);
@@ -514,10 +533,10 @@ function normCis(x){
   return String(x).replace(/^CIS\s*/i,"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
 }
 function activeCisName(){
-  const sess = JSON.parse(localStorage.getItem("csver_session") || "null");
-  const sessCis = Array.isArray(sess?.cis) ? sess.cis[0] : sess?.cis;
-  return normCis(sessCis || cis || "");
+  // renvoie le CIS courant, normalisé, ex : "vergeze"
+  return normCis(currentCisLabel());
 }
+
 function userHasCis(u, target){
   const tgt = normCis(target);
   if(!tgt) return false;
@@ -650,6 +669,35 @@ function fmaCreate(rec){ const arr=fmaAll(); arr.unshift(rec); fmaSave(arr); }
 let currentFmaId=null;
 let editingId=null;
 
+/* ====== Migration : corriger les FMA dont le cis est cassé (ex : [object Object]) ====== */
+function migrateFmaCis() {
+  const arr = fmaAll();
+  let changed = false;
+
+  // Libellé du CIS courant, ex : "CIS Lunel"
+  const currentLabel = cis;
+
+  arr.forEach(r => {
+    const c = r.cis;
+
+    // cas problématiques : pas de cis, cis vide après normalisation, ou chaîne "[object Object]"
+    if (
+      !c ||
+      normCis(c) === '' ||
+      String(c).includes('[object Object]')
+    ) {
+      r.cis = currentLabel;
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    fmaSave(arr);
+  }
+}
+
+
+  
 /* ====== Compteur FMA en attente (par CIS) ====== */
 function countPendingForActiveCis(){
   const target = activeCisName();
@@ -1245,6 +1293,9 @@ window.addEventListener("DOMContentLoaded", async ()=>{
     }
   }
 
+  // 🔧 Corrige les FMA dont le cis a été mal enregistré (ex : "CIS [object Object]")
+  migrateFmaCis();
+  
   $("#formateur").value = userName;
   // Empêcher de choisir une date future
   const dateInput = document.getElementById("date");
