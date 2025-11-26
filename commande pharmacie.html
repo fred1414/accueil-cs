@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="favicon.ico" type="image/x-icon">
-<title>Commande Pharmacie — CIS VERGEZE</title>
+<title>Commande Pharmacie</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;}
@@ -219,7 +219,7 @@ footer.sticky{position:sticky;bottom:0;background:#fff;border-top:1px solid #e6e
 <body>
 <header>
   <div class="left">
-    <h1>📦 Commande Pharmacie — CIS VERGEZE</h1>
+    <h1>📦 Commande Pharmacie</h1>
     <div class="meta">Sélectionnez les lignes à commander (cases) et saisissez la quantité. Les lignes cochées sont surlignées en jaune.</div>
   </div>
   <div class="center meta" id="agentMeta">Agent : <span id="agentName">Agent du CIS</span> • <span id="today"></span></div>
@@ -299,9 +299,20 @@ function currentAgentName(){
     return ((((s?.prenom)||"") + " " + ((s?.nom)||"")).trim()) || (s?.matricule) || "Agent";
   }catch(_){ return "Agent"; }
 }
+  function currentCisName() {
+  try {
+    const sess = JSON.parse(localStorage.getItem("csver_session") || "null");
+    if (!sess) return "CIS";
+    if (Array.isArray(sess.cis)) return sess.cis[0] || "CIS";
+    return sess.cis || "CIS";
+  } catch(e) {
+    return "CIS";
+  }
+}
+
 
 const DEST_MAIL = "SSSM-PHARMACIE@sdis30.fr";
-const CIS_NAME = "CIS VERGEZE";
+const CIS_NAME = currentCisName();
 const LOGO_URL = "https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png";
 
 /* Nouvel ordre :
@@ -448,6 +459,8 @@ function normalize(s){
 function initMeta(){
   document.getElementById('today').textContent =
     new Date().toLocaleDateString('fr-FR');
+
+  // 🔹 Agent
   try{
     const u = JSON.parse(localStorage.getItem("csver_session")||"null");
     const name = u
@@ -455,8 +468,15 @@ function initMeta(){
       : "Agent du CIS";
     document.getElementById('agentName').textContent = name;
   }catch(e){}
+
+  // 🔹 Nom du CIS dans le titre & le H1
+  const cisName = CIS_NAME; // vient de currentCisName()
+  document.title = `Commande Pharmacie — ${cisName}`;
+  const h1 = document.querySelector('header h1');
+  if (h1) h1.textContent = `📦 Commande Pharmacie — ${cisName}`;
 }
 initMeta();
+
 
 function categorySortKey(cat){
   const idx = ORDER.indexOf(cat);
@@ -720,7 +740,8 @@ async function generatePDF(){
     doc.text(fl[i],pageWidth/2,fy+i*12,{align:'center'});
   }
 
-  doc.save(`Commande_Pharmacie_CIS_VERGEZE_${dd}-${mm}-${yyyy}.pdf`);
+  const safeCis = CIS_NAME.replace(/\s+/g, "_").replace(/[^\w]/g, "");
+doc.save(`Commande_Pharmacie_${safeCis}_${dd}-${mm}-${yyyy}.pdf`);
   return true;
 }
 
