@@ -916,23 +916,37 @@ document.getElementById('btnPrintAgent').onclick = printAgentReport;
 
 function allDisplayNamesMap(){
   const keyToDisplay = new Map();
+  const cisTarget = activeCisName(); // 🔒 CIS courant uniquement
+
+  // 1) Agents de mon CIS (depuis csver_user_*)
   usersVerg().forEach(u=>{
-    const disp = `${(u.nom||'').toUpperCase()} ${String(u.prenom||'').charAt(0).toUpperCase()+String(u.prenom||'').slice(1).toLowerCase()}`.trim();
+    const disp = `${(u.nom||'').toUpperCase()} ${
+      String(u.prenom||'').charAt(0).toUpperCase() +
+      String(u.prenom||'').slice(1).toLowerCase()
+    }`.trim();
     const k = nameKey(`${u.nom||''} ${u.prenom||''}`);
-    if(!keyToDisplay.has(k)) keyToDisplay.set(k, disp);
+    if (!keyToDisplay.has(k)) keyToDisplay.set(k, disp);
   });
-  fmaAll().forEach(rec=>{
-    rec.participants?.forEach(p=>{
-      const k = nameKey(p.name);
-      const disp = displayFromParts(p.name);
-      if(!keyToDisplay.has(k)) keyToDisplay.set(k, disp);
+
+  // 2) Uniquement les FMA de mon CIS
+  fmaAll()
+    .filter(rec => normCis(rec.cis) === cisTarget) // 🔴 le filtre manquant
+    .forEach(rec=>{
+      // Participants
+      (rec.participants || []).forEach(p=>{
+        const k = nameKey(p.name);
+        const disp = displayFromParts(p.name);
+        if (!keyToDisplay.has(k)) keyToDisplay.set(k, disp);
+      });
+      // Formateur
+      const kF = nameKey(rec.formateur);
+      const dispF = displayFromParts(rec.formateur);
+      if (!keyToDisplay.has(kF)) keyToDisplay.set(kF, dispF);
     });
-    const kF = nameKey(rec.formateur);
-    const dispF = displayFromParts(rec.formateur);
-    if(!keyToDisplay.has(kF)) keyToDisplay.set(kF, dispF);
-  });
+
   return keyToDisplay;
 }
+
 
 function populateAgentSelect(){
   const map = allDisplayNamesMap();
