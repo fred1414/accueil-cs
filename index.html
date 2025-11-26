@@ -1398,25 +1398,50 @@ function purgeJournal(scope, evt){  // 🔐 Protection : super-admin 1414 OU adm
 
   const keyJournal = "journal_"+cisSel;
   const keyVehs    = "vehicules_"+cisSel;
+  const keyRes     = "reservations_"+cisSel;   // 🔁 mêmes clés que sur la page Réservations
 
-  const journal    = JSON.parse(localStorage.getItem(keyJournal)||"[]");
-  const vehs       = JSON.parse(localStorage.getItem(keyVehs)||"[]");
+  const journal       = JSON.parse(localStorage.getItem(keyJournal)||"[]");
+  const vehs          = JSON.parse(localStorage.getItem(keyVehs)||"[]");
+  const reservations  = JSON.parse(localStorage.getItem(keyRes)||"[]");
 
   const countNotes = Array.isArray(journal) ? journal.length : 0;
-  const countAnom  = Array.isArray(vehs) ? vehs.reduce((n,v)=>n+((v.history||[]).length||0),0) : 0;
+  const countAnom  = Array.isArray(vehs)
+    ? vehs.reduce((n,v)=> n + ((v.history||[]).length||0), 0)
+    : 0;
+
+  // on gère le cas où les réservations seraient un objet { "0": {...}, "1": {...} }
+  let countRes = 0;
+  if (Array.isArray(reservations)) {
+    countRes = reservations.length;
+  } else if (reservations && typeof reservations === "object") {
+    countRes = Object.keys(reservations).length;
+  }
 
   let msg = "";
   if(scope === "notes"){
     msg = `⚠️ Cette action va supprimer ${countNotes} note(s) personnalisée(s) de la main courante pour le CIS “${cisSel}”.\n\nContinuer ?`;
   }else{
-    msg = `⚠️ PURGE COMPLÈTE\n\n- Notes personnalisées : ${countNotes}\n- Entrées d'anomalies (tous véhicules) : ${countAnom}\n\nCette action est irréversible. Confirmez pour TOUT effacer.`;
+    msg = `⚠️ PURGE COMPLÈTE\n\n` +
+          `- Notes personnalisées : ${countNotes}\n` +
+          `- Entrées d'anomalies (tous véhicules) : ${countAnom}\n` +
+          `- Réservations véhicules : ${countRes}\n\n` +
+          `Cette action est irréversible. Confirmez pour TOUT effacer pour le CIS “${cisSel}”.`;
   }
 
   if(!confirm(msg)) return false;
 
-  if((countNotes>0 || (scope==="all" && countAnom>0)) && confirm("Souhaitez-vous télécharger une sauvegarde (.json) avant suppression ?")){
+  // ✅ Propose une sauvegarde globale avant suppression
+  if((countNotes>0 || countAnom>0 || countRes>0) &&
+     confirm("Souhaitez-vous télécharger une sauvegarde (.json) avant suppression ?")){
     try{
-      const backup = { cis: cisSel, ts: Date.now(), scope, notes: journal, vehicules: vehs };
+      const backup = {
+        cis: cisSel,
+        ts: Date.now(),
+        scope,
+        notes: journal,
+        vehicules: vehs,
+        reservations: reservations   // 🔁 ajout des réservations dans le backup
+      };
       const blob = new Blob([JSON.stringify(backup,null,2)], {type:"application/json"});
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
@@ -1430,20 +1455,44 @@ function purgeJournal(scope, evt){  // 🔐 Protection : super-admin 1414 OU adm
   }
 
   try{
+    // 🧹 Toujours : on supprime le journal (notes/FMA/etc.)
     localStorage.removeItem(keyJournal);
-    if(scope === "all" && Array.isArray(vehs)){
-      const cleaned = vehs.map(v=>{ const nv = Object.assign({}, v); nv.history = []; return nv; });
-      localStorage.setItem(keyVehs, JSON.stringify(cleaned));
+
+    if(scope === "all"){
+      // 🗑️ 1) purge des anomalies véhicules (historiques)
+      if(Array.isArray(vehs)){
+        const cleaned = vehs.map(v=>{
+          const nv = Object.assign({}, v);
+          nv.history = [];          // on efface toutes les anomalies
+          return nv;
+        });
+        localStorage.setItem(keyVehs, JSON.stringify(cleaned));
+      }
+
+      // 🗑️ 2) purge TOUTES les réservations du CIS (comme purgeAllReservations)
+      localStorage.removeItem(keyRes);
     }
+
+    // 🔁 rafraîchit l’affichage sur l’accueil
     renderJournal();
     renderFormations();
     renderVehicules(JSON.parse(localStorage.getItem(keyVehs)||"[]"));
-    alert(scope==="notes" ? "Main courante (notes) vidée." : "Purge complète effectuée.");
+
+    // 🔔 si l’overlay "demandes de réservation" existe sur cette page, on le met à jour
+    if (typeof renderReservationsPendingOverlay === "function") {
+      renderReservationsPendingOverlay();
+    }
+
+    alert(scope==="notes"
+      ? "Main courante (notes) vidée."
+      : "Purge complète effectuée (notes, anomalies, réservations)."
+    );
   }catch(e){
     alert("Erreur pendant la purge.");
   }
   return false;
 }
+
 </script>
 
 <!-- AJOUT : Script Mes FMA autonome (aucune collision) -->
