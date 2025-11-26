@@ -1096,11 +1096,18 @@ function saveUser(){
     if(currentMatricule!==matricule){ localStorage.removeItem("csver_user_"+currentMatricule); }
     localStorage.setItem("csver_user_"+matricule, JSON.stringify(payload));
   }else{
-    if(localStorage.getItem("csver_user_"+matricule)){
-      if(!confirm("Un utilisateur avec ce matricule existe déjà. Écraser ?")) return;
-    }
-    localStorage.setItem("csver_user_"+matricule, JSON.stringify(payload));
+  // ⛔ Empêcher la création si le matricule existe déjà
+  if (localStorage.getItem("csver_user_" + matricule)) {
+    alert("❌ Un utilisateur avec ce matricule existe déjà. La création est annulée.");
+    // Si tu veux aussi vider le formulaire complètement, décommente la ligne suivante :
+    // cancelForm();
+    return; // on arrête là, rien n’est enregistré
   }
+
+  // Matricule libre → on peut créer
+  localStorage.setItem("csver_user_" + matricule, JSON.stringify(payload));
+}
+
 
   alert("✅ Utilisateur enregistré !");
   cancelForm(); renderTable(document.getElementById("search").value);
