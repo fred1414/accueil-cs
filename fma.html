@@ -1078,9 +1078,12 @@ function renderThemesAdmin(){
          data-index="${i}">
       <div class="theme-label">${t}</div>
       <div class="flex">
-        <button class="btn-grey icon-btn" onclick="renameTheme(${i})">✎</button>
-        <button class="btn-danger icon-btn" onclick="deleteTheme(${i})">🗑️</button>
-      </div>
+  <button class="btn-grey icon-btn" title="Monter" onclick="moveThemeUp(${i})">⬆</button>
+  <button class="btn-grey icon-btn" title="Descendre" onclick="moveThemeDown(${i})">⬇</button>
+  <button class="btn-grey icon-btn" onclick="renameTheme(${i})">✎</button>
+  <button class="btn-danger icon-btn" onclick="deleteTheme(${i})">🗑️</button>
+</div>
+
     </div>`).join("");
 
   // Active le drag & drop après avoir recréé les lignes
@@ -1161,6 +1164,31 @@ function saveThemeOrderFromDom(){
   // On rerend la liste pour remettre les bons index dans les onclick(renameTheme(i), deleteTheme(i))
   renderThemesAdmin();
 }
+
+  window.moveThemeUp = function(i){
+  const list = getThemes();
+  if (i <= 0) return; // déjà tout en haut
+  // on échange l'élément i avec i-1
+  const tmp = list[i-1];
+  list[i-1] = list[i];
+  list[i] = tmp;
+
+  writeJson(currentThemesKey(), list);
+  renderThemesSelect();   // met à jour le <select> du formulaire
+  renderThemesAdmin();    // rerend la liste des thèmes dans la modale
+};
+
+window.moveThemeDown = function(i){
+  const list = getThemes();
+  if (i >= list.length - 1) return; // déjà tout en bas
+  const tmp = list[i+1];
+  list[i+1] = list[i];
+  list[i] = tmp;
+
+  writeJson(currentThemesKey(), list);
+  renderThemesSelect();
+  renderThemesAdmin();
+};
 
   
 window.renameTheme=(i)=>{
