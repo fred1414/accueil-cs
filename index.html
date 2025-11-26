@@ -1398,27 +1398,39 @@ function purgeJournal(scope, evt){  // 🔐 Protection : super-admin 1414 OU adm
     return false;
   }
 
-  const cisSel = Array.isArray(session.cis)?session.cis[0]:session.cis;
+  const cisSel  = Array.isArray(session.cis)?session.cis[0]:session.cis;
   const cisNorm = normCis(cisSel);
 
   const keyJournal = "journal_"+cisSel;
   const keyVehs    = "vehicules_"+cisSel;
   const keyRes     = "reservations_"+cisSel;
-  const K_FMA      = "fma_data_v2";   // 🔑 même clé que sur la page FMA
+  const K_FMA      = "fma_data_v2";
+  const K_REPLI    = "manoeuvre_repli_v1";
 
-  const journal      = JSON.parse(localStorage.getItem(keyJournal)||"[]");
-  const vehs         = JSON.parse(localStorage.getItem(keyVehs)||"[]");
-  let   fmaAll       = [];
+  const journal = JSON.parse(localStorage.getItem(keyJournal)||"[]");
+  const vehs    = JSON.parse(localStorage.getItem(keyVehs)||"[]");
+
+  // 🔁 Réservations
+  const reservationsRaw = (() => {
+    try { return JSON.parse(localStorage.getItem(keyRes) || "[]"); }
+    catch(_) { return []; }
+  })();
+
+  // 🔁 FMA (tous centres, on filtrera)
+  let fmaAll = [];
   try{
     fmaAll = JSON.parse(localStorage.getItem(K_FMA) || "[]");
   }catch(_){
     fmaAll = [];
   }
 
-  const reservationsRaw = (() => {
-    try { return JSON.parse(localStorage.getItem(keyRes) || "[]"); }
-    catch(_) { return []; }
-  })();
+  // 🔁 Manœuvres de repli (tous centres, on filtrera)
+  let repliAll = [];
+  try{
+    repliAll = JSON.parse(localStorage.getItem(K_REPLI) || "[]");
+  }catch(_){
+    repliAll = [];
+  }
 
   const countNotes = Array.isArray(journal) ? journal.length : 0;
   const countAnom  = Array.isArray(vehs)
@@ -1433,11 +1445,17 @@ function purgeJournal(scope, evt){  // 🔐 Protection : super-admin 1414 OU adm
     countRes = Object.keys(reservationsRaw).length;
   }
 
-  // 🔢 FMA du CIS courant uniquement (comme sur la page FMA)
+  // 🔢 FMA du CIS
   const fmaForCis = Array.isArray(fmaAll)
     ? fmaAll.filter(r => normCis(r.cis) === cisNorm)
     : [];
   const countFma = fmaForCis.length;
+
+  // 🔢 Manœuvres de repli du CIS
+  const repliForCis = Array.isArray(repliAll)
+    ? repliAll.filter(r => normCis(r.cis) === cisNorm)
+    : [];
+  const countRepli = repliForCis.length;
 
   let msg = "";
   if(scope === "notes"){
@@ -1447,15 +1465,18 @@ function purgeJournal(scope, evt){  // 🔐 Protection : super-admin 1414 OU adm
           `- Notes personnalisées : ${countNotes}\n` +
           `- Entrées d'anomalies (tous véhicules) : ${countAnom}\n` +
           `- Réservations véhicules : ${countRes}\n` +
-          `- FMA enregistrées : ${countFma}\n\n` +
+          `- FMA enregistrées : ${countFma}\n` +
+          `- Manœuvres de repli : ${countRepli}\n\n` +
           `Cette action est irréversible. Confirmez pour TOUT effacer pour le CIS “${cisSel}”.`;
   }
 
   if(!confirm(msg)) return false;
 
   // 💾 Sauvegarde JSON (scopée au CIS)
-  if((countNotes>0 || countAnom>0 || countRes>0 || countFma>0) &&
-     confirm("Souhaitez-vous télécharger une sauvegarde (.json) avant suppression ?")){
+  if(
+    (countNotes>0 || countAnom>0 || countRes>0 || countFma>0 || countRepli>0) &&
+    confirm("Souhaitez-vous télécharger une sauvegarde (.json) avant suppression ?")
+  ){
     try{
       const backup = {
         cis: cisSel,
@@ -1464,7 +1485,8 @@ function purgeJournal(scope, evt){  // 🔐 Protection : super-admin 1414 OU adm
         notes: journal,
         vehicules: vehs,
         reservations: reservationsRaw,
-        fma: fmaForCis           // 🔁 uniquement les FMA de ce CIS
+        fma: fmaForCis,       // 🔁 FMA du CIS
+        repli: repliForCis    // 🔁 manœuvres de repli du CIS
       };
       const blob = new Blob([JSON.stringify(backup,null,2)], {type:"application/json"});
       const a = document.createElement("a");
@@ -1496,10 +1518,16 @@ function purgeJournal(scope, evt){  // 🔐 Protection : super-admin 1414 OU adm
       // 🗑️ 2) toutes les réservations du CIS
       localStorage.removeItem(keyRes);
 
-      // 🗑️ 3) FMA du CIS (équivalent de "Supprimer toutes les FMA")
+      // 🗑️ 3) FMA du CIS
       if(Array.isArray(fmaAll) && countFma > 0){
-        const remaining = fmaAll.filter(r => normCis(r.cis) !== cisNorm);
-        localStorage.setItem(K_FMA, JSON.stringify(remaining));
+        const remainingFma = fmaAll.filter(r => normCis(r.cis) !== cisNorm);
+        localStorage.setItem(K_FMA, JSON.stringify(remainingFma));
+      }
+
+      // 🗑️ 4) Manœuvres de repli du CIS
+      if(Array.isArray(repliAll) && countRepli > 0){
+        const remainingRepli = repliAll.filter(r => normCis(r.cis) !== cisNorm);
+        localStorage.setItem(K_REPLI, JSON.stringify(remainingRepli));
       }
     }
 
@@ -1511,14 +1539,14 @@ function purgeJournal(scope, evt){  // 🔐 Protection : super-admin 1414 OU adm
       renderVehicules(newVehs);
     }
 
-    // 🔔 si tu as un overlay de réservations en attente sur l'accueil
+    // Si tu as un overlay réservations / FMA ou autre, on le relance au besoin
     if (typeof renderReservationsPendingOverlay === "function") {
       renderReservationsPendingOverlay();
     }
 
     alert(scope==="notes"
       ? "Main courante (notes) vidée."
-      : "Purge complète effectuée (notes, anomalies, réservations, FMA)."
+      : "Purge complète effectuée (notes, anomalies, réservations, FMA, manœuvres de repli)."
     );
   }catch(e){
     alert("Erreur pendant la purge.");
