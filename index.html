@@ -889,8 +889,8 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   document.getElementById("welcome-text").textContent=`Bienvenue ${nomComplet}`;
 
   applyRoleMenus(user.role);
-  // 🔐 Masquer les actions de purge pour tous sauf 1414
-if (!isSuperAdmin()) {
+// 🔐 Masquer les actions de purge pour tous sauf super-admin 1414 OU admin du centre
+if (!isSuperAdmin() && !isAdmin()) {
     const btn1 = document.getElementById("btnPurgeNotes");
     const btn2 = document.getElementById("btnPurgeAll");
 
@@ -1385,9 +1385,9 @@ function isSuperAdmin() {
     return u && String(u.matricule) === "1414";
 }
  
-function purgeJournal(scope, evt){  // 🔐 Protection super-admin (matricule 1414 uniquement)
-  if (!isSuperAdmin()) {
-      alert("Accès refusé : réservé à l'administrateur 1414.");
+function purgeJournal(scope, evt){  // 🔐 Protection : super-admin 1414 OU admin du centre
+  if (!isSuperAdmin() && !isAdmin()) {
+      alert("Accès refusé : réservé à l'administrateur du centre.");
       return false;
   }
   if(evt && typeof evt.preventDefault === "function") evt.preventDefault();
