@@ -403,7 +403,10 @@ if (canManageThemes) document.getElementById('btnThemes').style.display='inline-
 const _wipeBtn = document.getElementById('btnWipeAll');
 if (_wipeBtn && (isAdminRole() || isSuperAdmin())) _wipeBtn.style.display='inline-block';
 
-/* ===== Accès FMA à saisir — via permission "Saisie FMA" du CIS ACTIF ===== */
+/* ===== Accès FMA à saisir — via permission "Saisie FMA" lié au CIS actif ===== */
+
+// Renvoie vrai si l'utilisateur connecté a le droit "saisie_fma"
+// sur le CIS actuellement actif (principal ou secondaire).
 function hasSaisieFmaForActiveCis(){
   try{
     const sess = getSession();
@@ -415,26 +418,26 @@ function hasSaisieFmaForActiveCis(){
     const u = JSON.parse(raw);
     const target = activeCisName(); // ex : "vergeze", "nimes"
 
-    // 1️⃣ Déterminer le CIS principal de l'agent
+    // Déterminer le CIS principal enregistré pour cet agent
     let primaryLabel = "";
     const c = u.cis;
     if (c && typeof c === "object" && !Array.isArray(c)) {
-      // format moderne { primary: "...", secondaries: [...] }
+      // format moderne { primary:"...", secondaries:[...] }
       primaryLabel = c.primary || "";
     } else if (Array.isArray(c)) {
-      // vieux format ["CIS Vergèze", "CIS Nîmes"]
+      // ancien format ["CIS Vergèze","CIS Nîmes"]
       primaryLabel = c[0] || "";
     } else {
-      // très vieux format "CIS Vergèze"
+      // très ancien format "CIS Vergèze"
       primaryLabel = c || "";
     }
 
-    // ✅ Si le centre actif correspond au CIS principal → on regarde permissions.primary
+    // Si le CIS actif correspond au CIS principal → on regarde permissions.primary
     if (primaryLabel && normCis(primaryLabel) === target) {
       return !!(u.permissions && u.permissions.primary && u.permissions.primary.saisie_fma);
     }
 
-    // 2️⃣ Sinon : on regarde dans les permissions secondaires
+    // Sinon : regarder dans les permissions des CIS secondaires
     const secPerms = (u.permissions && u.permissions.secondaries) || {};
     for (const key in secPerms) {
       if (normCis(key) === target) {
@@ -443,14 +446,16 @@ function hasSaisieFmaForActiveCis(){
     }
 
     return false;
-  } catch(e) {
+  }catch(e){
     console.error("hasSaisieFmaForActiveCis error", e);
     return false;
   }
 }
 
-// admin/commandement + admin du CIS + super admin voient toujours la section
-const canSeePending = isAdminLike || isAdminRole() || isSuperAdmin() || hasSaisieFmaForActiveCis();
+// admin/commandement + admin du CIS + super admin ont toujours accès
+const canSeePending =
+  isAdminLike || isAdminRole() || isSuperAdmin() || hasSaisieFmaForActiveCis();
+
 
 
 const pendingSection = document.getElementById('pendingSection');
