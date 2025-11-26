@@ -180,6 +180,15 @@ hr{border:none;border-top:1px solid #eef2fb;margin:10px 0}
   }
 }
 
+  /* Drag & drop des thèmes */
+.theme-row.dragging{
+  opacity: .6;
+  border-style: dashed !important;
+}
+.theme-row.drop-target{
+  outline: 2px dashed #0b5bd3;
+}
+
   
 </style>
 </head>
@@ -1059,16 +1068,101 @@ document.getElementById("addTheme").onclick=()=>{
   notify("Thème ajouté.");
 };
 function renderThemesAdmin(){
-  const list=getThemes();
-  $("#themesList").innerHTML = list.map((t,i)=>`
-    <div class="flex" style="justify-content:space-between;border:1px solid #ebeff6;background:#f9fafe;border-radius:10px;padding:8px;margin:6px 0">
-      <div>${t}</div>
+  const list = getThemes();
+  const container = $("#themesList");
+
+  container.innerHTML = list.map((t,i)=>`
+    <div class="theme-row flex"
+         style="justify-content:space-between;border:1px solid #ebeff6;background:#f9fafe;border-radius:10px;padding:8px;margin:6px 0"
+         draggable="true"
+         data-index="${i}">
+      <div class="theme-label">${t}</div>
       <div class="flex">
         <button class="btn-grey icon-btn" onclick="renameTheme(${i})">✎</button>
         <button class="btn-danger icon-btn" onclick="deleteTheme(${i})">🗑️</button>
       </div>
     </div>`).join("");
+
+  // Active le drag & drop après avoir recréé les lignes
+  enableThemeDragDrop();
 }
+
+function enableThemeDragDrop(){
+  const listEl = document.getElementById("themesList");
+  if (!listEl) return;
+
+  let draggedEl = null;
+
+  listEl.querySelectorAll(".theme-row").forEach(row => {
+
+    row.addEventListener("dragstart", (e) => {
+      draggedEl = row;
+      row.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+    });
+
+    row.addEventListener("dragend", () => {
+      if (draggedEl) draggedEl.classList.remove("dragging");
+      listEl.querySelectorAll(".drop-target").forEach(el => el.classList.remove("drop-target"));
+      draggedEl = null;
+      // À la fin du drag, on sauvegarde l'ordre actuel
+      saveThemeOrderFromDom();
+    });
+
+    row.addEventListener("dragover", (e) => {
+      e.preventDefault();  // nécessaire pour autoriser le drop
+      if (!draggedEl || draggedEl === row) return;
+
+      const rows = Array.from(listEl.querySelectorAll(".theme-row"));
+      const draggingIndex = rows.indexOf(draggedEl);
+      const targetIndex   = rows.indexOf(row);
+
+      // On insère avant ou après selon la position
+      if (targetIndex < draggingIndex) {
+        listEl.insertBefore(draggedEl, row);
+      } else {
+        listEl.insertBefore(draggedEl, row.nextSibling);
+      }
+    });
+
+    row.addEventListener("dragenter", (e) => {
+      e.preventDefault();
+      if (row !== draggedEl) row.classList.add("drop-target");
+    });
+
+    row.addEventListener("dragleave", () => {
+      row.classList.remove("drop-target");
+    });
+
+    row.addEventListener("drop", (e) => {
+      e.preventDefault();
+      row.classList.remove("drop-target");
+      // l'ordre est déjà modifié par dragover, on sauvegarde
+      saveThemeOrderFromDom();
+    });
+
+  });
+}
+
+function saveThemeOrderFromDom(){
+  const listEl = document.getElementById("themesList");
+  if (!listEl) return;
+
+  const newOrder = Array.from(listEl.querySelectorAll(".theme-row .theme-label"))
+    .map(el => el.textContent.trim())
+    .filter(Boolean);
+
+  // Sauvegarde dans le localStorage pour le CIS courant
+  writeJson(currentThemesKey(), newOrder);
+
+  // Met à jour la <select> des thèmes du formulaire FMA
+  renderThemesSelect();
+
+  // On rerend la liste pour remettre les bons index dans les onclick(renameTheme(i), deleteTheme(i))
+  renderThemesAdmin();
+}
+
+  
 window.renameTheme=(i)=>{
   const list=getThemes(); const cur=list[i]; if(cur==null) return;
   const v=prompt("Renommer le thème :", cur); if(v==null || !v.trim()) return;
