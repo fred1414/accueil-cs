@@ -545,24 +545,90 @@ function sogInMyCis(u, mine){
   const secPerms = (up.permissions && up.permissions.secondaries) ? up.permissions.secondaries[entry.cis] : null;
   return !!(secPerms && secPerms.sog);
 }
+  /* ===== Admin helpers ===== */
+function adminInMyCis(u, mine){
+  const up = normalizeUser(u);
+
+  // admin sur le CIS principal
+  if(cisKey(up.cis.primary)===cisKey(mine)){
+    return !!(up.permissions && up.permissions.primary && up.permissions.primary.admin);
+  }
+
+  // admin sur un CIS secondaire
+  const entry = (up.cis.secondaries||[]).find(x=>cisKey(x.cis)===cisKey(mine));
+  if(!entry) return false;
+  const secPerms = (up.permissions && up.permissions.secondaries)
+    ? up.permissions.secondaries[entry.cis]
+    : null;
+  return !!(secPerms && secPerms.admin);
+}
+
+// admin sur au moins un CIS (n'importe lequel)
+function adminAnywhere(u){
+  const up = normalizeUser(u);
+  if(up.permissions && up.permissions.primary && up.permissions.primary.admin) return true;
+  const sec = (up.permissions && up.permissions.secondaries) || {};
+  return Object.keys(sec).some(cisName => !!sec[cisName].admin);
+}
+
+// est-ce que l'utilisateur connecté est admin sur son CIS actif ?
+function isCurrentUserAdmin(){
+  const s = robustSession();
+  if(!s) return false;
+  try{
+    const raw = localStorage.getItem("csver_user_"+s.matricule);
+    if(!raw) return false;
+    const u = JSON.parse(raw);
+    const myCis = Array.isArray(s.cis) ? (s.cis[0] || "") : (s.cis || "");
+    return adminInMyCis(u, myCis);
+  }catch(_){
+    return false;
+  }
+}
 
 /* ===== Contacts (liste simple pour autocomplete) ===== */
 function getContactsForCurrentCis(){
-  const contacts=[]; const mine=String(ctx.cis||"");
-  for(let i=0;i<localStorage.length;i++){
-    const key=localStorage.key(i);
+  const contacts = [];
+  const mine = String(ctx.cis || "");
+  const iAmAdmin = isCurrentUserAdmin() || isSuperAdmin(); // super admin inclus
+  const seen = new Set(); // pour éviter les doublons
+
+  for(let i=0; i<localStorage.length; i++){
+    const key = localStorage.key(i);
     if(!key || !key.startsWith('csver_user_')) continue;
+
     try{
-      const u=JSON.parse(localStorage.getItem(key)||'null'); if(!u) continue;
-      if(userBelongsToMyCis(u, mine)){
-        const display = ((u.prenom||"")+" "+(u.nom||"")).trim() || (u.matricule||"Agent");
-        contacts.push({matricule:u.matricule||"", display});
+      const u = JSON.parse(localStorage.getItem(key) || 'null');
+      if(!u || !u.matricule) continue;
+      const mat = u.matricule;
+      const baseName = ((u.prenom||"")+" "+(u.nom||"")).trim() || (mat || "Agent");
+      const up = normalizeUser(u);
+
+      // 1️⃣ Tous les agents de mon CIS (comme avant)
+      if(userBelongsToMyCis(up, mine)){
+        if(!seen.has(mat)){
+          contacts.push({matricule: mat, display: baseName});
+          seen.add(mat);
+        }
+        continue;
       }
+
+      // 2️⃣ Si je suis admin → j'ajoute aussi les admins des autres CIS
+      if(iAmAdmin && adminAnywhere(up)){
+        if(!seen.has(mat)){
+          const label = baseName + " (Admin " + (up.cis.primary || "") + ")";
+          contacts.push({matricule: mat, display: label});
+          seen.add(mat);
+        }
+      }
+
     }catch(_){}
   }
+
   contacts.sort((a,b)=> a.display.localeCompare(b.display,"fr",{sensitivity:"base"}));
   return contacts;
 }
+
 
 /* ===== Storage ===== */
 const GLOBAL_CIS = '_ALL_'; // canal global pour tous les CIS
@@ -693,8 +759,31 @@ function sendMessage(evt){
     return false;
   }
 
-  // 🗂️ si broadcast → canal global, sinon canal du CIS courant
-  const cisForMsg = broadcast ? GLOBAL_CIS : ctx.cis;
+  // 🧠 Détection : message admin inter-CIS (admin → admin d'un autre CIS)
+  const isAdminSender = isCurrentUserAdmin() || isSuperAdmin();
+  let crossAdmin = false;
+
+  if (!broadcast && isAdminSender){
+    const mine = ctx.cis || "";
+    composer.to.forEach(t => {
+      try{
+        const raw = localStorage.getItem("csver_user_" + t.matricule);
+        if(!raw) return;
+        const u = JSON.parse(raw);
+
+        // destinataire admin mais qui n'est PAS de mon CIS
+        if(!userBelongsToMyCis(u, mine) && adminAnywhere(u)){
+          crossAdmin = true;
+        }
+      }catch(_){}
+    });
+  }
+
+  // 🗂️ Règle de stockage :
+  //  - broadcast super admin → GLOBAL
+  //  - message admin inter-CIS (crossAdmin) → GLOBAL
+  //  - sinon → canal CIS courant
+  const cisForMsg = (broadcast || crossAdmin) ? GLOBAL_CIS : ctx.cis;
   const key       = storageKeyForCis(cisForMsg);
 
   const msgs = readMessagesRaw(key);
@@ -720,6 +809,7 @@ function sendMessage(evt){
 
   return false;
 }
+
 
 
 /* ===== Inbox / Sent rendering ===== */
