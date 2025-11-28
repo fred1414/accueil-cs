@@ -191,17 +191,8 @@ textarea{resize:none;height:80px;}
     <label>Immatriculation :</label>
     <input type="text" id="immat" placeholder="Ex: AB-123-CD">
 
-    <label>État :</label>
-    <select id="etat">
-      <option value="Disponible">Disponible</option>
-      <option value="Mineur">Disponible avec défaut mineur</option>
-      <option value="Atelier">Aux ateliers</option>
-      <option value="Pret">Indisponible avec prêt</option>
-      <option value="Indispo">Indisponible sans prêt</option>
-    </select>
-
-    <label>Anomalies :</label>
-    <textarea id="anomalies" placeholder="Détail des anomalies..."></textarea>
+    <!-- Champ État retiré -->
+    <!-- Champ Anomalies retiré -->
 
     <label>Prochain contrôle technique :</label>
     <input type="date" id="ctdate">
@@ -392,7 +383,7 @@ function render(){
       <td>${escapeHtml(v.nom)}</td>
       <td>${escapeHtml(v.immat || "-")}</td>
       <td>${formatDateFR(v.ctdate)}</td>
-      <td><span class="etat ${v.etat}">${v.etat}</span></td>
+      <td><span class="etat ${v.etat || 'Disponible'}">${v.etat || 'Disponible'}</span></td>
       <td>${escapeHtml(v.anomalies || "-")}</td>
       <td class="actions">
         <button class="edit" onclick="editVehicule('${v.id}')">✏️</button>
@@ -456,10 +447,9 @@ function openModal(){
   document.getElementById("modal").style.display="flex";
   document.getElementById("modal-title").textContent="Ajouter un véhicule";
   document.getElementById("nom").value="";
-  document.getElementById("etat").value="Disponible";
-  document.getElementById("anomalies").value="";
   document.getElementById("immat").value="";
   document.getElementById("ctdate").value="";
+  // plus de champ état / anomalies à réinitialiser
   editId=null;
 }
 
@@ -469,8 +459,6 @@ function closeModal(){
 
 function saveVehicule(){
   const nom=document.getElementById("nom").value.trim();
-  const etat=document.getElementById("etat").value;
-  const anomalies=document.getElementById("anomalies").value.trim();
   const immat=document.getElementById("immat").value.trim();
   const ctdate=document.getElementById("ctdate").value;
 
@@ -483,17 +471,18 @@ function saveVehicule(){
     const v=vehicules.find(x=>x.id===editId);
     if(v){
       v.nom=nom;
-      v.etat=etat;
-      v.anomalies=anomalies;
       v.immat=immat || "";
       v.ctdate=ctdate || "";
+      // v.etat et v.anomalies ne sont plus modifiés ici
     }
   }else{
     vehicules.push({
       id:"v_"+Date.now()+"_"+Math.random().toString(36).slice(2,8),
-      nom, etat, anomalies,
+      nom,
       immat: immat || "",
-      ctdate: ctdate || ""
+      ctdate: ctdate || "",
+      etat: "Disponible",      // ✅ nouvel engin = Disponible
+      anomalies: ""            // pas d'anomalies par défaut
     });
   }
   saveAll();
@@ -509,10 +498,9 @@ function editVehicule(id){
   document.getElementById("modal").style.display="flex";
   document.getElementById("modal-title").textContent="Modifier le véhicule";
   document.getElementById("nom").value=v.nom || "";
-  document.getElementById("etat").value=v.etat || "Disponible";
-  document.getElementById("anomalies").value=v.anomalies||"";
   document.getElementById("immat").value=v.immat||"";
   document.getElementById("ctdate").value=v.ctdate||"";
+  // plus de champ état / anomalies à renseigner
 }
 
 function deleteVehicule(id){
@@ -537,5 +525,3 @@ function toast(msg){
 
 </body>
 </html>
-
-
