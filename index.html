@@ -2228,12 +2228,13 @@ window.addEventListener("storage",(e)=>{
 
 
 <script>
-/* ===========================
+<!-- ===========================
    📬 Overlay "Nouveaux messages" — Accueil
-   =========================== */
+   =========================== -->
 
 const MESSAGE_PAGE_HREF = "messagerie.html"; // ⬅ adapte si besoin
 
+/* Contexte : clé locale du CIS + clé globale "__ALL_" utilisée par la messagerie */
 function mailCtx(){
   const session = JSON.parse(localStorage.getItem("csver_session")||"null");
   if(!session) return null;
@@ -2241,7 +2242,8 @@ function mailCtx(){
   return {
     session,
     cis: cisCur,
-    key: "messages_"+cisCur
+    keyLocal: "messages_"+cisCur,
+    keyGlobal: "messages__ALL_"   // 👈 mêmes messages globaux que dans messagerie.html
   };
 }
 
@@ -2253,32 +2255,74 @@ function fmtDateMail(ts){
   }catch(_){ return "—"; }
 }
 
-/* Renvoie la liste des messages non lus pour l'agent courant (triés récents→anciens) */
+/* Renvoie la liste des messages non lus pour l'agent courant
+   → en fusionnant messages_<CIS> ET messages__ALL_ (admin inter-CIS / broadcast)
+*/
 function getUnreadForMe(limit=10){
   const ctx = mailCtx(); if(!ctx) return [];
   const me = ctx.session.matricule;
-  const all = JSON.parse(localStorage.getItem(ctx.key)||"[]");
-  const rows = (Array.isArray(all)?all:[])
-    .filter(m => Array.isArray(m.to) && m.to.some(t => t.matricule===me))
-    .filter(m => !m.readBy || !m.readBy[me])
-    .sort((a,b)=> (Number(b.ts||0) - Number(a.ts||0)));
-  return typeof limit==="number" ? rows.slice(0,limit) : rows;
-}
 
-/* Marque comme lus (pour MOI) tous les messages actuellement non lus */
-function markMyMailsAsRead(){
-  const ctx = mailCtx(); if(!ctx) return;
-  const me = ctx.session.matricule;
-  const arr = JSON.parse(localStorage.getItem(ctx.key)||"[]");
-  let touched = false;
-  (Array.isArray(arr)?arr:[]).forEach(m=>{
+  const rawLocal  = JSON.parse(localStorage.getItem(ctx.keyLocal)  || "[]");
+  const rawGlobal = JSON.parse(localStorage.getItem(ctx.keyGlobal) || "[]");
+
+  let combined = [];
+  if(Array.isArray(rawLocal))  combined = combined.concat(rawLocal);
+  if(Array.isArray(rawGlobal)) combined = combined.concat(rawGlobal);
+
+  // dédoublonnage par id (au cas où)
+  const seen = new Set();
+  const rows = [];
+  combined.forEach(m=>{
+    if(!m || !m.id) return;
+    if(seen.has(m.id)) return;
+    seen.add(m.id);
+
     const toMe = Array.isArray(m.to) && m.to.some(t=>t.matricule===me);
-    if(toMe){
-      m.readBy = m.readBy || {};
-      if(!m.readBy[me]){ m.readBy[me] = true; touched = true; }
+    const isUnread = !m.readBy || !m.readBy[me];
+    if(toMe && isUnread){
+      rows.push(m);
     }
   });
-  if(touched){ localStorage.setItem(ctx.key, JSON.stringify(arr)); }
+
+  rows.sort((a,b)=> (Number(b.ts||0) - Number(a.ts||0)));
+  return (typeof limit==="number") ? rows.slice(0,limit) : rows;
+}
+
+/* Marque comme lus (pour MOI) dans les 2 canaux :
+   - messages_<CIS>
+   - messages__ALL_
+*/
+function markMyMailsAsRead(){
+  const ctx = mailCtx(); if(!ctx) return;
+  const me  = ctx.session.matricule;
+
+  function markArray(arr){
+    let touched = false;
+    (Array.isArray(arr)?arr:[]).forEach(m=>{
+      const toMe = Array.isArray(m.to) && m.to.some(t=>t.matricule===me);
+      if(toMe){
+        m.readBy = m.readBy || {};
+        if(!m.readBy[me]){
+          m.readBy[me] = true;
+          touched = true;
+        }
+      }
+    });
+    return touched;
+  }
+
+  const rawLocal  = JSON.parse(localStorage.getItem(ctx.keyLocal)  || "[]");
+  const rawGlobal = JSON.parse(localStorage.getItem(ctx.keyGlobal) || "[]");
+
+  const touchedLocal  = markArray(rawLocal);
+  const touchedGlobal = markArray(rawGlobal);
+
+  if(touchedLocal){
+    localStorage.setItem(ctx.keyLocal, JSON.stringify(rawLocal));
+  }
+  if(touchedGlobal){
+    localStorage.setItem(ctx.keyGlobal, JSON.stringify(rawGlobal));
+  }
 }
 
 /* Rend et affiche/masque l’overlay */
@@ -2332,10 +2376,13 @@ window.addEventListener("pageshow", ()=>renderMailOverlay());
 window.addEventListener("storage",(e)=>{
   try{
     const ctx = mailCtx(); if(!ctx) return;
-    if(e.key === ctx.key){ renderMailOverlay(); }
+    if(e.key === ctx.keyLocal || e.key === ctx.keyGlobal){
+      renderMailOverlay();
+    }
   }catch(_){}
 });
 </script>
+
 
 <script>
 /* Menu mobile : ouvre/ferme les sous-menus au clic */
