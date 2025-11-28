@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="icon" href="favicon.ico" type="image/x-icon">
-<title>Suivi des Véhicules - CS</title>
+<title>Suivi des Véhicules</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 *{box-sizing:border-box;font-family:'Inter',sans-serif;margin:0;padding:0}
@@ -69,7 +69,7 @@ tr:hover{background:#f9f9f9;}
 .modal-content h2{text-align:center;margin-bottom:15px;}
 .modal-content label{display:block;margin-top:10px;font-weight:600;}
 .modal-content input,.modal-content select,textarea{
-  width:100%;padding:8px;margin-top:5px;border:1px solid #ccc;border-radius:6px;
+  width:100%;padding:8px;margin-top:5px;border:1px solid:#ccc;border-radius:6px;
 }
 textarea{resize:none;height:80px;}
 .modal-content .actions{display:flex;justify-content:space-between;margin-top:15px;}
@@ -134,12 +134,12 @@ textarea{resize:none;height:80px;}
     font-size:15px;
   }
 
-  /* Tableau scrollable horizontalement : plus besoin de dézoomer */
+  /* Tableau scrollable horizontalement : moins large car moins de colonnes */
   table{
     display:block;
     overflow-x:auto;
     font-size:13px;
-    min-width:720px;       /* évite que les colonnes soient tassées */
+    min-width:640px;
   }
 
   th,td{
@@ -172,7 +172,7 @@ textarea{resize:none;height:80px;}
         <th>Immatriculation</th>
         <th>Prochain CT</th>
         <th>État</th>
-        <th>Anomalies</th>
+        <!-- Colonne Anomalies supprimée -->
         <th>Actions</th>
       </tr>
     </thead>
@@ -384,7 +384,7 @@ function render(){
       <td>${escapeHtml(v.immat || "-")}</td>
       <td>${formatDateFR(v.ctdate)}</td>
       <td><span class="etat ${v.etat || 'Disponible'}">${v.etat || 'Disponible'}</span></td>
-      <td>${escapeHtml(v.anomalies || "-")}</td>
+      <!-- cellule anomalies supprimée -->
       <td class="actions">
         <button class="edit" onclick="editVehicule('${v.id}')">✏️</button>
         <button class="delete" onclick="deleteVehicule('${v.id}')">🗑️</button>
@@ -449,7 +449,6 @@ function openModal(){
   document.getElementById("nom").value="";
   document.getElementById("immat").value="";
   document.getElementById("ctdate").value="";
-  // plus de champ état / anomalies à réinitialiser
   editId=null;
 }
 
@@ -481,8 +480,8 @@ function saveVehicule(){
       nom,
       immat: immat || "",
       ctdate: ctdate || "",
-      etat: "Disponible",      // ✅ nouvel engin = Disponible
-      anomalies: ""            // pas d'anomalies par défaut
+      etat: "Disponible",  // toujours dispo à la création
+      anomalies: ""        // stocké vide, même si plus affiché
     });
   }
   saveAll();
@@ -500,7 +499,6 @@ function editVehicule(id){
   document.getElementById("nom").value=v.nom || "";
   document.getElementById("immat").value=v.immat||"";
   document.getElementById("ctdate").value=v.ctdate||"";
-  // plus de champ état / anomalies à renseigner
 }
 
 function deleteVehicule(id){
