@@ -273,11 +273,28 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
           <label>Message</label>
           <textarea id="body" placeholder="Votre message…" required></textarea>
         </div>
+                <div class="col-6">
+          <label>Message</label>
+          <textarea id="body" placeholder="Votre message…" required></textarea>
+        </div>
+
+        <!-- ✅ Visible uniquement pour le super admin (1414) -->
+        <div class="col-6" id="broadcastRow" style="display:none">
+          <label style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="broadcastAll" style="width:auto;">
+            Envoyer à tous les CIS (super admin)
+          </label>
+          <p class="help">
+            Si cette case est cochée, le message sera envoyé à <strong>tous les agents de tous les centres</strong>.
+          </p>
+        </div>
+
         <div class="col-6" style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="btn primary" type="submit">Envoyer</button>
           <button class="btn secondary" type="button" onclick="resetComposer()">Réinitialiser</button>
           <button class="btn ghost" type="button" onclick="addAllRecipients()">Ajouter tout le CIS</button>
         </div>
+
       </div>
     </form>
   </section>
@@ -461,6 +478,11 @@ function initials(name){const parts=String(name||"").trim().split(/\s+/).slice(0
 
 /* ===== Session & Contexte ===== */
 let ctx={user:null,cis:"",keyMsg:""};
+  function isSuperAdmin(){
+  const s = robustSession();
+  return s && String(s.matricule) === '1414';
+}
+
 function robustSession(){ try{const raw=localStorage.getItem("csver_session"); if(!raw) return null; const s=JSON.parse(raw); return s&&typeof s==="object"?s:null;}catch(_){return null;} }
 function getDisplayName(u){
   const n=(((u?.prenom||"")+" "+(u?.nom||"")).trim()); if(n) return n;
@@ -546,8 +568,49 @@ function getContactsForCurrentCis(){
 }
 
 /* ===== Storage ===== */
-function readMessages(){const arr=JSON.parse(localStorage.getItem(ctx.keyMsg)||"[]");return Array.isArray(arr)?arr:[]}
-function saveMessages(arr){localStorage.setItem(ctx.keyMsg,JSON.stringify(arr));}
+const GLOBAL_CIS = '_ALL_'; // canal global pour tous les CIS
+
+function storageKeyForCis(cis){
+  return 'messages_' + cis;
+}
+
+// lecture brute pour une clé donnée (un seul "canal")
+function readMessagesRaw(key){
+  const arr = JSON.parse(localStorage.getItem(key) || "[]");
+  return Array.isArray(arr) ? arr : [];
+}
+
+// sauvegarde brute pour une clé donnée
+function saveMessagesRaw(key, arr){
+  localStorage.setItem(key, JSON.stringify(arr));
+}
+
+// 🔎 chercher un message par id, en local + global
+function findMessageById(id){
+  // 1) messages du CIS courant
+  const localKey = storageKeyForCis(ctx.cis);
+  let arr = readMessagesRaw(localKey);
+  let msg = arr.find(m => m.id === id);
+  if (msg) return { key: localKey, arr, msg };
+
+  // 2) messages globaux
+  const globalKey = storageKeyForCis(GLOBAL_CIS);
+  let arrG = readMessagesRaw(globalKey);
+  let msgG = arrG.find(m => m.id === id);
+  if (msgG) return { key: globalKey, arr: arrG, msg: msgG };
+
+  return null;
+}
+
+// ✅ utilisé par le reste du code : renvoie tous les messages visibles
+function readMessages(){
+  const localKey   = storageKeyForCis(ctx.cis);
+  const globalKey  = storageKeyForCis(GLOBAL_CIS);
+  const localMsgs  = readMessagesRaw(localKey);
+  const globalMsgs = readMessagesRaw(globalKey);
+  return localMsgs.concat(globalMsgs);
+}
+
 
 /* ===== Composer state ===== */
 const composer={to:[]};
@@ -597,33 +660,86 @@ function selectSuggestion(mat){const c=cachedContacts.find(x=>x.matricule===mat)
 function hideSuggest(){document.getElementById('toSuggest').style.display='none'}
 
 /* ===== Send ===== */
-function sendMessage(evt){ if(evt&&evt.preventDefault) evt.preventDefault();
-  const from=ctx.user; if(!from){alert('Session expirée.'); return false}
-  if(!composer.to.length){alert('Veuillez ajouter au moins un destinataire.'); return false}
-  const subject=(document.getElementById('subject').value||'').trim();
-  const body=(document.getElementById('body').value||'').trim();
-  if(!subject||!body){alert('Objet et message sont requis.'); return false}
-  const msgs=readMessages();
-  const msg={
-    id:'msg_'+Date.now()+"_"+Math.random().toString(36).slice(2,7),
-    cis:ctx.cis,
-    ts:Date.now(),
-    from:{matricule:from.matricule||'',display:getDisplayName(from)},
-    to:composer.to.slice(),
-    subject, body,
-    readBy:{} // matricule -> true (lu)
+function sendMessage(evt){
+  if(evt && evt.preventDefault) evt.preventDefault();
+
+  const from = ctx.user;
+  if(!from){
+    alert('Session expirée.');
+    return false;
+  }
+
+  const broadcast = isSuperAdmin() && document.getElementById('broadcastAll')?.checked;
+
+  // Si diffusion globale : on remplit automatiquement tous les destinataires
+  if (broadcast){
+    composer.to = [];
+    const all = getAllUsers(); // existe déjà dans ton code
+    all.forEach(u => {
+      if(!u || !u.matricule) return;
+      const display = ((u.prenom || "") + " " + (u.nom || "")).trim() || (u.matricule || "Agent");
+      if (!composer.to.some(t => t.matricule === u.matricule)){
+        composer.to.push({ matricule: u.matricule, display });
+      }
+    });
+  }
+
+  if(!composer.to.length){
+    alert('Veuillez ajouter au moins un destinataire.');
+    return false;
+  }
+
+  const subject = (document.getElementById('subject').value || '').trim();
+  const body    = (document.getElementById('body').value || '').trim();
+  if(!subject || !body){
+    alert('Objet et message sont requis.');
+    return false;
+  }
+
+  // 🗂️ si broadcast → canal global, sinon canal du CIS courant
+  const cisForMsg = broadcast ? GLOBAL_CIS : ctx.cis;
+  const key       = storageKeyForCis(cisForMsg);
+
+  const msgs = readMessagesRaw(key);
+  const msg = {
+    id: 'msg_' + Date.now() + "_" + Math.random().toString(36).slice(2,7),
+    cis: cisForMsg,
+    ts: Date.now(),
+    from: { matricule: from.matricule || '', display: getDisplayName(from) },
+    to: composer.to.slice(),
+    subject,
+    body,
+    readBy: {} // matricule -> true (lu)
   };
-  msgs.push(msg); saveMessages(msgs);
-  resetComposer(); renderInbox(); renderSent();
+
+  msgs.push(msg);
+  saveMessagesRaw(key, msgs);
+
+  resetComposer();
+  // (On laisse la case broadcast telle quelle)
+  renderInbox();
+  renderSent();
   alert('Message envoyé.');
+
   return false;
 }
+
 
 /* ===== Inbox / Sent rendering ===== */
 function currentMat(){return ctx.user?.matricule||''}
 function isToMe(msg){return msg.to.some(t=>t.matricule===currentMat())}
 function isFromMe(msg){return (msg.from?.matricule||'')===currentMat()}
-function markRead(msgId){const arr=readMessages(); const m=arr.find(x=>x.id===msgId); if(!m) return; m.readBy[currentMat()]=true; saveMessages(arr);}
+function markRead(msgId){
+  const found = findMessageById(msgId);
+  if (!found) return;
+
+  const { key, arr, msg } = found;
+  msg.readBy = msg.readBy || {};
+  msg.readBy[currentMat()] = true;
+
+  saveMessagesRaw(key, arr);
+}
+
 
 function renderInbox(){
   const q=norm(document.getElementById('inSearch').value||'');
@@ -765,7 +881,23 @@ function forward(id){
 
 
 /* ===== Delete ===== */
-function deleteMessage(id){ const arr=readMessages(); const idx=arr.findIndex(x=>x.id===id); if(idx<0) return; if(!confirm('Supprimer ce message ?')) return; arr.splice(idx,1); saveMessages(arr); renderInbox(); renderSent(); }
+function deleteMessage(id){
+  const found = findMessageById(id);
+  if (!found) return;
+
+  const { key, arr } = found;
+  const idx = arr.findIndex(m => m.id === id);
+  if (idx < 0) return;
+
+  if (!confirm('Supprimer ce message ?')) return;
+
+  arr.splice(idx, 1);
+  saveMessagesRaw(key, arr);
+
+  renderInbox();
+  renderSent();
+}
+
 
 /* ===== Navigation ===== */
 function goAccueil(){ try{window.location.href='index.html'}catch(_){} }
@@ -793,6 +925,11 @@ function init(){
   document.getElementById('fromDisplay').value = getDisplayName(sess);
   cachedContacts = getContactsForCurrentCis();
   renderToChips(); renderInbox(); renderSent();
+   // ✅ Affiche la ligne “Envoyer à tous les CIS” uniquement pour le super admin
+  if (isSuperAdmin()){
+    const row = document.getElementById('broadcastRow');
+    if (row) row.style.display = 'block';
+  }
   try{ const wanted=localStorage.getItem('csver_msg_tab')||'inbox'; switchTab(wanted==='sent'?'sent':'inbox'); }catch(_){ switchTab('inbox'); }
 }
 
@@ -807,12 +944,15 @@ document.addEventListener('click', (e)=>{ const box=document.getElementById('toS
 window.addEventListener('storage', (e)=>{
   try{
     if(e.key==='csver_session'){ init(); }
-    if(e.key && e.key===ctx.keyMsg){ renderInbox(); renderSent(); }
+    if(e.key && (e.key === ctx.keyMsg || e.key === storageKeyForCis(GLOBAL_CIS))){
+      renderInbox(); renderSent();
+    }
     if(e.key && (e.key==='agents_data' || e.key.startsWith('csver_user_'))){
       cachedContacts=getContactsForCurrentCis();
     }
   }catch(_){}
 });
+
 </script>
 </body>
 </html>
