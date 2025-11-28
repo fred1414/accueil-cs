@@ -2228,27 +2228,29 @@ window.addEventListener("storage",(e)=>{
 
 
 <script>
-
 /* ===========================
    📬 Overlay "Nouveaux messages" — Accueil
    =========================== */
 
 const MESSAGE_PAGE_HREF = "messagerie.html"; // ⬅ adapte si besoin
 
-// 🔹 Contexte : on stocke tout dans messages__ALL_ (inter-CIS)
+// 🔹 Contexte : messages du CIS + messages globaux inter-CIS
 function mailCtx(){
   const session = JSON.parse(localStorage.getItem("csver_session")||"null");
   if(!session) return null;
+  const cisCur = Array.isArray(session.cis)?session.cis[0]:session.cis;
   return {
     session,
-    keyStore: "messages__ALL_"   // 👈 même clé que ta messagerie pour les messages globaux
+    cis: cisCur,
+    keyLocal:  "messages_"+cisCur, // messages internes au centre
+    keyGlobal: "messages__ALL_"    // messages inter-CIS / broadcast
   };
 }
 
 function fmtDateMail(ts){
   try{
-    const d = new Date(Number(ts)||0);
-    const p = n => String(n).padStart(2,'0');
+    const d=new Date(Number(ts)||0);
+    const p=n=>String(n).padStart(2,'0');
     return `${p(d.getDate())}-${p(d.getMonth()+1)}-${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
   }catch(_){ return "—"; }
 }
@@ -2261,15 +2263,15 @@ function getRecipients(msg){
   return [];
 }
 
-/* 🔍 Récupère la map "lus" pour savoir si le message est lu par qui */
+/* 🔍 Récupère la map "lus" */
 function getReadMap(msg){
   if (msg.readBy && typeof msg.readBy === "object") return msg.readBy;
-  if (msg.luPar && typeof msg.luPar === "object") return msg.luPar;
+  if (msg.luPar  && typeof msg.luPar  === "object") return msg.luPar;
   return {};
 }
 
 /* Renvoie la liste des messages non lus pour l’agent courant
-   → en lisant UNIQUEMENT messages__ALL_ (inter-CIS)
+   → fusion messages_<CIS> + messages__ALL_
 */
 function getUnreadForMe(limit=10){
   const ctx = mailCtx(); 
@@ -2277,39 +2279,45 @@ function getUnreadForMe(limit=10){
 
   const me = String(ctx.session.matricule||"");
 
-  let raw = [];
+  let arrLocal  = [];
+  let arrGlobal = [];
+
   try{
-    raw = JSON.parse(localStorage.getItem(ctx.keyStore) || "[]");
-    if(!Array.isArray(raw)) raw = [];
-  }catch(_){
-    raw = [];
-  }
+    arrLocal = JSON.parse(localStorage.getItem(ctx.keyLocal) || "[]");
+    if(!Array.isArray(arrLocal)) arrLocal = [];
+  }catch(_){ arrLocal = []; }
 
-  const rows = [];
-  const seenIds = new Set();
+  try{
+    arrGlobal = JSON.parse(localStorage.getItem(ctx.keyGlobal) || "[]");
+    if(!Array.isArray(arrGlobal)) arrGlobal = [];
+  }catch(_){ arrGlobal = []; }
 
-  raw.forEach(m=>{
+  const combined = arrLocal.concat(arrGlobal);
+
+  const rows   = [];
+  const seenId = new Set();
+
+  combined.forEach(m=>{
     if(!m) return;
 
     const id = m.id || m.uid || null;
-    if(id && seenIds.has(id)) return;
-    if(id) seenIds.add(id);
+    if(id && seenId.has(id)) return;
+    if(id) seenId.add(id);
 
     const recips = getRecipients(m);
-    const toMe = recips.some(r => {
+    const toMe = recips.some(r=>{
       const rMat = String(r.matricule || r.id || "").trim();
       return rMat === me;
     });
     if(!toMe) return;
 
     const readMap = getReadMap(m);
-    if(readMap[me]) return;   // déjà lu
+    if(readMap[me]) return; // déjà lu
 
     rows.push(m);
   });
 
-  // Tri du plus récent au plus ancien
-  rows.sort((a,b)=> {
+  rows.sort((a,b)=>{
     const ta = Number(a.ts || a.timestamp || 0);
     const tb = Number(b.ts || b.timestamp || 0);
     return tb - ta;
@@ -2318,43 +2326,56 @@ function getUnreadForMe(limit=10){
   return (typeof limit==="number") ? rows.slice(0,limit) : rows;
 }
 
-/* Marque comme lus (pour MOI) tous les messages qui me sont adressés */
+/* Marque comme lus (pour MOI) dans messages_<CIS> ET messages__ALL_ */
 function markMyMailsAsRead(){
   const ctx = mailCtx(); 
   if(!ctx) return;
 
   const me = String(ctx.session.matricule||"");
 
-  let raw = [];
+  let arrLocal  = [];
+  let arrGlobal = [];
+
   try{
-    raw = JSON.parse(localStorage.getItem(ctx.keyStore) || "[]");
-    if(!Array.isArray(raw)) raw = [];
-  }catch(_){
-    raw = [];
+    arrLocal = JSON.parse(localStorage.getItem(ctx.keyLocal) || "[]");
+    if(!Array.isArray(arrLocal)) arrLocal = [];
+  }catch(_){ arrLocal = []; }
+
+  try{
+    arrGlobal = JSON.parse(localStorage.getItem(ctx.keyGlobal) || "[]");
+    if(!Array.isArray(arrGlobal)) arrGlobal = [];
+  }catch(_){ arrGlobal = []; }
+
+  function markArray(arr){
+    let touched = false;
+    (Array.isArray(arr)?arr:[]).forEach(m=>{
+      if(!m) return;
+      const recips = getRecipients(m);
+      const toMe = recips.some(r=>{
+        const rMat = String(r.matricule || r.id || "").trim();
+        return rMat === me;
+      });
+      if(!toMe) return;
+
+      const readMap = getReadMap(m);
+      if(!readMap[me]){
+        // on force la map dans le message au format readBy
+        m.readBy = readMap;
+        m.readBy[me] = true;
+        touched = true;
+      }
+    });
+    return touched;
   }
 
-  let touched = false;
+  const touchedLocal  = markArray(arrLocal);
+  const touchedGlobal = markArray(arrGlobal);
 
-  raw.forEach(m=>{
-    if(!m) return;
-    const recips = getRecipients(m);
-    const toMe = recips.some(r => {
-      const rMat = String(r.matricule || r.id || "").trim();
-      return rMat === me;
-    });
-    if(!toMe) return;
-
-    const readMap = getReadMap(m);
-    if(!readMap[me]){
-      // on force la map dans le message
-      m.readBy = readMap;       // on réutilise la même map
-      m.readBy[me] = true;
-      touched = true;
-    }
-  });
-
-  if(touched){
-    localStorage.setItem(ctx.keyStore, JSON.stringify(raw));
+  if(touchedLocal){
+    localStorage.setItem(ctx.keyLocal, JSON.stringify(arrLocal));
+  }
+  if(touchedGlobal){
+    localStorage.setItem(ctx.keyGlobal, JSON.stringify(arrGlobal));
   }
 }
 
@@ -2376,34 +2397,32 @@ function renderMailOverlay(){
     return;
   }
 
-  // Remplissage tableau
   badge.textContent = String(unread.length);
   body.innerHTML = unread.slice(0,10).map(m=>{
     const fromName = (m.from && m.from.display) ? m.from.display : (m.fromName || "-");
     const subject  = m.subject || m.objet || "-";
+    const ts       = m.ts || m.timestamp;
 
     const esc = s => String(s||"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
     return `
       <tr>
-        <td>${fmtDateMail(m.ts || m.timestamp)}</td>
+        <td>${fmtDateMail(ts)}</td>
         <td>${esc(fromName)}</td>
         <td>${esc(subject)}</td>
       </tr>
     `;
   }).join("");
 
-  // Actions
   btnGo.onclick   = (e)=>{ 
     if(e && e.preventDefault) e.preventDefault();
     try{ openLink(MESSAGE_PAGE_HREF, e); }
     catch(_){ window.location.href = MESSAGE_PAGE_HREF; }
   };
   btnRead.onclick = ()=>{ 
-    markMyMailsAsRead(); 
+    markMyMailsAsRead();
     overlay.style.display="none"; 
   };
 
-  // Fermer en cliquant dehors / Esc
   overlay.onclick = (e)=>{ if(e.target === overlay) overlay.style.display="none"; };
   document.addEventListener("keydown", function esc(ev){
     if(ev.key==="Escape" && overlay.style.display!=="none"){
@@ -2415,19 +2434,20 @@ function renderMailOverlay(){
   overlay.style.display = "flex";
 }
 
-/* Hooks : mêmes moments que tes autres overlays */
+/* Hooks : on réagit aux 2 clés (local + global) */
 window.addEventListener("DOMContentLoaded", ()=>{ setTimeout(()=>renderMailOverlay(), 200); });
 window.addEventListener("focus", ()=>renderMailOverlay());
 window.addEventListener("pageshow", ()=>renderMailOverlay());
 window.addEventListener("storage",(e)=>{
   try{
     const ctx = mailCtx(); if(!ctx) return;
-    if(e.key === ctx.keyStore){
+    if(e.key === ctx.keyLocal || e.key === ctx.keyGlobal){
       renderMailOverlay();
     }
   }catch(_){}
 });
 </script>
+
 
 
 <script>
