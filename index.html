@@ -2491,6 +2491,48 @@ window.addEventListener("storage",(e)=>{
 })();
 </script>
 
+<script>
+function loadChatbaseWidgetForAdmins() {
+  // 🔐 On limite le widget aux admins / commandement / admin du centre
+  if (!isAdmin() && !isSuperAdmin()) {
+    return; // Pas admin → on ne charge pas Chatbase
+  }
+
+  // Code d'intégration Chatbase tel que fourni
+  (function(){
+    if (!window.chatbase || window.chatbase("getState") !== "initialized") {
+      window.chatbase = (...arguments) => {
+        if (!window.chatbase.q) { window.chatbase.q = []; }
+        window.chatbase.q.push(arguments);
+      };
+      window.chatbase = new Proxy(window.chatbase, {
+        get(target, prop) {
+          if (prop === "q") { return target.q; }
+          return (...args) => target(prop, ...args);
+        }
+      });
+    }
+
+    const onLoad = function() {
+      const script = document.createElement("script");
+      script.src = "https://www.chatbase.co/embed.min.js";
+      script.id = "zVqCo-pyQDmi3XjItI7CQ";
+      script.domain = "www.chatbase.co";
+      document.body.appendChild(script);
+    };
+
+    if (document.readyState === "complete") {
+      onLoad();
+    } else {
+      window.addEventListener("load", onLoad);
+    }
+  })();
+}
+
+// 👉 On attend que la page soit prête, puis on vérifie le rôle
+window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
+</script>
+
   
 <!-- FIN AJOUT -->
 
