@@ -377,6 +377,43 @@ main{
   color:#555;
 }
 
+  /* 🌟 Style propre des consignes dans la modale agenda */
+.agenda-consigne-card{
+  background:#f8fafc;
+  border-radius:10px;
+  border:1px solid #e2e8f0;
+  padding:10px 12px;
+  margin-top:8px;
+  text-align:left;          /* tout le texte à gauche */
+}
+
+.agenda-consigne-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:600;
+  font-size:15px;
+  margin-bottom:4px;        /* petit espace avant le contenu */
+}
+
+.agenda-consigne-dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+
+.agenda-consigne-body{
+  font-size:14px;
+  margin:0;                 /* supprime le “saut” trop grand */
+}
+
+.agenda-consigne-meta{
+  margin-top:6px;
+  font-size:12px;
+  color:#64748b;
+}
+
 
 /* Tableau des réservations dans la modale */
 .agenda-modal-table-wrapper{
