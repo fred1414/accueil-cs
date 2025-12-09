@@ -2990,6 +2990,51 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
     return map;
   }
 
+  // Renvoie un objet { "YYYY-MM-DD": true } pour les jours couverts par une consigne
+  function buildConsigneMap(year, monthIndex){
+    const cisSel = getCurrentCis();
+    if(!cisSel) return {};
+
+    const keyCons = "consignes_" + cisSel;
+    let arr;
+    try{
+      arr = JSON.parse(localStorage.getItem(keyCons) || "[]");
+      if(!Array.isArray(arr)) arr = [];
+    }catch(_){
+      arr = [];
+    }
+
+    const map = {};
+    const monthStart = new Date(year, monthIndex, 1);
+    const monthEnd   = new Date(year, monthIndex + 1, 0);
+
+    arr.forEach(c=>{
+      if(!c || c.cis !== cisSel) return;
+
+      const dStartStr = (c.dateDebut || "").trim();
+      if(!dStartStr) return;
+      const dEndStr   = (c.dateFin || dStartStr).trim();
+
+      const dStart = new Date(dStartStr + "T00:00:00");
+      const dEnd   = new Date(dEndStr   + "T00:00:00");
+      if(isNaN(dStart) || isNaN(dEnd)) return;
+
+      let d = new Date(Math.max(dStart.getTime(), monthStart.getTime()));
+      const limit = Math.min(dEnd.getTime(), monthEnd.getTime());
+
+      while(d.getTime() <= limit){
+        const y  = d.getFullYear();
+        const m  = d.getMonth();
+        const dd = d.getDate();
+        const key = `${y}-${String(m+1).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
+        map[key] = true;          // on marque ce jour comme "a une consigne"
+        d.setDate(d.getDate() + 1);
+      }
+    });
+
+    return map;
+  }
+  
   function formatDateFR(dateKey){
     const p = String(dateKey||"").split("-");
     if(p.length !== 3) return dateKey || "";
@@ -3059,9 +3104,11 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
     const daysInMonth   = lastDay.getDate();
     const startWeekday  = (firstDay.getDay() + 6) % 7; // Lun=0 ... Dim=6
 
-    monthLabel.textContent = monthNames[month] + " " + year;
+        monthLabel.textContent = monthNames[month] + " " + year;
 
-    const resMap = buildReservationMap(year, month);
+    const resMap  = buildReservationMap(year, month);
+    const consMap = buildConsigneMap(year, month);
+
 
     // Cases vides avant le 1er
     for(let i=0; i<startWeekday; i++){
@@ -3075,7 +3122,7 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
       today.getFullYear() === year &&
       today.getMonth()    === month;
 
-    // Jours du mois
+        // Jours du mois
     for(let d=1; d<=daysInMonth; d++){
       const cell = document.createElement("div");
       cell.className = "agenda-cell";
@@ -3083,23 +3130,25 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
 
       const dateKey =
         `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-      const dayList = resMap[dateKey] || [];
+      const dayRes      = resMap[dateKey]  || [];
+      const hasConsigne = !!consMap[dateKey];
 
       if(isSameMonth && d === today.getDate()){
         cell.classList.add("agenda-today");
       }
-      if(dayList.length){
-        cell.classList.add("agenda-event");   // couleur spéciale si réservations
+      // 🔵 couleur si réservation APPROUVÉE OU consigne ce jour-là
+      if(dayRes.length || hasConsigne){
+        cell.classList.add("agenda-event");
       }
 
-      // 👉 on n'affiche plus les détails sous le calendrier,
-      // on ouvre directement la modale
+      // On garde la modale centrée sur les réservations (comme avant)
       cell.addEventListener("click", function(){
-        openAgendaModal(dateKey, dayList);
+        openAgendaModal(dateKey, dayRes);
       });
 
       grid.appendChild(cell);
     }
+
   }
 
   btnPrev && btnPrev.addEventListener("click", function(){
@@ -3121,9 +3170,6 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
 </script>
 
 
-
-
-  
 <!-- FIN AJOUT -->
 
 </body>
