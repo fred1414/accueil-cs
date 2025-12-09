@@ -752,11 +752,7 @@ nav.menu-bar a{ padding:10px 12px; }
           <div>Dim</div>
         </div>
         <div id="agenda-grid" class="agenda-grid"></div>
-        <div id="agenda-details" class="agenda-details">
-  <p class="agenda-details-empty">
-    Clique sur un jour pour voir les réservations.
-  </p>
-</div>
+        <div id="agenda-details" class="agenda-details"></div>
 
       </div>
     </div>
@@ -2912,10 +2908,9 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
     grid.innerHTML = "";
 
     // Texte fixe sous le calendrier (on n'y met plus les détails)
-    if(details){
-      details.innerHTML =
-        `<p class="agenda-details-empty">Clique sur un jour pour voir les réservations dans une fenêtre dédiée.</p>`;
-    }
+   if(details){
+  details.innerHTML = "";   // on laisse vide
+}
 
     const year  = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
