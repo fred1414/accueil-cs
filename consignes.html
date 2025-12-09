@@ -39,6 +39,38 @@ main{
   background:rgba(255,255,255,.92);border-radius:16px;padding:18px;
   box-shadow:0 4px 10px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:14px;
 }
+/* Filtres consignes */
+.filter-bar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:8px 0 10px;
+}
+
+.filter-btn{
+  border:none;
+  border-radius:999px;
+  padding:6px 12px;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+  background:#e2e8f0;
+  color:#1e293b;
+  box-shadow:0 2px 4px rgba(0,0,0,.08);
+  transition:background .15s ease, transform .15s ease;
+}
+
+.filter-btn:hover{
+  transform:translateY(-1px);
+  background:#cbd5e1;
+}
+
+.filter-btn.active{
+  background:#1a73e8;
+  color:#fff;
+}
+
+  
 .panel h2{
   font-size:20px;font-weight:800;color:#0d2b52;
   border-left:6px solid #b71c1c;padding-left:10px;
@@ -375,6 +407,17 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
     <p class="help">
       Les consignes sont affichées pour ton CIS, de la plus récente à la plus ancienne.
     </p>
+     <!-- 🔍 Barre de filtres -->
+    <div class="filter-bar">
+      <button id="btnFilterCurrent" class="filter-btn active" type="button"
+              onclick="setFilter('current')">En cours</button>
+      <button id="btnFilterFuture" class="filter-btn" type="button"
+              onclick="setFilter('future')">À venir</button>
+      <button id="btnFilterPast" class="filter-btn" type="button"
+              onclick="setFilter('past')">Passées</button>
+      <button id="btnFilterAll" class="filter-btn" type="button"
+              onclick="setFilter('all')">Toutes</button>
+    </div>
     <div id="consigneList" class="consigne-list"></div>
   </section>
 
@@ -452,6 +495,29 @@ let ctx = {
   key:""
 };
 let currentEditId = null;
+
+  let currentFilter = "current"; // "current" | "future" | "past" | "all"
+
+function setFilter(mode){
+  currentFilter = mode;
+
+  const map = {
+    current: "btnFilterCurrent",
+    future:  "btnFilterFuture",
+    past:    "btnFilterPast",
+    all:     "btnFilterAll"
+  };
+
+  Object.keys(map).forEach(key=>{
+    const btn = document.getElementById(map[key]);
+    if(btn){
+      btn.classList.toggle("active", key === mode);
+    }
+  });
+
+  renderConsignes();
+}
+
 
 function initPage(){
   const sess = robustSession();
@@ -772,28 +838,65 @@ function serviceLabel(s){
   }
 }
 
+function isConsigneCurrent(c, today){
+  const start = c.dateDebut || today;
+  const end   = c.dateFin || c.dateDebut || today;
+  return start <= today && today <= end;
+}
+
+function isConsigneFuture(c, today){
+  const start = c.dateDebut || today;
+  return start > today;
+}
+
+function isConsignePast(c, today){
+  const start = c.dateDebut || today;
+  const end   = c.dateFin || c.dateDebut || today;
+  return end < today;
+}
+  
 function renderConsignes(){
   const listEl = document.getElementById("consigneList");
   if(!listEl) return;
 
-  const all = readConsignes()
+  let consignes = readConsignes()
     .filter(c=>c && c.cis===ctx.cis);
 
-  if(!all.length){
-    listEl.innerHTML = "<p style='font-size:13px;color:#555;'>Aucune consigne enregistrée pour ce centre.</p>";
+  const today = todayIso();
+
+  if(!consignes.length){
+    listEl.innerHTML =
+      "<p style='font-size:13px;color:#555;'>Aucune consigne enregistrée pour ce centre.</p>";
     return;
   }
 
-  // plus récentes d'abord
-  all.sort((a,b)=>{
+  // plus récentes d'abord (par dates)
+  consignes.sort((a,b)=>{
     const ta = a.dateDebut || "";
     const tb = b.dateDebut || "";
     if(tb === ta) return (b.createdTs||0)-(a.createdTs||0);
     return tb.localeCompare(ta);
   });
 
+  // 🎯 Application du filtre choisi
+  const filtered = consignes.filter(c=>{
+    switch(currentFilter){
+      case "current": return isConsigneCurrent(c, today);
+      case "future":  return isConsigneFuture(c, today);
+      case "past":    return isConsignePast(c, today);
+      case "all":
+      default:        return true;
+    }
+  });
+
+  if(!filtered.length){
+    listEl.innerHTML =
+      "<p style='font-size:13px;color:#555;'>Aucune consigne pour ce filtre.</p>";
+    return;
+  }
+
   listEl.innerHTML = "";
-  all.forEach(c=>{
+  filtered.forEach(c=>{
     const card = document.createElement("div");
     card.className = "consigne-card";
     card.style.borderLeftColor = importanceToColorBorder(c.importance);
@@ -898,6 +1001,7 @@ function renderConsignes(){
   });
 }
 
+
 /* Navigation */
 function goAccueil(){
   try{ window.location.href="index.html"; }catch(_){}
@@ -929,4 +1033,5 @@ window.addEventListener("storage",(e)=>{
 </script>
 </body>
 </html>
+
 
