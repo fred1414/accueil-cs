@@ -1544,33 +1544,56 @@ function renderFormations(){
       }
     };
 
-    // ✅ Test "est-ce que cette consigne est active aujourd’hui ?"
-    function isActiveToday(c){
-      const d1 = (c.dateDebut || "").trim();
-      if(!d1) return false;
+   // ✅ Est-ce que la consigne est active MAINTENANT (date + heure + validité jour/nuit/24h) ?
+function isActiveNow(c){
+  const d1 = (c.dateDebut || "").trim();
+  if(!d1) return false;
 
-      // Si pas de date de fin, on considère que la fin = début
-      const d2 = (c.dateFin || d1).trim();
+  const d2 = (c.dateFin || d1).trim();
 
-      // Plage inclusive : todayIso doit être entre d1 et d2 (inclus)
-      if(todayIso < d1 || todayIso > d2) return false;
+  const now = new Date();
+  const hour = now.getHours();
 
-      const rec = c.recurrence || "once";
+  // "Jour de garde" = de 07h à 07h (J+1)
+  // → si on est avant 07h, on considère qu'on est encore sur la garde de la veille
+  const serviceBase = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if(hour < 7){
+    serviceBase.setDate(serviceBase.getDate() - 1);
+  }
+  const p = n => String(n).padStart(2,"0");
+  const serviceIso = `${serviceBase.getFullYear()}-${p(serviceBase.getMonth()+1)}-${p(serviceBase.getDate())}`;
 
-      // Ponctuelle : uniquement le jour de début
-      if(rec === "once"){
-        return todayIso === d1;
-      }
+  // D'abord : est-ce que ce "jour de garde" est dans la plage dateDébut/dateFin ?
+  if(serviceIso < d1 || serviceIso > d2) return false;
 
-      // Pour les autres recurrences (daily, weekly, etc.) :
-      // on considère la consigne active tous les jours dans la plage.
-      return true;
-    }
+  const rec = c.recurrence || "once";
+
+  // Ponctuelle : uniquement sur le jour de début (dans la logique "jour de garde")
+  if(rec === "once" && serviceIso !== d1){
+    return false;
+  }
+
+  const validite = c.validite || "24h";
+
+  // Jour : seulement entre 07h et 19h
+  if(validite === "jour"){
+    return (hour >= 7 && hour < 19);
+  }
+
+  // Nuit : 19h → 07h
+  if(validite === "nuit"){
+    return (hour >= 19 || hour < 7);
+  }
+
+  // 24h : toute la garde, de 07h à 07h (on est déjà dans la bonne plage serviceIso)
+  return true;
+}
+
 
     // 🔎 Filtre : consignes de ce CIS, actives aujourd’hui
     const todayConsignes = consignes
       .filter(c => c && c.cis === cisSel)
-      .filter(isActiveToday)
+      .filter(isActiveNow)
       .sort((a,b)=>{
         // Tri : importance puis date début (récentes d’abord)
         const ordImp = {haute:0, moyenne:1, faible:2};
