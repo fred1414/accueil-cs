@@ -2990,16 +2990,16 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
     return map;
   }
 
-  // Renvoie un objet { "YYYY-MM-DD": true } pour les jours couverts par une consigne
+   // Renvoie un objet { "YYYY-MM-DD": [ consignes de ce jour ] }
   function buildConsigneMap(year, monthIndex){
     const cisSel = getCurrentCis();
-    if(!cisSel) return {};
+    if (!cisSel) return {};
 
     const keyCons = "consignes_" + cisSel;
     let arr;
     try{
       arr = JSON.parse(localStorage.getItem(keyCons) || "[]");
-      if(!Array.isArray(arr)) arr = [];
+      if (!Array.isArray(arr)) arr = [];
     }catch(_){
       arr = [];
     }
@@ -3008,32 +3008,36 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
     const monthStart = new Date(year, monthIndex, 1);
     const monthEnd   = new Date(year, monthIndex + 1, 0);
 
-    arr.forEach(c=>{
-      if(!c || c.cis !== cisSel) return;
+    arr.forEach(c => {
+      if (!c || c.cis !== cisSel) return;
 
       const dStartStr = (c.dateDebut || "").trim();
-      if(!dStartStr) return;
+      if (!dStartStr) return;
       const dEndStr   = (c.dateFin || dStartStr).trim();
 
       const dStart = new Date(dStartStr + "T00:00:00");
       const dEnd   = new Date(dEndStr   + "T00:00:00");
-      if(isNaN(dStart) || isNaN(dEnd)) return;
+      if (isNaN(dStart) || isNaN(dEnd)) return;
 
       let d = new Date(Math.max(dStart.getTime(), monthStart.getTime()));
       const limit = Math.min(dEnd.getTime(), monthEnd.getTime());
 
-      while(d.getTime() <= limit){
+      while (d.getTime() <= limit){
         const y  = d.getFullYear();
         const m  = d.getMonth();
         const dd = d.getDate();
         const key = `${y}-${String(m+1).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
-        map[key] = true;          // on marque ce jour comme "a une consigne"
+
+        if (!map[key]) map[key] = [];
+        map[key].push(c);      // on ajoute la consigne pour ce jour
+
         d.setDate(d.getDate() + 1);
       }
     });
 
     return map;
   }
+
   
   function formatDateFR(dateKey){
     const p = String(dateKey||"").split("-");
@@ -3041,20 +3045,28 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
     return `${p[2]}/${p[1]}/${p[0]}`;
   }
 
-  /* ----- Ouverture / fermeture de la modale agenda ----- */
-  function openAgendaModal(dateKey, list){
+    /* ----- Ouverture / fermeture de la modale agenda ----- */
+  function openAgendaModal(dateKey, resList, consList){
     if(!agendaModal || !agendaModalTitle || !agendaModalBody) return;
 
     const label = dateKey ? formatDateFR(dateKey) : "";
     agendaModalTitle.textContent = label
-      ? `📅 Réservations du ${label}`
-      : "📅 Détails des réservations";
+      ? `📅 Détails du ${label}`
+      : "📅 Détails du jour";
 
-    if(!list || !list.length){
-      agendaModalBody.innerHTML =
-        `<tr><td colspan="6" style="padding:10px;color:#666">Aucune réservation pour ce jour.</td></tr>`;
-    }else{
-      agendaModalBody.innerHTML = list.map(r => `
+    let html = "";
+
+    // 🚘 Bloc réservations
+    if (resList && resList.length){
+      html += `
+        <tr>
+          <td colspan="6"
+              style="font-weight:700;padding:6px 4px;border-bottom:1px solid #ddd;">
+            🚘 Réservations véhicules
+          </td>
+        </tr>
+      `;
+      html += resList.map(r => `
         <tr>
           <td>${formatDateFR(r.dateKey || dateKey)}</td>
           <td>${escapeHtml((r.h1 || "--") + (r.h2 ? "–" + r.h2 : ""))}</td>
@@ -3066,8 +3078,53 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
       `).join("");
     }
 
+    // 🧾 Bloc consignes
+    if (consList && consList.length){
+      html += `
+        <tr>
+          <td colspan="6"
+              style="font-weight:700;padding:6px 4px;border-top:1px solid #ddd;border-bottom:1px solid #ddd;">
+            🧾 Consignes du jour
+          </td>
+        </tr>
+      `;
+
+      consList.forEach(c => {
+        const validiteLabel =
+          c.validite === "jour" ? "Jour" :
+          c.validite === "nuit" ? "Nuit" :
+          c.validite === "24h"  ? "24h"  : "—";
+        const importanceLabel =
+          c.importance === "haute"   ? "Importante" :
+          c.importance === "moyenne" ? "Moyenne" :
+          c.importance === "faible"  ? "Faible" : "—";
+
+        html += `
+          <tr>
+            <td colspan="6" style="padding:6px 4px;font-size:13px;line-height:1.3;">
+              <strong>${escapeHtml(c.titre || "Consigne")}</strong><br>
+              <span style="font-size:11px;color:#555;">
+                Validité : ${escapeHtml(validiteLabel)}
+                — Origine : ${escapeHtml(c.serviceOrigine || "—")}
+                — Importance : ${escapeHtml(importanceLabel)}
+              </span><br>
+              ${escapeHtml(c.contenu || "")}
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    if (!html){
+      html = `<tr><td colspan="6" style="padding:10px;color:#666">
+        Aucune réservation ni consigne pour ce jour.
+      </td></tr>`;
+    }
+
+    agendaModalBody.innerHTML = html;
     agendaModal.style.display = "flex";
   }
+
 
   function closeAgendaModal(){
     if(agendaModal) agendaModal.style.display = "none";
@@ -3104,7 +3161,7 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
     const daysInMonth   = lastDay.getDate();
     const startWeekday  = (firstDay.getDay() + 6) % 7; // Lun=0 ... Dim=6
 
-        monthLabel.textContent = monthNames[month] + " " + year;
+            monthLabel.textContent = monthNames[month] + " " + year;
 
     const resMap  = buildReservationMap(year, month);
     const consMap = buildConsigneMap(year, month);
@@ -3122,7 +3179,7 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
       today.getFullYear() === year &&
       today.getMonth()    === month;
 
-        // Jours du mois
+           // Jours du mois
     for(let d=1; d<=daysInMonth; d++){
       const cell = document.createElement("div");
       cell.className = "agenda-cell";
@@ -3131,19 +3188,20 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
       const dateKey =
         `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
       const dayRes      = resMap[dateKey]  || [];
-      const hasConsigne = !!consMap[dateKey];
+      const dayCons     = consMap[dateKey] || [];
+      const hasConsigne = dayCons.length > 0;
 
-      if(isSameMonth && d === today.getDate()){
+      if (isSameMonth && d === today.getDate()){
         cell.classList.add("agenda-today");
       }
       // 🔵 couleur si réservation APPROUVÉE OU consigne ce jour-là
-      if(dayRes.length || hasConsigne){
+      if (dayRes.length || hasConsigne){
         cell.classList.add("agenda-event");
       }
 
-      // On garde la modale centrée sur les réservations (comme avant)
+      // On ouvre la modale avec réservations + consignes
       cell.addEventListener("click", function(){
-        openAgendaModal(dateKey, dayRes);
+        openAgendaModal(dateKey, dayRes, dayCons);
       });
 
       grid.appendChild(cell);
