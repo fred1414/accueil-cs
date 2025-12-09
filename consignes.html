@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<title>Consignes — CISMIC</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif}
+body{
+  background:linear-gradient(135deg,#1d3f73 0%,#d43d3d 100%);
+  min-height:100vh;display:flex;flex-direction:column;color:#222;
+}
+/* HEADER */
+header{
+  background:#fff;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+header img{height:60px}
+header .title{font-size:24px;color:#0d2b52;font-weight:800}
+header .subtitle{font-size:14px;color:#444;margin-top:4px}
+.acceuil-btn{
+  background:#b71c1c;color:#fff;font-weight:800;border:none;border-radius:12px;
+  padding:10px 14px;cursor:pointer;transition:.2s;font-size:14px;
+}
+.acceuil-btn:hover{background:#8b0000}
+
+/* MAIN */
+main{
+  flex:1;max-width:1100px;margin:20px auto;padding:0 16px;
+  display:grid;gap:16px;grid-template-columns:1fr;
+}
+.panel{
+  background:rgba(255,255,255,.92);border-radius:16px;padding:18px;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:14px;
+}
+.panel h2{
+  font-size:20px;font-weight:800;color:#0d2b52;
+  border-left:6px solid #b71c1c;padding-left:10px;
+}
+.help{font-size:13px;color:#444}
+
+/* FORM */
+label{font-weight:700;color:#0d2b52;font-size:14px;margin-bottom:4px;display:block}
+input,textarea,select{
+  width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:10px;
+  background:#fff;font-size:14px;
+}
+textarea{min-height:140px;resize:vertical;}
+
+.form-grid{
+  display:grid;gap:12px;grid-template-columns:repeat(6,minmax(0,1fr));
+}
+.col-2{grid-column:span 2}
+.col-3{grid-column:span 3}
+.col-4{grid-column:span 4}
+.col-6{grid-column:1 / -1}
+
+/* Radio / choix inline */
+.inline-group{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  font-size:14px;
+}
+.inline-group label{
+  margin:0;
+  display:flex;align-items:center;gap:4px;
+  font-weight:600;color:#0d2b52;font-size:13px;
+}
+.inline-group input[type="radio"]{
+  width:auto;margin:0;
+}
+
+/* Importance pastilles */
+.dot{
+  display:inline-block;width:10px;height:10px;border-radius:50%;
+}
+.dot.red{background:#d32f2f;}
+.dot.orange{background:#fb8c00;}
+.dot.blue{background:#1976d2;}
+
+/* Boutons principaux */
+.btn{
+  border:none;border-radius:10px;padding:12px 16px;cursor:pointer;
+  color:#fff;font-size:15px;font-weight:800;
+  box-shadow:0 3px 8px rgba(0,0,0,.12);transition:transform .2s ease;
+}
+.btn:hover{transform:translateY(-2px)}
+.btn.primary{background:#1a73e8}
+.btn.secondary{background:#6a1b9a}
+
+/* INFO */
+.info{
+  background:#f7f9ff;border:1px solid #dfe6ff;color:#123;
+  padding:10px 12px;border-radius:10px;font-size:13px;
+}
+.info strong{color:#0d2b52}
+.info.edit-mode{
+  background:#fff3cd;border-color:#ffeeba;color:#856404;
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+}
+.info.edit-mode button{
+  border:none;border-radius:999px;padding:4px 10px;font-size:12px;
+  background:#b71c1c;color:#fff;cursor:pointer;
+}
+
+/* Liste des consignes */
+.consigne-list{
+  display:flex;flex-direction:column;gap:10px;
+}
+.consigne-card{
+  background:#fff;border-radius:12px;padding:10px 12px;
+  border-left:6px solid #1976d2; /* par défaut bleu */
+  box-shadow:0 2px 6px rgba(0,0,0,.08);
+}
+.consigne-header{
+  display:flex;justify-content:space-between;gap:8px;align-items:flex-start;
+}
+.consigne-title{
+  font-weight:800;color:#0d2b52;font-size:15px;margin-bottom:2px;
+}
+.consigne-meta{
+  font-size:12px;color:#555;display:flex;flex-wrap:wrap;gap:6px;
+}
+.badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 8px;border-radius:999px;font-size:11px;
+  background:#f1f5f9;color:#1e293b;border:1px solid #e2e8f0;
+}
+.badge.valid-jour{background:#fff3cd;border-color:#ffeeba;color:#856404;}
+.badge.valid-nuit{background:#e2e3ff;border-color:#c5c6ff;color:#343a40;}
+.badge.valid-24h{background:#e6fffa;border-color:#b2f5ea;color:#234e52;}
+.badge.service{background:#edf2ff;border-color:#c3dafe;color:#1a237e;}
+
+.consigne-body{
+  font-size:14px;color:#333;margin-top:6px;white-space:pre-wrap;
+}
+.consigne-footer{
+  margin-top:6px;font-size:11px;color:#777;display:flex;flex-wrap:wrap;gap:8px;
+}
+
+/* Actions sur carte */
+.card-actions{
+  margin-top:6px;
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.card-actions button{
+  border:none;border-radius:999px;padding:4px 10px;font-size:11px;
+  cursor:pointer;font-weight:600;
+}
+.card-actions .edit{
+  background:#1a73e8;color:#fff;
+}
+.card-actions .delete{
+  background:#b71c1c;color:#fff;
+}
+
+/* Responsive */
+@media (max-width:900px){
+  .form-grid{grid-template-columns:1fr 1fr}
+  .col-2{grid-column:span 2}
+  .col-3{grid-column:span 2}
+  .col-4{grid-column:1 / -1}
+}
+footer{text-align:center;color:#fff;font-size:13px;padding:20px}
+
+/* ===========================
+   📱 Version mobile (≤ 768px)
+   =========================== */
+@media (max-width: 768px) {
+
+  body{
+    min-height: 100vh;
+  }
+
+  header{
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    text-align: center;
+  }
+
+  header img{
+    height: 50px;
+    display:block;
+    margin:0 auto;
+  }
+
+  header .title{
+    font-size: 20px;
+  }
+
+  header .subtitle{
+    font-size: 13px;
+  }
+
+  .acceuil-btn{
+    align-self: stretch;
+    width: 100%;
+    text-align: center;
+    padding: 8px 0;
+    font-size: 14px;
+    border-radius: 999px;
+  }
+
+  main{
+    margin: 16px auto;
+    padding: 0 12px;
+  }
+
+  .panel{
+    padding: 16px;
+  }
+
+  .panel h2{
+    font-size: 18px;
+  }
+
+  .form-grid{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+  .col-2,
+  .col-3,
+  .col-4,
+  .col-6{
+    grid-column:1 / -1;
+  }
+
+  textarea{
+    min-height:120px;
+    font-size:14px;
+  }
+
+  .btn{
+    width:100%;
+    text-align:center;
+    padding:10px 14px;
+    font-size:14px;
+  }
+}
+</style>
+</head>
+<body>
+<header>
+  <img src="https://i.postimg.cc/LsB40JQq/logo-cismic.png" alt="Logo SDIS 30">
+  <div>
+    <div class="title">Consignes du centre</div>
+    <div class="subtitle" id="cisLabel">—</div>
+  </div>
+  <button class="acceuil-btn" onclick="goAccueil()">⟵ Accueil</button>
+</header>
+
+<main>
+
+  <!-- Création / édition d'une consigne -->
+  <section class="panel">
+    <h2>🧾 Nouvelle consigne</h2>
+
+    <div class="info" id="infoUser">
+      Agent : <strong>—</strong>
+    </div>
+
+    <!-- Bandeau mode édition -->
+    <div id="editBanner" class="info edit-mode" style="display:none;">
+      <span>Mode édition : vous modifiez une consigne existante.</span>
+      <button type="button" onclick="cancelEdit()">Annuler l’édition</button>
+    </div>
+
+    <p class="help">
+      Renseigne les éléments ci-dessous pour créer une consigne appliquée à ton centre.
+    </p>
+
+    <form id="consigneForm" onsubmit="return saveConsigne(event)">
+      <div class="form-grid">
+        <!-- Dates -->
+        <div class="col-2">
+          <label for="dateDebut">Date de début</label>
+          <input type="date" id="dateDebut" required>
+        </div>
+        <div class="col-2">
+          <label for="dateFin">Date de fin</label>
+          <input type="date" id="dateFin">
+        </div>
+
+        <!-- Période de validité -->
+        <div class="col-2">
+          <label>Période de validité</label>
+          <div class="inline-group">
+            <label><input type="radio" name="validite" value="jour"> Jour</label>
+            <label><input type="radio" name="validite" value="nuit"> Nuit</label>
+            <label><input type="radio" name="validite" value="24h"> 24h</label>
+          </div>
+        </div>
+
+        <!-- Récurrence -->
+        <div class="col-2">
+          <label for="periodicite">Périodicité</label>
+          <input type="number" id="periodicite" min="1" value="1">
+          <span style="font-size:11px;color:#666;">Nombre d'unités entre deux occurrences</span>
+        </div>
+        <div class="col-2">
+          <label for="recurrence">Récurrence</label>
+          <select id="recurrence">
+            <option value="" disabled selected hidden>— Choisir —</option>
+            <option value="once">Ponctuelle</option>
+            <option value="daily">Journalière</option>
+            <option value="weekly">Hebdomadaire</option>
+            <option value="monthly">Mensuelle</option>
+            <option value="yearly">Annuelle</option>
+          </select>
+        </div>
+
+        <!-- Service origine -->
+        <div class="col-2">
+          <label for="serviceOrigine">Service à l'origine</label>
+          <select id="serviceOrigine">
+            <option value="" disabled selected hidden>— Choisir —</option>
+            <option value="commandement">Commandement</option>
+            <option value="officier">Officier de garde</option>
+            <option value="sous-officier">Sous-officier de garde</option>
+          </select>
+        </div>
+
+        <!-- Importance -->
+        <div class="col-3">
+          <label>Importance</label>
+          <div class="inline-group">
+            <label>
+              <input type="radio" name="importance" value="haute">
+              <span class="dot red"></span> Importante
+            </label>
+            <label>
+              <input type="radio" name="importance" value="moyenne">
+              <span class="dot orange"></span> Moyenne
+            </label>
+            <label>
+              <input type="radio" name="importance" value="faible">
+              <span class="dot blue"></span> Faible
+            </label>
+          </div>
+        </div>
+
+        <!-- Titre / contenu -->
+        <div class="col-6">
+          <label for="titre">Titre de la consigne</label>
+          <input type="text" id="titre" required>
+        </div>
+
+        <div class="col-6">
+          <label for="contenu">Contenu de la consigne</label>
+          <textarea id="contenu" placeholder="Détaille ici la consigne…" required></textarea>
+        </div>
+
+        <div class="col-6" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+          <button id="btnSubmitConsigne" class="btn primary" type="submit">Enregistrer la consigne</button>
+          <button class="btn secondary" type="button" onclick="resetForm()">Réinitialiser</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- Liste des consignes existantes -->
+  <section class="panel">
+    <h2>📚 Consignes enregistrées</h2>
+    <p class="help">
+      Les consignes sont affichées pour ton CIS, de la plus récente à la plus ancienne.
+    </p>
+    <div id="consigneList" class="consigne-list"></div>
+  </section>
+
+</main>
+
+<footer>© CISMIC — Consignes — 2025</footer>
+
+<!-- 🔌 Firebase + Firestore + stockage partagé -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="cloud-storage.js"></script>
+
+<script>
+/* ===== Helpers ===== */
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g, m => ({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    "\"":"&quot;",
+    "'":"&#39;"
+  }[m]));
+}
+function robustSession(){
+  try{
+    const raw = localStorage.getItem("csver_session");
+    if(!raw) return null;
+    const s = JSON.parse(raw);
+    return s && typeof s==="object" ? s : null;
+  }catch(_){ return null; }
+}
+function getDisplayName(u){
+  const n = (((u?.prenom||"")+" "+(u?.nom||"")).trim());
+  if(n) return n;
+  try{
+    const fiche = JSON.parse(localStorage.getItem("csver_user_"+(u?.matricule||""))||"null");
+    const n2 = (((fiche?.prenom||"")+" "+(ficche?.nom||"")).trim());
+    if(n2) return n2;
+  }catch(_){}
+  try{
+    const agents = JSON.parse(localStorage.getItem("agents_data")||"[]");
+    const hit = agents.find(a=>a.matricule===u?.matricule);
+    if(hit){
+      const n3 = (((hit.prenom||"")+" "+(hit.nom||"")).trim());
+      return n3 || hit.nom || hit.prenom || u?.matricule || "Agent";
+    }
+  }catch(_){}
+  return u?.matricule || "Agent";
+}
+function fmtDateFR(dateStr){
+  if(!dateStr) return "—";
+  try{
+    const d = new Date(dateStr+"T00:00:00");
+    if(isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("fr-FR");
+  }catch(_){ return dateStr; }
+}
+function fmtDateTime(ts){
+  try{
+    const d=new Date(Number(ts)||0);
+    const p=n=>String(n).padStart(2,'0');
+    return `${p(d.getDate())}-${p(d.getMonth()+1)}-${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }catch(_){return "—";}
+}
+function todayIso(){
+  const d = new Date();
+  const p = n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+
+/* ===== Contexte page ===== */
+let ctx = {
+  user:null,
+  cis:"",
+  key:""
+};
+let currentEditId = null;
+
+function initPage(){
+  const sess = robustSession();
+  if(!sess){
+    alert("Session expirée.");
+    try{ window.location.href="login.html"; }catch(_){}
+    return;
+  }
+
+  ctx.user = sess;
+  ctx.cis  = Array.isArray(sess.cis) ? (sess.cis[0] || "") : (sess.cis || "");
+  ctx.key  = "consignes_"+ctx.cis;
+
+  document.getElementById("cisLabel").textContent = "Centre de Secours "+ctx.cis;
+  document.getElementById("infoUser").innerHTML =
+    'Agent : <strong>'+escapeHtml(getDisplayName(sess))+'</strong>';
+
+  // Dates : valeur + min = aujourd'hui
+  const iso = todayIso();
+  const inputDebut = document.getElementById("dateDebut");
+  const inputFin   = document.getElementById("dateFin");
+
+  if(inputDebut){
+    inputDebut.min   = iso;
+    if(!inputDebut.value || inputDebut.value < iso) inputDebut.value = iso;
+  }
+  if(inputFin){
+    inputFin.min   = iso;
+    if(inputFin.value && inputFin.value < iso) inputFin.value = iso;
+  }
+
+  resetEditState();
+  renderConsignes();
+}
+
+/* ===== Accès stockage ===== */
+function readConsignes(){
+  try{
+    const arr = JSON.parse(localStorage.getItem(ctx.key)||"[]");
+    return Array.isArray(arr) ? arr : [];
+  }catch(_){ return []; }
+}
+function saveConsignesAll(arr){
+  localStorage.setItem(ctx.key, JSON.stringify(arr));
+}
+
+/* ===== Gestion mode édition ===== */
+function resetEditState(){
+  currentEditId = null;
+  const banner = document.getElementById("editBanner");
+  if(banner) banner.style.display = "none";
+  const submitBtn = document.getElementById("btnSubmitConsigne");
+  if(submitBtn) submitBtn.textContent = "Enregistrer la consigne";
+}
+function cancelEdit(){
+  resetEditState();
+  resetForm();
+}
+
+/* ===== Formulaire ===== */
+function resetForm(){
+  const inputDebut = document.getElementById("dateDebut");
+  const inputFin   = document.getElementById("dateFin");
+  const iso        = todayIso();
+
+  if(inputDebut){
+    inputDebut.min   = iso;
+    inputDebut.value = iso;
+  }
+  if(inputFin){
+    inputFin.min   = iso;
+    inputFin.value = "";
+  }
+
+  document.getElementById("periodicite").value = "1";
+
+  const recSel = document.getElementById("recurrence");
+  if(recSel){ recSel.value = ""; }
+  const servSel = document.getElementById("serviceOrigine");
+  if(servSel){ servSel.value = ""; }
+
+  document.querySelectorAll('input[name="validite"]').forEach(i=>{ i.checked = false; });
+  document.querySelectorAll('input[name="importance"]').forEach(i=>{ i.checked = false; });
+
+  document.getElementById("titre").value   = "";
+  document.getElementById("contenu").value = "";
+}
+
+function saveConsigne(evt){
+  if(evt && evt.preventDefault) evt.preventDefault();
+  if(!ctx.user){
+    alert("Session expirée.");
+    return false;
+  }
+
+  const dateDebut = (document.getElementById("dateDebut").value||"").trim();
+  const dateFin   = (document.getElementById("dateFin").value||"").trim();
+  const titre     = (document.getElementById("titre").value||"").trim();
+  const contenu   = (document.getElementById("contenu").value||"").trim();
+  const periodicite = parseInt(document.getElementById("periodicite").value||"1",10) || 1;
+
+  const recSel = document.getElementById("recurrence");
+  const recurrence = recSel ? (recSel.value||"") : "";
+  if(!recurrence){
+    alert("Merci de choisir une récurrence (Ponctuelle, Journalière, Hebdomadaire, Mensuelle ou Annuelle).");
+    return false;
+  }
+
+  const servSel = document.getElementById("serviceOrigine");
+  const serviceOrigine = servSel ? (servSel.value||"") : "";
+  if(!serviceOrigine){
+    alert("Merci de choisir le service à l'origine de la consigne.");
+    return false;
+  }
+
+  const validiteInput = document.querySelector('input[name="validite"]:checked');
+  if(!validiteInput){
+    alert("Merci de choisir une période de validité (Jour, Nuit ou 24h).");
+    return false;
+  }
+  const validite = validiteInput.value;
+
+  const importanceInput = document.querySelector('input[name="importance"]:checked');
+  if(!importanceInput){
+    alert("Merci de choisir l'importance de la consigne (Importante, Moyenne ou Faible).");
+    return false;
+  }
+  const importance = importanceInput.value;
+
+  if(!dateDebut){
+    alert("Merci de renseigner la date de début.");
+    return false;
+  }
+
+  const today = todayIso();
+  if(dateDebut < today){
+    alert("La date de début ne peut pas être antérieure à aujourd'hui.");
+    return false;
+  }
+  if(dateFin){
+    if(dateFin < today){
+      alert("La date de fin ne peut pas être antérieure à aujourd'hui.");
+      return false;
+    }
+    if(dateFin < dateDebut){
+      alert("La date de fin ne peut pas être antérieure à la date de début.");
+      return false;
+    }
+  }
+
+  if(!titre || !contenu){
+    alert("Le titre et le contenu de la consigne sont obligatoires.");
+    return false;
+  }
+
+  const all = readConsignes();
+
+  if(currentEditId){
+    // 🔁 édition
+    const idx = all.findIndex(c => c.id === currentEditId);
+    if(idx !== -1){
+      const existing = all[idx];
+      all[idx] = {
+        ...existing,
+        dateDebut,
+        dateFin,
+        periodicite,
+        recurrence,
+        validite,
+        serviceOrigine,
+        titre,
+        contenu,
+        importance,
+        updatedTs: Date.now()
+      };
+      saveConsignesAll(all);
+      alert("Consigne modifiée.");
+    }else{
+      alert("Impossible de retrouver la consigne à modifier.");
+    }
+  }else{
+    // 🆕 création
+    const consigne = {
+      id: "consigne_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),
+      cis: ctx.cis,
+      createdTs: Date.now(),
+      createdBy: {
+        matricule: ctx.user.matricule || "",
+        display: getDisplayName(ctx.user)
+      },
+      dateDebut,
+      dateFin,
+      periodicite,
+      recurrence,
+      validite,
+      serviceOrigine,
+      titre,
+      contenu,
+      importance
+    };
+    all.push(consigne);
+    saveConsignesAll(all);
+    alert("Consigne enregistrée.");
+  }
+
+  resetForm();
+  resetEditState();
+  renderConsignes();
+  return false;
+}
+
+/* ===== Edition / suppression depuis la liste ===== */
+function startEditConsigne(id){
+  const all = readConsignes();
+  const c = all.find(x => x.id === id);
+  if(!c) return;
+
+  currentEditId = id;
+
+  const isoToday = todayIso();
+  const dDebut = document.getElementById("dateDebut");
+  const dFin   = document.getElementById("dateFin");
+  if(dDebut){
+    dDebut.min   = isoToday;
+    dDebut.value = c.dateDebut || isoToday;
+  }
+  if(dFin){
+    dFin.min   = isoToday;
+    dFin.value = c.dateFin || "";
+  }
+
+  document.getElementById("periodicite").value = c.periodicite || 1;
+
+  const recSel = document.getElementById("recurrence");
+  if(recSel) recSel.value = c.recurrence || "";
+
+  const servSel = document.getElementById("serviceOrigine");
+  if(servSel) servSel.value = c.serviceOrigine || "";
+
+  document.querySelectorAll('input[name="validite"]').forEach(i=>{
+    i.checked = (i.value === (c.validite||""));
+  });
+  document.querySelectorAll('input[name="importance"]').forEach(i=>{
+    i.checked = (i.value === (c.importance||""));
+  });
+
+  document.getElementById("titre").value   = c.titre   || "";
+  document.getElementById("contenu").value = c.contenu || "";
+
+  const banner = document.getElementById("editBanner");
+  if(banner) banner.style.display = "flex";
+  const submitBtn = document.getElementById("btnSubmitConsigne");
+  if(submitBtn) submitBtn.textContent = "Enregistrer les modifications";
+
+  // remonter en haut pour voir le formulaire
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function deleteConsigne(id){
+  const all = readConsignes();
+  const c = all.find(x=>x.id===id);
+  if(!c) return;
+
+  if(!confirm("Supprimer cette consigne ?\n\nTitre : "+(c.titre||""))) return;
+
+  const remaining = all.filter(x=>x.id!==id);
+  saveConsignesAll(remaining);
+
+  if(currentEditId === id){
+    resetForm();
+    resetEditState();
+  }
+
+  renderConsignes();
+}
+
+/* ===== Rendu de la liste ===== */
+function importanceToColorBorder(imp){
+  switch(imp){
+    case "haute":   return "#d32f2f"; // rouge
+    case "moyenne": return "#fb8c00"; // orange
+    case "faible":  return "#1976d2"; // bleu
+    default:        return "#1976d2";
+  }
+}
+function importanceToLabel(imp){
+  switch(imp){
+    case "haute":   return "Importante";
+    case "moyenne": return "Moyenne";
+    case "faible":  return "Faible";
+    default:        return "—";
+  }
+}
+function recurrenceToLabel(rec, per){
+  if(rec==="once") return "Ponctuelle";
+  const n = per||1;
+  const prefix = (n>1) ? `Toutes les ${n}` : "Tous les";
+  switch(rec){
+    case "daily":   return `${prefix} jour(s)`;
+    case "weekly":  return `${prefix} semaine(s)`;
+    case "monthly": return `${prefix} mois`;
+    case "yearly":  return `${prefix} an(s)`;
+    default:        return "Récurrence inconnue";
+  }
+}
+function validiteClass(v){
+  if(v==="jour") return "valid-jour";
+  if(v==="nuit") return "valid-nuit";
+  if(v==="24h")  return "valid-24h";
+  return "";
+}
+function serviceLabel(s){
+  switch(s){
+    case "commandement":  return "Commandement";
+    case "officier":      return "Officier de garde";
+    case "sous-officier": return "Sous-officier de garde";
+    default:              return s;
+  }
+}
+
+function renderConsignes(){
+  const listEl = document.getElementById("consigneList");
+  if(!listEl) return;
+
+  const all = readConsignes()
+    .filter(c=>c && c.cis===ctx.cis);
+
+  if(!all.length){
+    listEl.innerHTML = "<p style='font-size:13px;color:#555;'>Aucune consigne enregistrée pour ce centre.</p>";
+    return;
+  }
+
+  // plus récentes d'abord
+  all.sort((a,b)=>{
+    const ta = a.dateDebut || "";
+    const tb = b.dateDebut || "";
+    if(tb === ta) return (b.createdTs||0)-(a.createdTs||0);
+    return tb.localeCompare(ta);
+  });
+
+  listEl.innerHTML = "";
+  all.forEach(c=>{
+    const card = document.createElement("div");
+    card.className = "consigne-card";
+    card.style.borderLeftColor = importanceToColorBorder(c.importance);
+
+    const header = document.createElement("div");
+    header.className = "consigne-header";
+
+    const left = document.createElement("div");
+    const title = document.createElement("div");
+    title.className = "consigne-title";
+    title.textContent = c.titre || "Consigne";
+
+    const meta = document.createElement("div");
+    meta.className = "consigne-meta";
+
+    const datesLabel = (c.dateDebut && c.dateFin)
+      ? `Du ${fmtDateFR(c.dateDebut)} au ${fmtDateFR(c.dateFin)}`
+      : (c.dateDebut ? `À partir du ${fmtDateFR(c.dateDebut)}` : "Période non renseignée");
+
+    const spanDates = document.createElement("span");
+    spanDates.textContent = datesLabel;
+    meta.appendChild(spanDates);
+
+    const spanRec = document.createElement("span");
+    spanRec.textContent = "— "+recurrenceToLabel(c.recurrence, c.periodicite);
+    meta.appendChild(spanRec);
+
+    left.appendChild(title);
+    left.appendChild(meta);
+
+    const right = document.createElement("div");
+    right.style.display = "flex";
+    right.style.flexWrap = "wrap";
+    right.style.gap = "4px";
+    right.style.justifyContent = "flex-end";
+
+    const badgeImp = document.createElement("span");
+    badgeImp.className = "badge";
+    badgeImp.innerHTML =
+      `<span class="dot ${
+        c.importance==="haute" ? "red"
+        : c.importance==="moyenne" ? "orange"
+        : "blue"
+      }"></span> ${escapeHtml(importanceToLabel(c.importance))}`;
+    right.appendChild(badgeImp);
+
+    const badgeVal = document.createElement("span");
+    badgeVal.className = "badge "+validiteClass(c.validite);
+    badgeVal.textContent = "Validité : "+(
+      c.validite==="jour" ? "Jour"
+      : c.validite==="nuit" ? "Nuit"
+      : c.validite==="24h" ? "24h"
+      : "—"
+    );
+    right.appendChild(badgeVal);
+
+    const badgeServ = document.createElement("span");
+    badgeServ.className = "badge service";
+    badgeServ.textContent = serviceLabel(c.serviceOrigine);
+    right.appendChild(badgeServ);
+
+    header.appendChild(left);
+    header.appendChild(right);
+
+    const body = document.createElement("div");
+    body.className = "consigne-body";
+    body.textContent = c.contenu || "";
+
+    const footer = document.createElement("div");
+    footer.className = "consigne-footer";
+    let footerHtml =
+      `<span>Créée le ${escapeHtml(fmtDateTime(c.createdTs||0))}</span>`+
+      `<span>par ${escapeHtml(c.createdBy?.display || "")}</span>`;
+    if(c.updatedTs){
+      footerHtml += `<span>Modifiée le ${escapeHtml(fmtDateTime(c.updatedTs))}</span>`;
+    }
+    footer.innerHTML = footerHtml;
+
+    const actions = document.createElement("div");
+    actions.className = "card-actions";
+    const btnEdit = document.createElement("button");
+    btnEdit.className = "edit";
+    btnEdit.type = "button";
+    btnEdit.textContent = "Modifier";
+    btnEdit.onclick = ()=>startEditConsigne(c.id);
+
+    const btnDel = document.createElement("button");
+    btnDel.className = "delete";
+    btnDel.type = "button";
+    btnDel.textContent = "Supprimer";
+    btnDel.onclick = ()=>deleteConsigne(c.id);
+
+    actions.appendChild(btnEdit);
+    actions.appendChild(btnDel);
+
+    card.appendChild(header);
+    card.appendChild(body);
+    card.appendChild(footer);
+    card.appendChild(actions);
+
+    listEl.appendChild(card);
+  });
+}
+
+/* Navigation */
+function goAccueil(){
+  try{ window.location.href="index.html"; }catch(_){}
+}
+
+/* Init */
+window.addEventListener("DOMContentLoaded", async ()=>{
+  if(typeof syncAccueilFromCloud === "function"){
+    try{
+      await syncAccueilFromCloud();
+    }catch(e){
+      console.error("Erreur syncAccueilFromCloud :", e);
+    }
+  }
+  initPage();
+});
+
+window.addEventListener("storage",(e)=>{
+  try{
+    if(!e.key) return;
+    if(e.key === "csver_session"){
+      initPage();
+    }
+    if(e.key === ctx.key){
+      renderConsignes();
+    }
+  }catch(_){}
+});
+</script>
+</body>
+</html>
