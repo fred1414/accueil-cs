@@ -336,39 +336,47 @@ main{
 .agenda-consigne-card{
   border-radius:10px;
   border:1px solid #e0e4f0;
-  padding:8px 10px;
-  margin-top:6px;
+  padding:10px 14px;
+  margin-top:8px;
   background:#f9fafb;
 }
 
+/* ligne : point coloré + titre */
 .agenda-consigne-title{
   display:flex;
   align-items:center;
-  gap:6px;
+  gap:8px;
   font-weight:700;
-  font-size:14px;
+  font-size:16px;
   color:#0d2b52;
-  margin-bottom:4px;
 }
 
+/* point bien visible */
 .agenda-consigne-dot{
-  width:10px;
-  height:10px;
+  width:12px;
+  height:12px;
   border-radius:50%;
   flex-shrink:0;
 }
 
+/* contenu juste en dessous, aligné à gauche */
 .agenda-consigne-body{
-  font-size:13px;
+  margin-top:4px;       /* colle le texte sous le titre */
+  margin-left:20px;     /* aligne sous le texte du titre, pas sous le point */
+  font-size:15px;
   color:#333;
   white-space:pre-wrap;
+  text-align:left;
 }
 
+/* ligne "Validité / Origine / Importance" */
 .agenda-consigne-meta{
-  font-size:11px;
+  margin-top:6px;
+  margin-left:20px;
+  font-size:13px;
   color:#555;
-  margin-top:4px;
 }
+
 
 /* Tableau des réservations dans la modale */
 .agenda-modal-table-wrapper{
