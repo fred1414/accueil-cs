@@ -1695,7 +1695,7 @@ function renderFormations(){
       }
     };
 
-   // ✅ Est-ce que la consigne est active MAINTENANT (date + heure + validité jour/nuit/24h) ?
+   // ✅ Est-ce que la consigne est active MAINTENANT (date + heure + validité + récurrence) ?
 function isActiveNow(c){
   const d1 = (c.dateDebut || "").trim();
   if(!d1) return false;
@@ -1706,7 +1706,6 @@ function isActiveNow(c){
   const hour = now.getHours();
 
   // "Jour de garde" = de 07h à 07h (J+1)
-  // → si on est avant 07h, on considère qu'on est encore sur la garde de la veille
   const serviceBase = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   if(hour < 7){
     serviceBase.setDate(serviceBase.getDate() - 1);
@@ -1714,14 +1713,55 @@ function isActiveNow(c){
   const p = n => String(n).padStart(2,"0");
   const serviceIso = `${serviceBase.getFullYear()}-${p(serviceBase.getMonth()+1)}-${p(serviceBase.getDate())}`;
 
-  // D'abord : est-ce que ce "jour de garde" est dans la plage dateDébut/dateFin ?
+  // Dans la plage globale ?
   if(serviceIso < d1 || serviceIso > d2) return false;
 
   const rec = c.recurrence || "once";
+  const per = parseInt(c.periodicite, 10) || 1;
 
-  // Ponctuelle : uniquement sur le jour de début (dans la logique "jour de garde")
-  if(rec === "once" && serviceIso !== d1){
-    return false;
+  const startDate   = new Date(d1 + "T00:00:00");
+  const serviceDate = new Date(serviceIso + "T00:00:00");
+  if (isNaN(startDate) || isNaN(serviceDate)) return false;
+
+  const diffDays = Math.floor((serviceDate.getTime() - startDate.getTime()) / (1000*60*60*24));
+  if(diffDays < 0) return false;
+
+  // 📅 Gestion de la récurrence
+  switch(rec){
+    case "once":
+      // Ponctuelle : uniquement sur le jour de début (logique garde)
+      if(serviceIso !== d1) return false;
+      break;
+
+    case "daily":
+      if(diffDays % per !== 0) return false;
+      break;
+
+    case "weekly":
+      if(diffDays % (7 * per) !== 0) return false;
+      break;
+
+    case "monthly": {
+      const monthsDiff =
+        (serviceDate.getFullYear() - startDate.getFullYear()) * 12 +
+        (serviceDate.getMonth() - startDate.getMonth());
+      // On impose en plus le même "jour du mois"
+      if(serviceDate.getDate() !== startDate.getDate()) return false;
+      if(monthsDiff < 0 || monthsDiff % per !== 0) return false;
+      break;
+    }
+
+    case "yearly": {
+      const yearsDiff = serviceDate.getFullYear() - startDate.getFullYear();
+      if(serviceDate.getMonth() !== startDate.getMonth()) return false;
+      if(serviceDate.getDate()  !== startDate.getDate())  return false;
+      if(yearsDiff < 0 || yearsDiff % per !== 0) return false;
+      break;
+    }
+
+    default:
+      // type inconnu -> on ne filtre pas plus
+      break;
   }
 
   const validite = c.validite || "24h";
@@ -1736,7 +1776,7 @@ function isActiveNow(c){
     return (hour >= 19 || hour < 7);
   }
 
-  // 24h : toute la garde, de 07h à 07h (on est déjà dans la bonne plage serviceIso)
+  // 24h : toute la garde, de 07h à 07h
   return true;
 }
 
@@ -3142,52 +3182,132 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
   }
 
    // Renvoie un objet { "YYYY-MM-DD": [ consignes de ce jour ] }
-  function buildConsigneMap(year, monthIndex){
-    const cisSel = getCurrentCis();
-    if (!cisSel) return {};
+function buildConsigneMap(year, monthIndex){
+  const cisSel = getCurrentCis();
+  if (!cisSel) return {};
 
-    const keyCons = "consignes_" + cisSel;
-    let arr;
-    try{
-      arr = JSON.parse(localStorage.getItem(keyCons) || "[]");
-      if (!Array.isArray(arr)) arr = [];
-    }catch(_){
-      arr = [];
-    }
+  const keyCons = "consignes_" + cisSel;
+  let arr;
+  try{
+    arr = JSON.parse(localStorage.getItem(keyCons) || "[]");
+    if (!Array.isArray(arr)) arr = [];
+  }catch(_){
+    arr = [];
+  }
 
-    const map = {};
-    const monthStart = new Date(year, monthIndex, 1);
-    const monthEnd   = new Date(year, monthIndex + 1, 0);
+  const map = {};
+  const monthStart = new Date(year, monthIndex, 1);
+  const monthEnd   = new Date(year, monthIndex + 1, 0);
 
-    arr.forEach(c => {
-      if (!c || c.cis !== cisSel) return;
+  function addOccurence(dateObj, consigne){
+    const y  = dateObj.getFullYear();
+    const m  = dateObj.getMonth();
+    const dd = dateObj.getDate();
+    const key = `${y}-${String(m+1).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
 
-      const dStartStr = (c.dateDebut || "").trim();
-      if (!dStartStr) return;
-      const dEndStr   = (c.dateFin || dStartStr).trim();
+    if (!map[key]) map[key] = [];
+    map[key].push(consigne);
+  }
 
-      const dStart = new Date(dStartStr + "T00:00:00");
-      const dEnd   = new Date(dEndStr   + "T00:00:00");
-      if (isNaN(dStart) || isNaN(dEnd)) return;
+  arr.forEach(c => {
+    if (!c || c.cis !== cisSel) return;
 
+    const dStartStr = (c.dateDebut || "").trim();
+    if (!dStartStr) return;
+    const dEndStr   = (c.dateFin || dStartStr).trim();
+
+    const dStart = new Date(dStartStr + "T00:00:00");
+    const dEnd   = new Date(dEndStr   + "T00:00:00");
+    if (isNaN(dStart) || isNaN(dEnd)) return;
+
+    const rec = c.recurrence || "once";
+    const per = parseInt(c.periodicite, 10) || 1;
+
+    // 🔹 Cas "Ponctuelle" : comportement actuel = tous les jours entre début et fin
+    if (rec === "once"){
       let d = new Date(Math.max(dStart.getTime(), monthStart.getTime()));
       const limit = Math.min(dEnd.getTime(), monthEnd.getTime());
 
       while (d.getTime() <= limit){
-        const y  = d.getFullYear();
-        const m  = d.getMonth();
-        const dd = d.getDate();
-        const key = `${y}-${String(m+1).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
-
-        if (!map[key]) map[key] = [];
-        map[key].push(c);      // on ajoute la consigne pour ce jour
-
+        addOccurence(d, c);
         d.setDate(d.getDate() + 1);
       }
-    });
+      return;
+    }
 
-    return map;
-  }
+    // 📅 Pour les récurrences, dateFin = dernière occurrence possible
+    const globalEnd = Math.min(dEnd.getTime(), monthEnd.getTime());
+
+    // Helper pour avancer à la première occurrence >= monthStart
+    function alignToMonthStart(stepFn){
+      let occ = new Date(dStart.getTime());
+      while (occ.getTime() < monthStart.getTime()){
+        occ = stepFn(occ);
+      }
+      return occ;
+    }
+
+    if (rec === "daily"){
+      const stepDays = per;
+
+      let occ = alignToMonthStart(d => {
+        const n = new Date(d.getTime());
+        n.setDate(n.getDate() + stepDays);
+        return n;
+      });
+
+      while (occ.getTime() <= globalEnd){
+        addOccurence(occ, c);
+        occ.setDate(occ.getDate() + stepDays);
+      }
+      return;
+    }
+
+    if (rec === "weekly"){
+      const stepDays = 7 * per;
+
+      let occ = alignToMonthStart(d => {
+        const n = new Date(d.getTime());
+        n.setDate(n.getDate() + stepDays);
+        return n;
+      });
+
+      while (occ.getTime() <= globalEnd){
+        addOccurence(occ, c);
+        occ.setDate(occ.getDate() + stepDays);
+      }
+      return;
+    }
+
+    if (rec === "monthly" || rec === "yearly"){
+      const baseDay = dStart.getDate();
+      const stepMonths = (rec === "monthly") ? per : 12 * per;
+
+      let occ = new Date(dStart.getTime());
+      while (occ.getTime() < monthStart.getTime()){
+        occ = new Date(occ.getFullYear(), occ.getMonth() + stepMonths, baseDay);
+      }
+
+      while (occ.getTime() <= globalEnd){
+        // si le changement de mois déplace le jour (ex: 31 → 30), on accepte tel quel
+        addOccurence(occ, c);
+        occ = new Date(occ.getFullYear(), occ.getMonth() + stepMonths, baseDay);
+      }
+      return;
+    }
+
+    // Sécurité : si type inconnu -> comportement "plein" comme avant
+    let d = new Date(Math.max(dStart.getTime(), monthStart.getTime()));
+    const limit = Math.min(dEnd.getTime(), monthEnd.getTime());
+    while (d.getTime() <= limit){
+      addOccurence(d, c);
+      d.setDate(d.getDate() + 1);
+    }
+  });
+
+  return map;
+}
+
 
   
   function formatDateFR(dateKey){
