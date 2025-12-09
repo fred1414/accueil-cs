@@ -176,6 +176,124 @@ main{
   display:flex;flex-direction:column;gap:10px;
 }
 
+/* Colonne gauche : FMA (haut) + Agenda (bas) */
+.left-column{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  min-height:0;
+}
+
+/* Agenda mensuel (bas gauche) */
+#agenda-panel.panel{
+  padding:0;
+  overflow:hidden;
+}
+
+#agenda-header{
+  padding:14px 16px;
+  background:#0d2b52;
+  color:#fff;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+#agenda-header span{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.agenda-nav{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:14px;
+}
+
+.agenda-nav button{
+  border:none;
+  border-radius:999px;
+  padding:4px 8px;
+  background:#b71c1c;
+  color:#fff;
+  cursor:pointer;
+  font-size:14px;
+}
+.agenda-nav button:hover{
+  background:#8b0000;
+}
+
+#agenda-body{
+  padding:10px 12px 14px;
+  background:rgba(255,255,255,0.95);
+}
+
+/* Jours de la semaine */
+.agenda-weekdays{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  font-size:12px;
+  font-weight:600;
+  color:#555;
+  text-align:center;
+  margin-bottom:6px;
+}
+
+.agenda-weekdays div{
+  padding:4px 0;
+}
+
+/* Grille des jours */
+.agenda-grid{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:4px;
+  font-size:13px;
+}
+
+.agenda-cell{
+  height:32px;
+  border-radius:8px;
+  background:#f5f7fb;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:default;
+  user-select:none;
+}
+
+.agenda-cell-empty{
+  background:transparent;
+  cursor:default;
+}
+
+/* Aujourd'hui */
+.agenda-today{
+  background:#0d2b52;
+  color:#fff;
+  font-weight:700;
+}
+
+/* Plus tard : jour avec consigne / évènement */
+.agenda-event{
+  background:#ffe0b2;
+  color:#5d3d00;
+  font-weight:600;
+  box-shadow:0 0 0 1px rgba(0,0,0,.05);
+}
+
+/* Les deux panneaux de la colonne gauche prennent chacun ~50% */
+.left-column > #formation-panel,
+.left-column > #agenda-panel{
+  flex:1;
+  min-height:0;
+}
+
+
 /* ✅ Main courante (droite) – existant */
 #journal-panel.panel{ overflow:hidden;padding:0; }
 #journal-header{
@@ -573,11 +691,41 @@ nav.menu-bar a{ padding:10px 12px; }
 
 <main>
 
-  <!-- 📘 Main courante Formation (colonne gauche) -->
-  <div id="formation-panel" class="panel">
-    <div id="formation-header">📘 Main courante — FMA</div>
-    <div id="formation-list"></div>
+   <!-- Colonne gauche : 📘 Main courante FMA (haut) + 📅 Agenda mensuel (bas) -->
+  <div class="left-column">
+
+    <!-- 📘 Main courante Formation (haut) -->
+    <div id="formation-panel" class="panel">
+      <div id="formation-header">📘 Main courante — FMA</div>
+      <div id="formation-list"></div>
+    </div>
+
+    <!-- 📅 Agenda mensuel (bas) -->
+    <div id="agenda-panel" class="panel">
+      <div id="agenda-header">
+        <span>📅 Agenda du centre</span>
+        <div class="agenda-nav">
+          <button id="agenda-prev" type="button">◀</button>
+          <span id="agenda-month-label"></span>
+          <button id="agenda-next" type="button">▶</button>
+        </div>
+      </div>
+      <div id="agenda-body">
+        <div class="agenda-weekdays">
+          <div>Lun</div>
+          <div>Mar</div>
+          <div>Mer</div>
+          <div>Jeu</div>
+          <div>Ven</div>
+          <div>Sam</div>
+          <div>Dim</div>
+        </div>
+        <div id="agenda-grid" class="agenda-grid"></div>
+      </div>
+    </div>
+
   </div>
+
 
   <!-- 🚒 ÉTAT DES VÉHICULES (colonne centre) -->
   <div class="section vehicules">
@@ -2528,6 +2676,88 @@ function loadChatbaseWidgetForAdmins() {
     }
   })();
 }
+
+  <script>
+/* ===========================
+   📅 Agenda mensuel (colonne gauche)
+   =========================== */
+(function(){
+  const monthLabel = document.getElementById("agenda-month-label");
+  const grid       = document.getElementById("agenda-grid");
+  const btnPrev    = document.getElementById("agenda-prev");
+  const btnNext    = document.getElementById("agenda-next");
+
+  if (!monthLabel || !grid) return; // sécurité
+
+  const monthNames = [
+    "Janvier","Février","Mars","Avril","Mai","Juin",
+    "Juillet","Août","Septembre","Octobre","Novembre","Décembre"
+  ];
+
+  // On se cale sur le 1er du mois courant
+  let currentMonth = new Date();
+  currentMonth.setDate(1);
+
+  function renderAgenda() {
+    grid.innerHTML = "";
+
+    const year  = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay  = new Date(year, month + 1, 0);
+
+    const daysInMonth = lastDay.getDate();
+
+    // getDay(): 0=Dim, 1=Lun, ..., 6=Sam
+    // On veut Lundi=0…Dimanche=6
+    const startWeekday = (firstDay.getDay() + 6) % 7;
+
+    monthLabel.textContent = monthNames[month] + " " + year;
+
+    // Cases vides avant le 1er
+    for (let i = 0; i < startWeekday; i++) {
+      const cell = document.createElement("div");
+      cell.className = "agenda-cell agenda-cell-empty";
+      grid.appendChild(cell);
+    }
+
+    const today = new Date();
+    const isSameMonth =
+      today.getFullYear() === year &&
+      today.getMonth() === month;
+
+    // Jours du mois
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement("div");
+      cell.className = "agenda-cell";
+      cell.textContent = d;
+
+      if (isSameMonth && d === today.getDate()) {
+        cell.classList.add("agenda-today");
+      }
+
+      // 🔜 Plus tard : ajouter ici la classe agenda-event
+      // si ce jour possède une consigne / FMA / autre.
+
+      grid.appendChild(cell);
+    }
+  }
+
+  btnPrev && btnPrev.addEventListener("click", function(){
+    currentMonth.setMonth(currentMonth.getMonth() - 1);
+    renderAgenda();
+  });
+
+  btnNext && btnNext.addEventListener("click", function(){
+    currentMonth.setMonth(currentMonth.getMonth() + 1);
+    renderAgenda();
+  });
+
+  renderAgenda();
+})();
+</script>
+
 
 // 👉 On attend que la page soit prête, puis on vérifie le rôle
 window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
