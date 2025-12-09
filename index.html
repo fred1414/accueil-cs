@@ -3261,28 +3261,34 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
     `;
 
     sortedCons.forEach(c => {
-      const color  = importanceToColor(c.importance);
-      const vLab   = validiteLabel(c.validite);
-      const impLab = importanceToLabel(c.importance);
-      const serv   = serviceLabel(c.serviceOrigine);
+  const color  = importanceToColor(c.importance);
+  const vLab   = validiteLabel(c.validite);
+  const impLab = importanceToLabel(c.importance);
+  const serv   = serviceLabel(c.serviceOrigine);
 
-      html += `
-        <div class="agenda-consigne-card">
-          <div class="agenda-consigne-title">
-            <span class="agenda-consigne-dot" style="background:${color};"></span>
-            ${escapeHtml(c.titre || "Consigne")}
-          </div>
-          <div class="agenda-consigne-body">
-            ${escapeHtml(c.contenu || "")}
-          </div>
-          <div class="agenda-consigne-meta">
-            Validité : ${escapeHtml(vLab)}
-            — Origine : ${escapeHtml(serv)}
-            — Importance : ${escapeHtml(impLab)}
-          </div>
-        </div>
-      `;
-    });
+  // 👉 nom de l’agent qui a créé la consigne
+  const auteur =
+    (c.createdBy && (c.createdBy.display || c.createdBy.nom || c.createdBy.matricule)) || "";
+
+  html += `
+    <div class="agenda-consigne-card">
+      <div class="agenda-consigne-title">
+        <span class="agenda-consigne-dot" style="background:${color};"></span>
+        ${escapeHtml(c.titre || "Consigne")}
+      </div>
+      <div class="agenda-consigne-body">
+        ${escapeHtml(c.contenu || "")}
+      </div>
+      <div class="agenda-consigne-meta">
+        Validité : ${escapeHtml(vLab)}
+        — Origine : ${escapeHtml(serv)}
+        — Importance : ${escapeHtml(impLab)}
+        ${auteur ? " — Créée par : " + escapeHtml(auteur) : ""}
+      </div>
+    </div>
+  `;
+});
+
 
     html += `</div>`;
   }
