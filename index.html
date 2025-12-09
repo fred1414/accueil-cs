@@ -2677,7 +2677,11 @@ function loadChatbaseWidgetForAdmins() {
   })();
 }
 
-  <script>
+// 👉 On attend que la page soit prête, puis on vérifie le rôle
+window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
+</script>
+
+<script>
 /* ===========================
    📅 Agenda mensuel (colonne gauche)
    =========================== */
@@ -2737,7 +2741,7 @@ function loadChatbaseWidgetForAdmins() {
         cell.classList.add("agenda-today");
       }
 
-      // 🔜 Plus tard : ajouter ici la classe agenda-event
+      // 🔜 Plus tard : jour avec consigne / évènement
       // si ce jour possède une consigne / FMA / autre.
 
       grid.appendChild(cell);
@@ -2758,10 +2762,6 @@ function loadChatbaseWidgetForAdmins() {
 })();
 </script>
 
-
-// 👉 On attend que la page soit prête, puis on vérifie le rôle
-window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
-</script>
 
   
 <!-- FIN AJOUT -->
