@@ -262,9 +262,10 @@ main{
   display:flex;
   align-items:center;
   justify-content:center;
-  cursor:default;
+  cursor:pointer;       /* ← au lieu de cursor:default */
   user-select:none;
 }
+
 
 .agenda-cell-empty{
   background:transparent;
@@ -285,6 +286,36 @@ main{
   font-weight:600;
   box-shadow:0 0 0 1px rgba(0,0,0,.05);
 }
+
+  /* Détails sous le calendrier */
+.agenda-details{
+  margin-top:8px;
+  padding-top:6px;
+  border-top:1px solid #e0e4f0;
+  font-size:12px;
+}
+.agenda-details h4{
+  font-size:13px;
+  margin-bottom:4px;
+  color:#0d2b52;
+}
+.agenda-details table{
+  width:100%;
+  border-collapse:collapse;
+}
+.agenda-details th,
+.agenda-details td{
+  padding:3px 4px;
+  border:1px solid #e3e6f3;
+  text-align:left;
+}
+.agenda-details th{
+  background:#f5f7fb;
+}
+.agenda-details-empty{
+  color:#666;
+}
+
 
 /* Les deux panneaux de la colonne gauche prennent chacun ~50% */
 .left-column > #formation-panel,
@@ -721,6 +752,12 @@ nav.menu-bar a{ padding:10px 12px; }
           <div>Dim</div>
         </div>
         <div id="agenda-grid" class="agenda-grid"></div>
+        <div id="agenda-details" class="agenda-details">
+  <p class="agenda-details-empty">
+    Clique sur un jour pour voir les réservations.
+  </p>
+</div>
+
       </div>
     </div>
 
@@ -2683,13 +2720,14 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
 
 <script>
 /* ===========================
-   📅 Agenda mensuel (colonne gauche)
+   📅 Agenda mensuel + réservations véhicules
    =========================== */
 (function(){
   const monthLabel = document.getElementById("agenda-month-label");
   const grid       = document.getElementById("agenda-grid");
   const btnPrev    = document.getElementById("agenda-prev");
   const btnNext    = document.getElementById("agenda-next");
+  const details    = document.getElementById("agenda-details");
 
   if (!monthLabel || !grid) return; // sécurité
 
@@ -2702,25 +2740,156 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
   let currentMonth = new Date();
   currentMonth.setDate(1);
 
-  function renderAgenda() {
+  /* ----- Helpers pour récupérer les réservations du CIS courant ----- */
+
+  function getCurrentCis(){
+    try{
+      const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+      if(!session) return null;
+      return Array.isArray(session.cis) ? session.cis[0] : session.cis;
+    }catch(_){ return null; }
+  }
+
+  // Accepte soit un tableau, soit un objet { "0": {...}, "1": {...} }
+  function rawToArray(raw){
+    if(Array.isArray(raw)) return raw;
+    if(raw && typeof raw === "object"){
+      const keys = Object.keys(raw);
+      if(keys.length && keys.every(k => /^\d+$/.test(k))){
+        return keys.sort((a,b)=>Number(a)-Number(b)).map(k => raw[k]);
+      }
+    }
+    return [];
+  }
+
+  // Renvoie un objet { "YYYY-MM-DD": [ réservations ce jour ] } pour le mois affiché
+  function buildReservationMap(year, monthIndex){
+    const cisSel = getCurrentCis();
+    if(!cisSel) return {};
+
+    const keyRes = "reservations_" + cisSel;
+    let raw;
+    try{
+      raw = JSON.parse(localStorage.getItem(keyRes) || "[]");
+    }catch(_){
+      raw = [];
+    }
+    const arr = rawToArray(raw);
+
+    const map = {};
+    const monthStart = new Date(year, monthIndex, 1);
+    const monthEnd   = new Date(year, monthIndex + 1, 0);
+
+    arr.forEach(r=>{
+      if(!r) return;
+
+      const status = r.status || "pending";
+      // 👉 On colore uniquement les réservations ACCEPTÉES
+      if(status !== "approved") return;
+
+      const dStartStr = r.dateDebut || r.date;
+      const dEndStr   = r.dateFin   || r.dateDebut || r.date;
+      if(!dStartStr) return;
+
+      const dStart = new Date(dStartStr + "T00:00:00");
+      const dEnd   = new Date((dEndStr || dStartStr) + "T00:00:00");
+      if(isNaN(dStart) || isNaN(dEnd)) return;
+
+      let d = new Date(Math.max(dStart.getTime(), monthStart.getTime()));
+      const limit = Math.min(dEnd.getTime(), monthEnd.getTime());
+
+      while(d.getTime() <= limit){
+        const y  = d.getFullYear();
+        const m  = d.getMonth();
+        const dd = d.getDate();
+        const key = `${y}-${String(m+1).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
+
+        if(!map[key]) map[key] = [];
+        map[key].push({
+          h1: r.h1 || "",
+          h2: r.h2 || "",
+          vehicule: r.vehicule || "",
+          agent: r.agent || "",
+          motif: r.motif || "",
+          destination: r.destination || "",
+          status: status
+        });
+
+        d.setDate(d.getDate() + 1);
+      }
+    });
+
+    return map;
+  }
+
+  function formatDateFR(dateKey){
+    const p = String(dateKey||"").split("-");
+    if(p.length !== 3) return dateKey || "";
+    return `${p[2]}/${p[1]}/${p[0]}`;
+  }
+
+  function renderDayDetails(dateKey, list){
+    if(!details) return;
+
+    if(!dateKey){
+      details.innerHTML =
+        `<p class="agenda-details-empty">Clique sur un jour pour voir les réservations.</p>`;
+      return;
+    }
+
+    if(!list || !list.length){
+      details.innerHTML =
+        `<h4>${formatDateFR(dateKey)}</h4>
+         <p class="agenda-details-empty">Aucune réservation programmée ce jour.</p>`;
+      return;
+    }
+
+    const rows = list.map(r => `
+      <tr>
+        <td>${escapeHtml((r.h1 || "--") + (r.h2 ? "–" + r.h2 : ""))}</td>
+        <td>${escapeHtml(r.vehicule || "—")}</td>
+        <td>${escapeHtml(r.agent || "—")}</td>
+        <td>${escapeHtml(r.motif || "—")}</td>
+        <td>${escapeHtml(r.destination || "—")}</td>
+      </tr>
+    `).join("");
+
+    details.innerHTML = `
+      <h4>${formatDateFR(dateKey)}</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Heures</th>
+            <th>Véhicule</th>
+            <th>Agent</th>
+            <th>Motif</th>
+            <th>Destination</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  /* ----- Rendu du calendrier ----- */
+  function renderAgenda(){
     grid.innerHTML = "";
+    renderDayDetails(null, null);  // reset du bloc détail
 
     const year  = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
 
     const firstDay = new Date(year, month, 1);
     const lastDay  = new Date(year, month + 1, 0);
-
-    const daysInMonth = lastDay.getDate();
-
-    // getDay(): 0=Dim, 1=Lun, ..., 6=Sam
-    // On veut Lundi=0…Dimanche=6
-    const startWeekday = (firstDay.getDay() + 6) % 7;
+    const daysInMonth   = lastDay.getDate();
+    const startWeekday  = (firstDay.getDay() + 6) % 7; // Lun=0 ... Dim=6
 
     monthLabel.textContent = monthNames[month] + " " + year;
 
+    const resMap = buildReservationMap(year, month);
+
     // Cases vides avant le 1er
-    for (let i = 0; i < startWeekday; i++) {
+    for(let i=0; i<startWeekday; i++){
       const cell = document.createElement("div");
       cell.className = "agenda-cell agenda-cell-empty";
       grid.appendChild(cell);
@@ -2729,20 +2898,28 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
     const today = new Date();
     const isSameMonth =
       today.getFullYear() === year &&
-      today.getMonth() === month;
+      today.getMonth()    === month;
 
     // Jours du mois
-    for (let d = 1; d <= daysInMonth; d++) {
+    for(let d=1; d<=daysInMonth; d++){
       const cell = document.createElement("div");
       cell.className = "agenda-cell";
       cell.textContent = d;
 
-      if (isSameMonth && d === today.getDate()) {
+      const dateKey =
+        `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const dayList = resMap[dateKey] || [];
+
+      if(isSameMonth && d === today.getDate()){
         cell.classList.add("agenda-today");
       }
+      if(dayList.length){
+        cell.classList.add("agenda-event");   // couleur spéciale si réservations
+      }
 
-      // 🔜 Plus tard : jour avec consigne / évènement
-      // si ce jour possède une consigne / FMA / autre.
+      cell.addEventListener("click", function(){
+        renderDayDetails(dateKey, dayList);
+      });
 
       grid.appendChild(cell);
     }
@@ -2758,9 +2935,14 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
     renderAgenda();
   });
 
+  // Expose une fonction globale si tu veux forcer un refresh plus tard
+  window.refreshAgendaCalendar = renderAgenda;
+
+  // Premier affichage
   renderAgenda();
 })();
 </script>
+
 
 
   
