@@ -3242,38 +3242,50 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
     let html = "";
 
     /* 🧾 CONSIGNES EN HAUT */
-    if(consList && consList.length){
+   if (consList && consList.length){
+    // 👉 tri par importance : rouge (haute), orange (moyenne), bleu (faible)
+    const orderImp = { haute: 0, moyenne: 1, faible: 2 };
+
+    const sortedCons = [...consList].sort((a, b) => {
+      const ia = orderImp[a.importance] ?? 99;
+      const ib = orderImp[b.importance] ?? 99;
+      if (ia !== ib) return ia - ib;
+
+      // tri secondaire : par titre (optionnel)
+      return (a.titre || "").localeCompare(b.titre || "", "fr", {sensitivity:"base"});
+    });
+
+    html += `
+      <div class="agenda-modal-section">
+        <div class="agenda-modal-title-sub">🧾 Consignes du jour</div>
+    `;
+
+    sortedCons.forEach(c => {
+      const color  = importanceToColor(c.importance);
+      const vLab   = validiteLabel(c.validite);
+      const impLab = importanceToLabel(c.importance);
+      const serv   = serviceLabel(c.serviceOrigine);
+
       html += `
-        <div class="agenda-modal-section">
-          <div class="agenda-modal-title-sub">🧾 Consignes du jour</div>
-      `;
-
-      consList.forEach(c => {
-        const color = importanceToColor(c.importance);
-        const vLab  = validiteLabel(c.validite);
-        const impLab = importanceToLabel(c.importance);
-        const serv  = serviceLabel(c.serviceOrigine);
-
-        html += `
-          <div class="agenda-consigne-card">
-            <div class="agenda-consigne-title">
-              <span class="agenda-consigne-dot" style="background:${color};"></span>
-              ${escapeHtml(c.titre || "Consigne")}
-            </div>
-            <div class="agenda-consigne-body">
-              ${escapeHtml(c.contenu || "")}
-            </div>
-            <div class="agenda-consigne-meta">
-              Validité : ${escapeHtml(vLab)}
-              — Origine : ${escapeHtml(serv)}
-              — Importance : ${escapeHtml(impLab)}
-            </div>
+        <div class="agenda-consigne-card">
+          <div class="agenda-consigne-title">
+            <span class="agenda-consigne-dot" style="background:${color};"></span>
+            ${escapeHtml(c.titre || "Consigne")}
           </div>
-        `;
-      });
+          <div class="agenda-consigne-body">
+            ${escapeHtml(c.contenu || "")}
+          </div>
+          <div class="agenda-consigne-meta">
+            Validité : ${escapeHtml(vLab)}
+            — Origine : ${escapeHtml(serv)}
+            — Importance : ${escapeHtml(impLab)}
+          </div>
+        </div>
+      `;
+    });
 
-      html += `</div>`;
-    }
+    html += `</div>`;
+  }
 
     /* 🚘 RÉSERVATIONS EN BAS */
     if(resList && resList.length){
