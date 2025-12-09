@@ -316,6 +316,84 @@ main{
   color:#666;
 }
 
+  /* ===========================
+   🗓️ Modale agenda (consignes + réservations)
+   =========================== */
+.agenda-modal-section{
+  margin-bottom:12px;
+}
+
+.agenda-modal-title-sub{
+  font-size:14px;
+  font-weight:700;
+  color:#0d2b52;
+  margin-bottom:4px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.agenda-consigne-card{
+  border-radius:10px;
+  border:1px solid #e0e4f0;
+  padding:8px 10px;
+  margin-top:6px;
+  background:#f9fafb;
+}
+
+.agenda-consigne-title{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-weight:700;
+  font-size:14px;
+  color:#0d2b52;
+  margin-bottom:4px;
+}
+
+.agenda-consigne-dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+
+.agenda-consigne-body{
+  font-size:13px;
+  color:#333;
+  white-space:pre-wrap;
+}
+
+.agenda-consigne-meta{
+  font-size:11px;
+  color:#555;
+  margin-top:4px;
+}
+
+/* Tableau des réservations dans la modale */
+.agenda-modal-table-wrapper{
+  margin-top:6px;
+  overflow:auto;
+}
+
+.agenda-modal-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+
+.agenda-modal-table th,
+.agenda-modal-table td{
+  padding:4px 6px;
+  border:1px solid #e3e6f3;
+  text-align:left;
+}
+
+.agenda-modal-table th{
+  background:#f5f7fb;
+  font-weight:600;
+}
+
 
 /* Les deux panneaux de la colonne gauche prennent chacun ~50% */
 .left-column > #formation-panel,
@@ -866,32 +944,22 @@ nav.menu-bar a{ padding:10px 12px; }
   </div>
 </div>
 
-<!-- 🗓️ MODALE : Détails des réservations de l'agenda -->
+<!-- 🗓️ MODALE : Détails agenda (consignes + réservations) -->
 <div id="agenda-modal" class="fma-overlay" style="display:none">
   <div class="fma-pending-card">
     <div class="head">
-      <div class="title" id="agenda-modal-title">📅 Détails des réservations</div>
+      <div class="title" id="agenda-modal-title">📅 Détails du jour</div>
       <div class="fma-actions">
         <button id="agenda-modal-close" class="fma-btn ghost">Fermer</button>
       </div>
     </div>
     <div class="body">
-      <table>
-        <thead>
-          <tr>
-            <th>Date / jour</th>
-            <th>Heures</th>
-            <th>Véhicule</th>
-            <th>Agent</th>
-            <th>Motif</th>
-            <th>Destination</th>
-          </tr>
-        </thead>
-        <tbody id="agenda-modal-body"></tbody>
-      </table>
+      <!-- Tout le contenu (consignes + réservations) sera injecté ici -->
+      <div id="agenda-modal-body"></div>
     </div>
   </div>
 </div>
+
 
 
 
@@ -3046,6 +3114,40 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
   }
 
     /* ----- Ouverture / fermeture de la modale agenda ----- */
+    function importanceToColor(imp){
+    switch(imp){
+      case "haute":   return "#d32f2f"; // rouge
+      case "moyenne": return "#fb8c00"; // orange
+      case "faible":  return "#1976d2"; // bleu
+      default:        return "#1976d2";
+    }
+  }
+  function importanceToLabel(imp){
+    switch(imp){
+      case "haute":   return "Importante";
+      case "moyenne": return "Moyenne";
+      case "faible":  return "Faible";
+      default:        return "—";
+    }
+  }
+  function validiteLabel(v){
+    switch(v){
+      case "jour": return "Jour";
+      case "nuit": return "Nuit";
+      case "24h":  return "24h";
+      default:     return "—";
+    }
+  }
+  function serviceLabel(s){
+    switch(s){
+      case "commandement":  return "Commandement";
+      case "officier":      return "Officier de garde";
+      case "sous-officier": return "Sous-officier de garde";
+      default:              return s || "Service";
+    }
+  }
+
+  /* ----- Ouverture / fermeture de la modale agenda ----- */
   function openAgendaModal(dateKey, resList, consList){
     if(!agendaModal || !agendaModalTitle || !agendaModalBody) return;
 
@@ -3056,16 +3158,60 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
 
     let html = "";
 
-    // 🚘 Bloc réservations
-    if (resList && resList.length){
+    /* 🧾 CONSIGNES EN HAUT */
+    if(consList && consList.length){
       html += `
-        <tr>
-          <td colspan="6"
-              style="font-weight:700;padding:6px 4px;border-bottom:1px solid #ddd;">
-            🚘 Réservations véhicules
-          </td>
-        </tr>
+        <div class="agenda-modal-section">
+          <div class="agenda-modal-title-sub">🧾 Consignes du jour</div>
       `;
+
+      consList.forEach(c => {
+        const color = importanceToColor(c.importance);
+        const vLab  = validiteLabel(c.validite);
+        const impLab = importanceToLabel(c.importance);
+        const serv  = serviceLabel(c.serviceOrigine);
+
+        html += `
+          <div class="agenda-consigne-card">
+            <div class="agenda-consigne-title">
+              <span class="agenda-consigne-dot" style="background:${color};"></span>
+              ${escapeHtml(c.titre || "Consigne")}
+            </div>
+            <div class="agenda-consigne-body">
+              ${escapeHtml(c.contenu || "")}
+            </div>
+            <div class="agenda-consigne-meta">
+              Validité : ${escapeHtml(vLab)}
+              — Origine : ${escapeHtml(serv)}
+              — Importance : ${escapeHtml(impLab)}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+    }
+
+    /* 🚘 RÉSERVATIONS EN BAS */
+    if(resList && resList.length){
+      html += `
+        <div class="agenda-modal-section">
+          <div class="agenda-modal-title-sub">🚘 Réservations véhicules</div>
+          <div class="agenda-modal-table-wrapper">
+            <table class="agenda-modal-table">
+              <thead>
+                <tr>
+                  <th>Date / jour</th>
+                  <th>Heures</th>
+                  <th>Véhicule</th>
+                  <th>Agent</th>
+                  <th>Motif</th>
+                  <th>Destination</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+
       html += resList.map(r => `
         <tr>
           <td>${formatDateFR(r.dateKey || dateKey)}</td>
@@ -3076,49 +3222,21 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
           <td>${escapeHtml(r.destination || "—")}</td>
         </tr>
       `).join("");
-    }
 
-    // 🧾 Bloc consignes
-    if (consList && consList.length){
       html += `
-        <tr>
-          <td colspan="6"
-              style="font-weight:700;padding:6px 4px;border-top:1px solid #ddd;border-bottom:1px solid #ddd;">
-            🧾 Consignes du jour
-          </td>
-        </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       `;
-
-      consList.forEach(c => {
-        const validiteLabel =
-          c.validite === "jour" ? "Jour" :
-          c.validite === "nuit" ? "Nuit" :
-          c.validite === "24h"  ? "24h"  : "—";
-        const importanceLabel =
-          c.importance === "haute"   ? "Importante" :
-          c.importance === "moyenne" ? "Moyenne" :
-          c.importance === "faible"  ? "Faible" : "—";
-
-        html += `
-          <tr>
-            <td colspan="6" style="padding:6px 4px;font-size:13px;line-height:1.3;">
-              <strong>${escapeHtml(c.titre || "Consigne")}</strong><br>
-              <span style="font-size:11px;color:#555;">
-                Validité : ${escapeHtml(validiteLabel)}
-                — Origine : ${escapeHtml(c.serviceOrigine || "—")}
-                — Importance : ${escapeHtml(importanceLabel)}
-              </span><br>
-              ${escapeHtml(c.contenu || "")}
-            </td>
-          </tr>
-        `;
-      });
     }
 
-    if (!html){
-      html = `<tr><td colspan="6" style="padding:10px;color:#666">
-        Aucune réservation ni consigne pour ce jour.
-      </td></tr>`;
+    if(!html){
+      html = `
+        <div style="padding:10px;color:#666;font-size:13px;">
+          Aucune consigne ni réservation pour ce jour.
+        </div>
+      `;
     }
 
     agendaModalBody.innerHTML = html;
