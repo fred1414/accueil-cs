@@ -1476,8 +1476,6 @@ function renderJournal(){
 
 /* 📘 Panneau gauche : Consignes du jour (à la place des FMA) */
 function renderFormations(){
-  // On réutilise ce nom pour ne pas avoir à changer tous les appels,
-  // mais la fonction affiche désormais les consignes "actives aujourd’hui".
   try{
     const session = JSON.parse(localStorage.getItem("csver_session")||"null");
     if(!session) return;
@@ -1486,7 +1484,7 @@ function renderFormations(){
     const list = document.getElementById("formation-list");
     if(!list) return;
 
-    // 🔑 Clé de stockage des consignes (comme dans consignes.html)
+    // 🔑 Clé des consignes (même logique que consignes.html)
     const keyCons = "consignes_"+cisSel;
     let consignes = [];
     try{
@@ -1496,81 +1494,14 @@ function renderFormations(){
       consignes = [];
     }
 
-    const today = new Date();
+    // Aujourd’hui au format ISO "YYYY-MM-DD"
     const todayIso = (() => {
+      const d = new Date();
       const p = n => String(n).padStart(2,"0");
-      return `${today.getFullYear()}-${p(today.getMonth()+1)}-${p(today.getDate())}`;
+      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
     })();
 
-    // Helpers locaux
-    const parseIsoDate = (s) => {
-      if(!s) return null;
-      const d = new Date(s + "T00:00:00");
-      return isNaN(d.getTime()) ? null : d;
-    };
-    const sameDay = (a,b) => (
-      a.getFullYear() === b.getFullYear() &&
-      a.getMonth()    === b.getMonth() &&
-      a.getDate()     === b.getDate()
-    );
-    const inRange = (d, startStr, endStr) => {
-      const start = parseIsoDate(startStr);
-      const end   = parseIsoDate(endStr);
-      if(!start) return false;
-      if(d < start) return false;
-      if(end && d > end) return false;
-      return true;
-    };
-
-    function isActiveToday(c){
-      const rec = c.recurrence || "once";
-      const per = Number(c.periodicite || 1) || 1;
-      const start = parseIsoDate(c.dateDebut);
-      if(!start) return false;
-
-      if(!inRange(today, c.dateDebut, c.dateFin)) return false;
-
-      const diffDays = Math.floor((today - start) / (1000*60*60*24));
-      if(diffDays < 0) return false;
-
-      switch(rec){
-        case "once":
-          return sameDay(today, start);
-
-        case "daily":
-          return diffDays % per === 0;
-
-        case "weekly":
-          // même jour de semaine que le début + multiple de 7*periodicité
-          if(today.getDay() !== start.getDay()) return false;
-          return diffDays % (7*per) === 0;
-
-        case "monthly":{
-          const monthsDiff =
-            (today.getFullYear() - start.getFullYear())*12 +
-            (today.getMonth() - start.getMonth());
-          if(monthsDiff < 0) return false;
-          if(monthsDiff % per !== 0) return false;
-          // on fait tomber la consigne le même numéro de jour
-          return today.getDate() === start.getDate();
-        }
-
-        case "yearly":{
-          const yearsDiff = today.getFullYear() - start.getFullYear();
-          if(yearsDiff < 0) return false;
-          if(yearsDiff % per !== 0) return false;
-          return (
-            today.getMonth() === start.getMonth() &&
-            today.getDate()  === start.getDate()
-          );
-        }
-
-        default:
-          // si jamais valeur bizarre → on la considère seulement le jour de début
-          return sameDay(today, start);
-      }
-    }
-
+    // Helpers
     const fmtDateFR = (dateStr) => {
       if(!dateStr) return "—";
       try{
@@ -1613,12 +1544,35 @@ function renderFormations(){
       }
     };
 
-    // 🔎 On garde uniquement les consignes actives aujourd’hui pour ce CIS
+    // ✅ Test "est-ce que cette consigne est active aujourd’hui ?"
+    function isActiveToday(c){
+      const d1 = (c.dateDebut || "").trim();
+      if(!d1) return false;
+
+      // Si pas de date de fin, on considère que la fin = début
+      const d2 = (c.dateFin || d1).trim();
+
+      // Plage inclusive : todayIso doit être entre d1 et d2 (inclus)
+      if(todayIso < d1 || todayIso > d2) return false;
+
+      const rec = c.recurrence || "once";
+
+      // Ponctuelle : uniquement le jour de début
+      if(rec === "once"){
+        return todayIso === d1;
+      }
+
+      // Pour les autres recurrences (daily, weekly, etc.) :
+      // on considère la consigne active tous les jours dans la plage.
+      return true;
+    }
+
+    // 🔎 Filtre : consignes de ce CIS, actives aujourd’hui
     const todayConsignes = consignes
       .filter(c => c && c.cis === cisSel)
       .filter(isActiveToday)
       .sort((a,b)=>{
-        // plus importantes d'abord, puis par date début décroissante
+        // Tri : importance puis date début (récentes d’abord)
         const ordImp = {haute:0, moyenne:1, faible:2};
         const ia = ordImp[a.importance] ?? 99;
         const ib = ordImp[b.importance] ?? 99;
@@ -1638,7 +1592,6 @@ function renderFormations(){
       return;
     }
 
-    // On réutilise le style .journal-item pour rester homogène
     todayConsignes.forEach(c=>{
       const wrap = document.createElement("div");
       wrap.className = "journal-item";
@@ -1683,7 +1636,6 @@ function renderFormations(){
     console.error("Erreur renderFormations/Consignes :", e);
   }
 }
-
 
 function typeToIcon(t){
   switch(String(t).toUpperCase()){
