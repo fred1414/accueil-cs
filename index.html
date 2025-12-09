@@ -1594,14 +1594,10 @@ function renderFormations(){
 
     todayConsignes.forEach(c=>{
       const wrap = document.createElement("div");
-      wrap.className = "journal-item";
+wrap.className = "journal-item";
 
-      const icon = document.createElement("div");
-      icon.className = "icon";
-      icon.textContent = "📘";
-
-      const body = document.createElement("div");
-      body.className = "body";
+const body = document.createElement("div");
+body.className = "body";
 
       const periode =
         c.dateDebut && c.dateFin
@@ -1619,15 +1615,13 @@ function renderFormations(){
       const metaTxt = `Origine : ${servTxt} — Importance : ${impLabel}`;
 
       body.innerHTML = `
-        <div class="title" style="display:flex;align-items:center;gap:6px;">
-          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${impColor};"></span>
-          ${escapeHtml(c.titre || "Consigne")}
-        </div>
-        <div class="text">${escapeHtml(c.contenu || "")}</div>
-        <div class="date">${escapeHtml(dateTxt)}<br>${escapeHtml(metaTxt)}</div>
-      `;
+  <div class="title" style="display:flex;align-items:center;gap:6px;">
+    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${impColor};"></span>
+    ${escapeHtml(c.titre || "Consigne")}
+  </div>
+  <div class="text">${escapeHtml(c.contenu || "")}</div>
+`;
 
-      wrap.appendChild(icon);
       wrap.appendChild(body);
       list.appendChild(wrap);
     });
