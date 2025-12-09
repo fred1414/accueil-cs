@@ -726,11 +726,12 @@ nav.menu-bar a{ padding:10px 12px; }
    <!-- Colonne gauche : 📘 Main courante FMA (haut) + 📅 Agenda mensuel (bas) -->
   <div class="left-column">
 
-    <!-- 📘 Main courante Formation (haut) -->
-    <div id="formation-panel" class="panel">
-      <div id="formation-header">📘 Main courante — FMA</div>
-      <div id="formation-list"></div>
-    </div>
+    <!-- 📘 Consignes du jour (haut) -->
+<div id="formation-panel" class="panel">
+  <div id="formation-header">📘 Consignes du jour</div>
+  <div id="formation-list"></div>
+</div>
+
 
     <!-- 📅 Agenda mensuel (bas) -->
     <div id="agenda-panel" class="panel">
@@ -1473,34 +1474,172 @@ function renderJournal(){
   }catch(_){}
 }
 
-/* 📘 Panneau Formation (FMA uniquement) */
+/* 📘 Panneau gauche : Consignes du jour (à la place des FMA) */
 function renderFormations(){
+  // On réutilise ce nom pour ne pas avoir à changer tous les appels,
+  // mais la fonction affiche désormais les consignes "actives aujourd’hui".
   try{
     const session = JSON.parse(localStorage.getItem("csver_session")||"null");
     if(!session) return;
     const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
 
-    const custom = JSON.parse(localStorage.getItem("journal_"+cisSel) || "[]");
-    const entries = (Array.isArray(custom) ? custom : [])
-      .filter(e => String(e.type||"").toUpperCase()==="FMA")
-      .map(e => ({
-        type: "FMA",
-        ts: Number(e.ts||0),
-        title: e.title || typeToTitle("FMA"),
-        text: e.text || ""
-      }))
-      .sort((a,b)=>Number(b.ts||0)-Number(a.ts||0));
-
     const list = document.getElementById("formation-list");
     if(!list) return;
+
+    // 🔑 Clé de stockage des consignes (comme dans consignes.html)
+    const keyCons = "consignes_"+cisSel;
+    let consignes = [];
+    try{
+      consignes = JSON.parse(localStorage.getItem(keyCons) || "[]");
+      if(!Array.isArray(consignes)) consignes = [];
+    }catch(_){
+      consignes = [];
+    }
+
+    const today = new Date();
+    const todayIso = (() => {
+      const p = n => String(n).padStart(2,"0");
+      return `${today.getFullYear()}-${p(today.getMonth()+1)}-${p(today.getDate())}`;
+    })();
+
+    // Helpers locaux
+    const parseIsoDate = (s) => {
+      if(!s) return null;
+      const d = new Date(s + "T00:00:00");
+      return isNaN(d.getTime()) ? null : d;
+    };
+    const sameDay = (a,b) => (
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth()    === b.getMonth() &&
+      a.getDate()     === b.getDate()
+    );
+    const inRange = (d, startStr, endStr) => {
+      const start = parseIsoDate(startStr);
+      const end   = parseIsoDate(endStr);
+      if(!start) return false;
+      if(d < start) return false;
+      if(end && d > end) return false;
+      return true;
+    };
+
+    function isActiveToday(c){
+      const rec = c.recurrence || "once";
+      const per = Number(c.periodicite || 1) || 1;
+      const start = parseIsoDate(c.dateDebut);
+      if(!start) return false;
+
+      if(!inRange(today, c.dateDebut, c.dateFin)) return false;
+
+      const diffDays = Math.floor((today - start) / (1000*60*60*24));
+      if(diffDays < 0) return false;
+
+      switch(rec){
+        case "once":
+          return sameDay(today, start);
+
+        case "daily":
+          return diffDays % per === 0;
+
+        case "weekly":
+          // même jour de semaine que le début + multiple de 7*periodicité
+          if(today.getDay() !== start.getDay()) return false;
+          return diffDays % (7*per) === 0;
+
+        case "monthly":{
+          const monthsDiff =
+            (today.getFullYear() - start.getFullYear())*12 +
+            (today.getMonth() - start.getMonth());
+          if(monthsDiff < 0) return false;
+          if(monthsDiff % per !== 0) return false;
+          // on fait tomber la consigne le même numéro de jour
+          return today.getDate() === start.getDate();
+        }
+
+        case "yearly":{
+          const yearsDiff = today.getFullYear() - start.getFullYear();
+          if(yearsDiff < 0) return false;
+          if(yearsDiff % per !== 0) return false;
+          return (
+            today.getMonth() === start.getMonth() &&
+            today.getDate()  === start.getDate()
+          );
+        }
+
+        default:
+          // si jamais valeur bizarre → on la considère seulement le jour de début
+          return sameDay(today, start);
+      }
+    }
+
+    const fmtDateFR = (dateStr) => {
+      if(!dateStr) return "—";
+      try{
+        const d = new Date(dateStr + "T00:00:00");
+        if(isNaN(d.getTime())) return dateStr;
+        return d.toLocaleDateString("fr-FR");
+      }catch(_){ return dateStr; }
+    };
+
+    const importanceToLabel = (imp) => {
+      switch(imp){
+        case "haute":   return "Importante";
+        case "moyenne": return "Moyenne";
+        case "faible":  return "Faible";
+        default:        return "—";
+      }
+    };
+    const importanceToColor = (imp) => {
+      switch(imp){
+        case "haute":   return "#d32f2f";
+        case "moyenne": return "#fb8c00";
+        case "faible":  return "#1976d2";
+        default:        return "#1976d2";
+      }
+    };
+    const serviceLabel = (s) => {
+      switch(s){
+        case "commandement":  return "Commandement";
+        case "officier":      return "Officier de garde";
+        case "sous-officier": return "Sous-officier de garde";
+        default:              return s || "Service";
+      }
+    };
+    const validiteLabel = (v) => {
+      switch(v){
+        case "jour": return "Jour";
+        case "nuit": return "Nuit";
+        case "24h":  return "24h";
+        default:     return "—";
+      }
+    };
+
+    // 🔎 On garde uniquement les consignes actives aujourd’hui pour ce CIS
+    const todayConsignes = consignes
+      .filter(c => c && c.cis === cisSel)
+      .filter(isActiveToday)
+      .sort((a,b)=>{
+        // plus importantes d'abord, puis par date début décroissante
+        const ordImp = {haute:0, moyenne:1, faible:2};
+        const ia = ordImp[a.importance] ?? 99;
+        const ib = ordImp[b.importance] ?? 99;
+        if(ia !== ib) return ia - ib;
+        const da = a.dateDebut || "";
+        const db = b.dateDebut || "";
+        return db.localeCompare(da);
+      });
+
     list.innerHTML = "";
 
-    if(entries.length===0){
-      list.innerHTML = "<p style='color:#666'>Aucune formation enregistrée.</p>";
+    if(todayConsignes.length === 0){
+      list.innerHTML =
+        `<p style="color:#666;font-size:13px;">
+          Aucune consigne particulière pour aujourd’hui (${fmtDateFR(todayIso)}).
+        </p>`;
       return;
     }
 
-    entries.slice(0,40).forEach(e=>{
+    // On réutilise le style .journal-item pour rester homogène
+    todayConsignes.forEach(c=>{
       const wrap = document.createElement("div");
       wrap.className = "journal-item";
 
@@ -1510,19 +1649,41 @@ function renderFormations(){
 
       const body = document.createElement("div");
       body.className = "body";
-      const dateTxt = e.ts ? new Date(e.ts).toLocaleString("fr-FR") : "—";
+
+      const periode =
+        c.dateDebut && c.dateFin
+          ? `Du ${fmtDateFR(c.dateDebut)} au ${fmtDateFR(c.dateFin)}`
+          : c.dateDebut
+            ? `À partir du ${fmtDateFR(c.dateDebut)}`
+            : "Période non renseignée";
+
+      const impColor = importanceToColor(c.importance);
+      const impLabel = importanceToLabel(c.importance);
+      const validTxt = validiteLabel(c.validite);
+      const servTxt  = serviceLabel(c.serviceOrigine);
+
+      const dateTxt = `Validité : ${validTxt} — ${periode}`;
+      const metaTxt = `Origine : ${servTxt} — Importance : ${impLabel}`;
+
       body.innerHTML = `
-        <div class="title">${escapeHtml(e.title||"FMA enregistrée")}</div>
-        <div class="text">${escapeHtml(e.text||"")}</div>
-        <div class="date">${escapeHtml(dateTxt)}</div>
+        <div class="title" style="display:flex;align-items:center;gap:6px;">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${impColor};"></span>
+          ${escapeHtml(c.titre || "Consigne")}
+        </div>
+        <div class="text">${escapeHtml(c.contenu || "")}</div>
+        <div class="date">${escapeHtml(dateTxt)}<br>${escapeHtml(metaTxt)}</div>
       `;
 
       wrap.appendChild(icon);
       wrap.appendChild(body);
       list.appendChild(wrap);
     });
-  }catch(_){}
+
+  }catch(e){
+    console.error("Erreur renderFormations/Consignes :", e);
+  }
 }
+
 
 function typeToIcon(t){
   switch(String(t).toUpperCase()){
@@ -1564,18 +1725,26 @@ function logActivity(type, text, meta){
     renderFormations(); // mise à jour immédiate du panneau FMA
   }catch(_){}
 }
+
 window.addEventListener("storage",(e)=>{
   try{
-    const session = JSON.parse(localStorage.getItem("csver_session") || "null");
-    if(!session) return;
-    const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
-    if(e.key === "vehicules_"+cisSel || e.key === "journal_"+cisSel){
+    if(!e.key) return;
+    const user=JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!user) return;
+    const cisSel = Array.isArray(user.cis)?user.cis[0]:user.cis;
+    if(e.key===key || e.key==="journal_"+cisSel || e.key==="fma_data_v2"){
+      renderVehicules(JSON.parse(localStorage.getItem(key)||"[]"));
       renderJournal();
+      renderFormations();
+      renderFmaPendingCard();
+    }
+    if(e.key === "consignes_"+cisSel){
       renderFormations();
     }
   }catch(_){}
 });
 
+  
 /* ✅ Purge MC */
 function isAdmin(){
   try{
