@@ -868,6 +868,32 @@ nav.menu-bar a{ padding:10px 12px; }
   </div>
 </div>
 
+<!-- 🗓️ MODALE : Détails des réservations de l'agenda -->
+<div id="agenda-modal" class="fma-overlay" style="display:none">
+  <div class="fma-pending-card">
+    <div class="head">
+      <div class="title" id="agenda-modal-title">📅 Détails des réservations</div>
+      <div class="fma-actions">
+        <button id="agenda-modal-close" class="fma-btn ghost">Fermer</button>
+      </div>
+    </div>
+    <div class="body">
+      <table>
+        <thead>
+          <tr>
+            <th>Date / jour</th>
+            <th>Heures</th>
+            <th>Véhicule</th>
+            <th>Agent</th>
+            <th>Motif</th>
+            <th>Destination</th>
+          </tr>
+        </thead>
+        <tbody id="agenda-modal-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 
 
@@ -2729,6 +2755,12 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
   const btnNext    = document.getElementById("agenda-next");
   const details    = document.getElementById("agenda-details");
 
+  // 👉 éléments de la modale agenda
+  const agendaModal      = document.getElementById("agenda-modal");
+  const agendaModalTitle = document.getElementById("agenda-modal-title");
+  const agendaModalBody  = document.getElementById("agenda-modal-body");
+  const agendaModalClose = document.getElementById("agenda-modal-close");
+
   if (!monthLabel || !grid) return; // sécurité
 
   const monthNames = [
@@ -2784,7 +2816,7 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
       if(!r) return;
 
       const status = r.status || "pending";
-      // 👉 On colore uniquement les réservations ACCEPTÉES
+      // 👉 on colore / affiche uniquement les réservations ACCEPTÉES
       if(status !== "approved") return;
 
       const dStartStr = r.dateDebut || r.date;
@@ -2806,6 +2838,7 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
 
         if(!map[key]) map[key] = [];
         map[key].push({
+          dateKey: key,
           h1: r.h1 || "",
           h2: r.h2 || "",
           vehicule: r.vehicule || "",
@@ -2828,53 +2861,61 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
     return `${p[2]}/${p[1]}/${p[0]}`;
   }
 
-  function renderDayDetails(dateKey, list){
-    if(!details) return;
+  /* ----- Ouverture / fermeture de la modale agenda ----- */
+  function openAgendaModal(dateKey, list){
+    if(!agendaModal || !agendaModalTitle || !agendaModalBody) return;
 
-    if(!dateKey){
-      details.innerHTML =
-        `<p class="agenda-details-empty">Clique sur un jour pour voir les réservations.</p>`;
-      return;
-    }
+    const label = dateKey ? formatDateFR(dateKey) : "";
+    agendaModalTitle.textContent = label
+      ? `📅 Réservations du ${label}`
+      : "📅 Détails des réservations";
 
     if(!list || !list.length){
-      details.innerHTML =
-        `<h4>${formatDateFR(dateKey)}</h4>
-         <p class="agenda-details-empty">Aucune réservation programmée ce jour.</p>`;
-      return;
+      agendaModalBody.innerHTML =
+        `<tr><td colspan="6" style="padding:10px;color:#666">Aucune réservation pour ce jour.</td></tr>`;
+    }else{
+      agendaModalBody.innerHTML = list.map(r => `
+        <tr>
+          <td>${formatDateFR(r.dateKey || dateKey)}</td>
+          <td>${escapeHtml((r.h1 || "--") + (r.h2 ? "–" + r.h2 : ""))}</td>
+          <td>${escapeHtml(r.vehicule || "—")}</td>
+          <td>${escapeHtml(r.agent || "—")}</td>
+          <td>${escapeHtml(r.motif || "—")}</td>
+          <td>${escapeHtml(r.destination || "—")}</td>
+        </tr>
+      `).join("");
     }
 
-    const rows = list.map(r => `
-      <tr>
-        <td>${escapeHtml((r.h1 || "--") + (r.h2 ? "–" + r.h2 : ""))}</td>
-        <td>${escapeHtml(r.vehicule || "—")}</td>
-        <td>${escapeHtml(r.agent || "—")}</td>
-        <td>${escapeHtml(r.motif || "—")}</td>
-        <td>${escapeHtml(r.destination || "—")}</td>
-      </tr>
-    `).join("");
+    agendaModal.style.display = "flex";
+  }
 
-    details.innerHTML = `
-      <h4>${formatDateFR(dateKey)}</h4>
-      <table>
-        <thead>
-          <tr>
-            <th>Heures</th>
-            <th>Véhicule</th>
-            <th>Agent</th>
-            <th>Motif</th>
-            <th>Destination</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    `;
+  function closeAgendaModal(){
+    if(agendaModal) agendaModal.style.display = "none";
+  }
+
+  if(agendaModalClose){
+    agendaModalClose.addEventListener("click", closeAgendaModal);
+  }
+  if(agendaModal){
+    agendaModal.addEventListener("click", function(e){
+      if(e.target === agendaModal) closeAgendaModal();
+    });
+    document.addEventListener("keydown", function esc(e){
+      if(e.key === "Escape" && agendaModal.style.display !== "none"){
+        closeAgendaModal();
+      }
+    });
   }
 
   /* ----- Rendu du calendrier ----- */
   function renderAgenda(){
     grid.innerHTML = "";
-    renderDayDetails(null, null);  // reset du bloc détail
+
+    // Texte fixe sous le calendrier (on n'y met plus les détails)
+    if(details){
+      details.innerHTML =
+        `<p class="agenda-details-empty">Clique sur un jour pour voir les réservations dans une fenêtre dédiée.</p>`;
+    }
 
     const year  = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
@@ -2917,8 +2958,10 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
         cell.classList.add("agenda-event");   // couleur spéciale si réservations
       }
 
+      // 👉 on n'affiche plus les détails sous le calendrier,
+      // on ouvre directement la modale
       cell.addEventListener("click", function(){
-        renderDayDetails(dateKey, dayList);
+        openAgendaModal(dateKey, dayList);
       });
 
       grid.appendChild(cell);
@@ -2942,6 +2985,7 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
   renderAgenda();
 })();
 </script>
+
 
 
 
