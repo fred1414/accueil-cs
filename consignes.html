@@ -327,10 +327,10 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
           <label for="dateDebut">Date de début</label>
           <input type="date" id="dateDebut" required>
         </div>
-        <div class="col-2">
-          <label for="dateFin">Date de fin</label>
-          <input type="date" id="dateFin">
-        </div>
+       <div class="col-2">
+  <label for="dateFin">Date de fin</label>
+  <input type="date" id="dateFin" required>
+</div>
 
         <!-- Période de validité -->
         <div class="col-2">
@@ -552,10 +552,11 @@ function initPage(){
     inputDebut.min   = iso;
     if(!inputDebut.value || inputDebut.value < iso) inputDebut.value = iso;
   }
-  if(inputFin){
-    inputFin.min   = iso;
-    if(inputFin.value && inputFin.value < iso) inputFin.value = iso;
-  }
+ if(inputFin){
+  inputFin.min   = iso;
+  if(!inputFin.value || inputFin.value < iso) inputFin.value = iso;
+}
+
 
   resetEditState();
   renderConsignes();
@@ -595,10 +596,11 @@ function resetForm(){
     inputDebut.min   = iso;
     inputDebut.value = iso;
   }
-  if(inputFin){
-    inputFin.min   = iso;
-    inputFin.value = "";
-  }
+if(inputFin){
+  inputFin.min   = iso;
+  inputFin.value = iso;
+}
+
 
   document.getElementById("periodicite").value = "1";
 
@@ -661,20 +663,25 @@ function saveConsigne(evt){
   }
 
   const today = todayIso();
-  if(dateDebut < today){
-    alert("La date de début ne peut pas être antérieure à aujourd'hui.");
-    return false;
-  }
-  if(dateFin){
-    if(dateFin < today){
-      alert("La date de fin ne peut pas être antérieure à aujourd'hui.");
-      return false;
-    }
-    if(dateFin < dateDebut){
-      alert("La date de fin ne peut pas être antérieure à la date de début.");
-      return false;
-    }
-  }
+if(dateDebut < today){
+  alert("La date de début ne peut pas être antérieure à aujourd'hui.");
+  return false;
+}
+
+if(!dateFin){
+  alert("Merci de renseigner la date de fin.");
+  return false;
+}
+
+if(dateFin < today){
+  alert("La date de fin ne peut pas être antérieure à aujourd'hui.");
+  return false;
+}
+if(dateFin < dateDebut){
+  alert("La date de fin ne peut pas être antérieure à la date de début.");
+  return false;
+}
+
 
   if(!titre || !contenu){
     alert("Le titre et le contenu de la consigne sont obligatoires.");
@@ -752,10 +759,11 @@ function startEditConsigne(id){
     dDebut.min   = isoToday;
     dDebut.value = c.dateDebut || isoToday;
   }
-  if(dFin){
-    dFin.min   = isoToday;
-    dFin.value = c.dateFin || "";
-  }
+ if(dFin){
+  dFin.min   = isoToday;
+  dFin.value = c.dateFin || c.dateDebut || isoToday;
+}
+
 
   document.getElementById("periodicite").value = c.periodicite || 1;
 
@@ -1041,6 +1049,7 @@ window.addEventListener("storage",(e)=>{
 </script>
 </body>
 </html>
+
 
 
 
