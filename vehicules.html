@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
 <title>Gestion des véhicules - CS</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
@@ -34,6 +34,23 @@
   }
   .logout-btn:hover{background:#b71c1c;transform:translateY(-3px);}
 
+  /* ➕ bouton anomalie matériel */
+  .add-mat-btn{
+    background:#1976d2;
+    color:#fff;
+    border:none;
+    padding:8px 16px;
+    border-radius:20px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.2s;
+  }
+  .add-mat-btn:hover{
+    background:#0f4fa3;
+    transform:translateY(-2px);
+  }
+
   .container{
     max-width:1200px;
     margin:40px auto;
@@ -53,6 +70,7 @@
     display:flex;
     justify-content:space-between;
     align-items:center;
+    gap:12px;
   }
 
   .grid{
@@ -164,9 +182,10 @@
   .section-title{
     font-size:18px;
     padding:10px 12px;
+    flex-direction:column;
+    align-items:flex-start;
   }
 
-  /* Grille des véhicules : 1 carte par ligne */
   .grid{
     grid-template-columns:1fr;
     padding:14px 6px;
@@ -184,7 +203,6 @@
     margin-top:16px;
   }
 
-  /* MODALES plus compactes et adaptées mobile */
   .modal-content{
     width:100%;
     max-width:100%;
@@ -227,7 +245,6 @@
     margin-top:10px;
   }
 
-  /* Tableau des anomalies : scroll horizontal si besoin */
   .history{
     margin-top:18px;
     padding:12px;
@@ -239,7 +256,6 @@
     font-size:13px;
   }
 }
-  
 </style>
 </head>
 <body>
@@ -255,14 +271,15 @@
 
 <div class="container">
   <div class="section-title">
-    🚗 Véhicules du centre
+    <span>🚗 Véhicules du centre</span>
+    <button type="button" class="add-mat-btn" onclick="openNewMaterielModal()">➕ Anomalie matériel de caserne</button>
   </div>
   <div id="vehicule-grid" class="grid"></div>
 </div>
 
 <footer>© SDIS 30 — Gestion véhicules 2025</footer>
 
-<!-- MODALE PRINCIPALE -->
+<!-- MODALE PRINCIPALE VÉHICULE -->
 <div class="modal" id="vehiculeModal">
   <div class="modal-content">
     <div class="modal-header">
@@ -374,68 +391,60 @@
   </div>
 </div>
 
+<!-- MODALE MATERIEL DE CASERNE -->
+<div class="modal" id="materielModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="matModalTitle">Anomalie matériel</h2>
+      <button class="x-close" onclick="closeMatModal()">×</button>
+    </div>
+
+    <form id="materielForm">
+      <div class="form-row">
+        <label>Matériel :</label>
+        <input type="text" id="matNom" placeholder="Ex : Sèche-linge foyer">
+      </div>
+
+      <div class="form-row">
+        <label>État :</label>
+        <select id="matEtat">
+          <option value="Mineur">Disponible avec défaut mineur</option>
+          <option value="Atelier">Aux ateliers</option>
+          <option value="Indispo">Indisponible</option>
+        </select>
+      </div>
+
+      <div class="form-row" style="align-items:flex-start;">
+        <label>Anomalie :</label>
+        <textarea id="matAnomalyText" placeholder="Décrire l'anomalie..."></textarea>
+      </div>
+    </form>
+
+    <button class="save-btn" onclick="addMatAnomaly()">💾 Ajouter / Mettre à jour</button>
+
+    <div class="history">
+      <h3>🕓 Anomalies en cours</h3>
+      <table id="matHistoryTable">
+        <thead>
+          <tr>
+            <th>Date</th><th>Agent</th><th>Description</th><th>État</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- 🔌 Firebase + Firestore + stockage partagé -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="cloud-storage.js"></script>
 
 <script>
-/* =======================================================
-     🔁 SYNCHRO VÉHICULES <-> FIRESTORE
-   ======================================================= */
-
-// On synchronise seulement les données véhicules
-function shouldSyncVehicules(key){
-  return key && key.startsWith("vehicules_");
-}
-
-/* 🔄 Cloud ➜ Local */
-async function syncVehiculesFromCloud(){
-  try{
-    if(typeof db === "undefined"){
-      console.warn("Firestore non initialisé");
-      return;
-    }
-    const snap = await db.collection("accueilcs").get();
-    snap.forEach(doc=>{
-      const key = doc.id;
-      if(shouldSyncVehicules(key)){
-        // on stocke tel quel, on normalisera à la lecture
-        localStorage.setItem(key, JSON.stringify(doc.data()));
-      }
-    });
-    console.log("Véhicules : sync Firestore → localStorage OK");
-  }catch(e){
-    console.error("syncVehiculesFromCloud", e);
-  }
-}
-
-/* 🔄 Local ➜ Cloud */
-(function(){
-  const oldSet = localStorage.setItem.bind(localStorage);
-  localStorage.setItem = function(key, val){
-    oldSet(key, val);
-    if(shouldSyncVehicules(key)){
-      try{
-        cloudSetJSON(key, JSON.parse(val));
-      }catch(_){}
-    }
-  };
-
-  const oldRemove = localStorage.removeItem.bind(localStorage);
-  localStorage.removeItem = function(key){
-    if(shouldSyncVehicules(key)){
-      try{
-        db.collection("accueilcs").doc(key).delete();
-      }catch(_){}
-    }
-    oldRemove(key);
-  };
-})();
-</script>
-
-<script>
-let user=null,key="",vehicules=[],currentVehiculeIndex=null;
+let user=null,key="",keyVeh="",keyMat="",vehicules=[],materiel=[];
+let currentVehiculeIndex=null;
+let currentMaterielIndex=null;
 let editingVehIndex=null, editingHistTs=null;
 const SEVERITY={ "Disponible":0,"Mineur":1,"Atelier":2,"Pret":3,"Indispo":4 };
 
@@ -455,12 +464,13 @@ function gravestEtat(h){
   return m;
 }
 function escapeHtml(s){
-  return String(s||"").replace(/[&<>"']/g,m=>(
-    {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]||m
-  ));
+  return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]||m));
 }
 function saveVehs(){
-  localStorage.setItem(key,JSON.stringify(vehicules));
+  localStorage.setItem(keyVeh,JSON.stringify(vehicules));
+}
+function saveMat(){
+  localStorage.setItem(keyMat,JSON.stringify(materiel));
 }
 function getSessionAgentDisplay(u){
   const name=((u?.prenom||"")+" "+(u?.nom||"")).trim();
@@ -489,10 +499,12 @@ function setRadioGroup(name,val){
 
 /* ---- Init ---- */
 window.addEventListener("DOMContentLoaded", async ()=>{
-  // 1️⃣ On récupère d'abord les données du cloud dans le localStorage
-  await syncVehiculesFromCloud();
+  // 1️⃣ Sync Firestore → localStorage pour toutes les clés accueilcs
+  if(typeof syncAccueilFromCloud === "function"){
+    await syncAccueilFromCloud();
+  }
 
-  // 2️⃣ Puis on continue comme avant
+  // 2️⃣ Session
   user=JSON.parse(localStorage.getItem("csver_session")||"null");
   if(!user){
     alert("Session expirée.");
@@ -503,10 +515,14 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   const cis = Array.isArray(user.cis) ? user.cis[0] : user.cis;
   document.getElementById("cis-title").textContent = `Gestion des véhicules - CS ${cis}`;
 
-  key = "vehicules_" + cis;   // 🔑 même clé que dans suivi-vehicules.html
+  keyVeh = "vehicules_" + cis;
+  keyMat = "materiel_" + cis;
+  key = keyVeh; // compat avec printAnomalies existant
 
-  const raw = JSON.parse(localStorage.getItem(key) || "[]");
-  vehicules = normalizeVehicules(raw);
+  const rawVeh = JSON.parse(localStorage.getItem(keyVeh) || "[]");
+  const rawMat = JSON.parse(localStorage.getItem(keyMat) || "[]");
+  vehicules = normalizeVehicules(rawVeh);
+  materiel  = normalizeVehicules(rawMat);
 
   renderVehicules();
 });
@@ -540,7 +556,6 @@ function openModal(i){
   document.getElementById("pretNom").value=v.pretNom||"";
   document.getElementById("anomalyText").value="";
 
-  // Préremplir le panneau "Mineur" (form d'ajout)
   const mi=v.minorInfo||{};
   setRadioGroup("pieceCmd", mi.pieceCommande ? "oui" : (mi.pieceCommande===false ? "non" : null));
   setRadioGroup("atelierInf", mi.atelierInforme ? "oui" : (mi.atelierInforme===false ? "non" : null));
@@ -552,13 +567,14 @@ function closeModal(){
   document.getElementById("vehiculeModal").style.display="none";
 }
 
+/* Champ prêt + mineur (véhicules) */
 function togglePretField(){
   const etat=document.getElementById("vehiculeEtat").value;
   document.getElementById("pretRow").style.display = (etat==="Pret") ? "flex" : "none";
   document.getElementById("minorRow").style.display = (etat==="Mineur") ? "flex" : "none";
 }
 
-/* ---- Ajout d'une nouvelle anomalie ---- */
+/* ---- Ajout d'une nouvelle anomalie (véhicule) ---- */
 function addAnomaly(){
   const v=vehicules[currentVehiculeIndex];
   const etat=document.getElementById("vehiculeEtat").value;
@@ -572,7 +588,6 @@ function addAnomaly(){
   v.history=v.history||[];
   v.pretNom=(etat==="Pret")?pretNom:"";
 
-  // Minor info (au niveau entrée + copie au niveau véhicule pour confort d'affichage)
   let minorInfoObj;
   if(etat==="Mineur"){
     const piece=getRadioValue("pieceCmd");
@@ -609,7 +624,7 @@ function addAnomaly(){
   document.getElementById("anomalyText").value="";
 }
 
-/* ---- Tableau des anomalies en cours ---- */
+/* ---- Tableau des anomalies en cours (véhicule) ---- */
 function loadHistory(v){
   const tbody=document.querySelector("#historyTable tbody");
   tbody.innerHTML="";
@@ -618,7 +633,6 @@ function loadHistory(v){
     const pc = (mi.pieceCommande===true) ? "Oui" : (mi.pieceCommande===false ? "Non" : "—");
     const ai = (mi.atelierInforme===true) ? "Oui" : (mi.atelierInforme===false ? "Non" : "—");
 
-    // Loupe visible seulement SPP/Admin
     const editBtn = canEdit()
       ? `<button class="icon-btn" title="Modifier" onclick="openEditAnomaly(${currentVehiculeIndex},${h.timestamp})">🔍</button>`
       : "";
@@ -661,7 +675,7 @@ function closeAnomaly(vehIndex, ts){
   if(currentVehiculeIndex===vehIndex) loadHistory(v);
 }
 
-/* ---- ÉDITION via loupe ---- */
+/* ---- ÉDITION via loupe (véhicule) ---- */
 function openEditAnomaly(vehIndex, ts){
   if(!canEdit()){
     alert("Accès réservé à un SPP ou à un administrateur.");
@@ -754,7 +768,120 @@ function saveEditedAnomaly(){
   closeEditModal();
 }
 
-/* ---- Impression (optionnel, inchangé) ---- */
+/* ---------- MATERIEL : ouverture / fermeture de la modale ---------- */
+
+function openNewMaterielModal(){
+  currentMaterielIndex = null;
+  document.getElementById("matModalTitle").textContent = "Nouvelle anomalie matériel";
+  document.getElementById("matNom").value = "";
+  document.getElementById("matEtat").value = "Mineur";
+  document.getElementById("matAnomalyText").value = "";
+  const tbody = document.querySelector("#matHistoryTable tbody");
+  tbody.innerHTML = "<tr><td colspan='5' style='padding:10px;color:#666;'>Aucune anomalie en cours pour ce matériel.</td></tr>";
+  document.getElementById("materielModal").style.display="flex";
+}
+
+function closeMatModal(){
+  document.getElementById("materielModal").style.display="none";
+  currentMaterielIndex = null;
+}
+
+/* ---------- MATERIEL : ajout / mise à jour d'anomalie ---------- */
+
+function addMatAnomaly(){
+  const name = (document.getElementById("matNom").value || "").trim();
+  const etat = document.getElementById("matEtat").value;
+  const text = (document.getElementById("matAnomalyText").value || "").trim();
+
+  if(name==="" || text===""){
+    alert("Nom du matériel et anomalie obligatoires.");
+    return;
+  }
+
+  let m;
+  if(currentMaterielIndex == null){
+    m = materiel.find(x => String(x.nom||"").toLowerCase() === name.toLowerCase());
+    if(!m){
+      m = { nom:name, etat:"Disponible", history:[] };
+      materiel.push(m);
+      currentMaterielIndex = materiel.length-1;
+    }
+  }else{
+    m = materiel[currentMaterielIndex];
+    m.nom = name;
+  }
+
+  const agent = getSessionAgentDisplay(user);
+  const nowTs = Date.now();
+
+  m.history = m.history || [];
+  m.history.push({
+    date: new Date(nowTs).toLocaleString("fr-FR"),
+    timestamp: nowTs,
+    agent,
+    text,
+    level: etat,
+    closed:false
+  });
+
+  const open = m.history.filter(h=>!h.closed);
+  m.etat = open.length ? gravestEtat(open) : "Disponible";
+
+  saveMat();
+  loadMatHistory(m);
+  document.getElementById("matAnomalyText").value = "";
+}
+
+function loadMatHistory(m){
+  const tbody = document.querySelector("#matHistoryTable tbody");
+  tbody.innerHTML = "";
+  (m.history||[]).filter(h=>!h.closed).forEach(h=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(h.date)}</td>
+      <td>${escapeHtml(h.agent)}</td>
+      <td>${escapeHtml(h.text)}</td>
+      <td>${escapeHtml(h.level)}</td>
+      <td>
+        <button class='close-anomaly' onclick='closeMatAnomaly(${currentMaterielIndex},${h.timestamp})'>Clôturer</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  if(!tbody.children.length){
+    tbody.innerHTML = "<tr><td colspan='5' style='padding:10px;color:#666;'>Aucune anomalie en cours pour ce matériel.</td></tr>";
+  }
+}
+
+function closeMatAnomaly(idx, ts){
+  const m = materiel[idx];
+  if(!m || !m.history) return;
+  const hIdx = m.history.findIndex(h=>h.timestamp===ts);
+  if(hIdx === -1) return;
+  if(!confirm("Clôturer cette anomalie matériel ?")) return;
+
+  const agent = getSessionAgentDisplay(user);
+  const nowTs = Date.now();
+
+  m.history[hIdx].closed   = true;
+  m.history[hIdx].closedBy = agent;
+  m.history[hIdx].closedTs = nowTs;
+
+  const open = m.history.filter(h=>!h.closed);
+
+  if(open.length === 0){
+    // plus aucune anomalie : on supprime le matériel
+    materiel.splice(idx,1);
+    saveMat();
+    closeMatModal();
+  }else{
+    m.etat = gravestEtat(open);
+    saveMat();
+    loadMatHistory(m);
+  }
+}
+
+/* ---- Impression (inchangé – véhicules uniquement) ---- */
 function printAnomalies(){
   const cis=document.getElementById("cis-title").textContent.replace("Gestion des véhicules - CS ","");
   const vehs=vehicules;
@@ -790,5 +917,3 @@ function printAnomalies(){
 
 </body>
 </html>
-
-
