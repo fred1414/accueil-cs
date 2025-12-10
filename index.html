@@ -3173,7 +3173,8 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
     return [];
   }
 
-  function getTodayApprovedReservations(){
+  window.getTodayApprovedReservations = function(){
+
     const cisSel = getCurrentCis();
     if(!cisSel) return [];
 
