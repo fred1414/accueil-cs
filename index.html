@@ -1268,19 +1268,16 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   document.getElementById("cis-title").textContent=`CISMIC ${cis}`;
   document.getElementById("welcome-text").textContent=`Bienvenue ${nomComplet}`;
 
-  applyRoleMenus(user.role);
-// 🔐 Masquer les actions de purge pour tous sauf super-admin 1414 OU admin du centre
-if (!isSuperAdmin() && !isAdmin()) {
-    const btn1 = document.getElementById("btnPurgeNotes");
-    const btn2 = document.getElementById("btnPurgeAll");
+   applyRoleMenus(user.role);
 
-    if (btn1) btn1.style.display = "none";
-    if (btn2) btn2.style.display = "none";
-}
+  // 🔄 On lit les données depuis le localStorage
+  const vehData = JSON.parse(localStorage.getItem(key)    || "[]");
+  const matData = JSON.parse(localStorage.getItem(keyMat) || "[]");
 
-
-  renderVehicules(vehicules);
-  renderMateriel(materiel); 
+  // 🧊 Rendu initial
+  renderVehicules(vehData);
+  renderMateriel(matData);
+  renderJournal();
   renderFormations();       // 📘 panneau gauche
   fetchMeteoVergeze();      // 🌤️ bandeau
   setInterval(fetchMeteoVergeze, 30*60*1000); // toutes les 30 min
@@ -1290,34 +1287,39 @@ if (!isSuperAdmin() && !isAdmin()) {
 });
 
 window.addEventListener("focus",()=>{
-  const vehicules=JSON.parse(localStorage.getItem(key)||"[]");
-  renderVehicules(vehicules);
-  renderMateriel(materiel);   
+  const vehData = JSON.parse(localStorage.getItem(key)    || "[]");
+  const matData = JSON.parse(localStorage.getItem(keyMat) || "[]");
+  renderVehicules(vehData);
+  renderMateriel(matData);
   renderJournal();
   renderFormations();
   fetchMeteoVergeze();
-  // 👉 Réévalue à l’arrivée sur l’onglet
   renderFmaPendingCard();
 });
+
 window.addEventListener("pageshow",()=>{
-  const vehicules=JSON.parse(localStorage.getItem(key)||"[]");
-  renderVehicules(vehicules);
-  renderMateriel(materiel);   
+  const vehData = JSON.parse(localStorage.getItem(key)    || "[]");
+  const matData = JSON.parse(localStorage.getItem(keyMat) || "[]");
+  renderVehicules(vehData);
+  renderMateriel(matData);
   renderJournal();
   renderFormations();
-  // 👉 Réévalue sur pageshow (Firefox/Back-Forward cache)
   renderFmaPendingCard();
 });
+
 document.addEventListener("visibilitychange",()=>{
   if(!document.hidden){
-    const vehicules=JSON.parse(localStorage.getItem(key)||"[]");
-    renderVehicules(vehicules)
-    renderMateriel(materiel);   
+    const vehData = JSON.parse(localStorage.getItem(key)    || "[]");
+    const matData = JSON.parse(localStorage.getItem(keyMat) || "[]");
+    renderVehicules(vehData);
+    renderMateriel(matData);
     renderJournal();
     renderFormations();
     renderFmaPendingCard();
   }
 });
+
+
 window.addEventListener("storage",(e)=>{
   try{
     if(!e.key) return;
