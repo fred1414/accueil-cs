@@ -1843,7 +1843,16 @@ body.className = "body";
     // ---------------------------------------------
     // 🚘 Réservations véhicules ACCEPTÉES aujourd’hui
     // ---------------------------------------------
-    const todaysRes = getTodayApprovedReservations();
+    let todaysRes = [];
+if (typeof getTodayApprovedReservations === "function") {
+  todaysRes = getTodayApprovedReservations();
+} else if (typeof window.getTodayApprovedReservations === "function") {
+  todaysRes = window.getTodayApprovedReservations();
+} else {
+  console.warn("⚠️ getTodayApprovedReservations n’est pas définie");
+}
+
+console.log("📅 Réservations du jour (renderFormations) :", todaysRes);
 
     if(todaysRes.length){
       const box = document.createElement("div");
@@ -3161,47 +3170,52 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
     }catch(_){ return null; }
   }
 
-  // Accepte soit un tableau, soit un objet { "0": {...}, "1": {...} }
-  function rawToArray(raw){
-    if(Array.isArray(raw)) return raw;
-    if(raw && typeof raw === "object"){
-      const keys = Object.keys(raw);
-      if(keys.length && keys.every(k => /^\d+$/.test(k))){
-        return keys.sort((a,b)=>Number(a)-Number(b)).map(k => raw[k]);
-      }
+  // Accepte soit un tableau, soit un objet { "0": {.}, "1": {.} }
+function rawToArray(raw){
+  if(Array.isArray(raw)) return raw;
+  if(raw && typeof raw === "object"){
+    const keys = Object.keys(raw);
+    if(keys.length && keys.every(k => /^\d+$/.test(k))){
+      return keys.sort((a,b)=>Number(a)-Number(b)).map(k => raw[k]);
     }
-    return [];
+  }
+  return [];
+}
+
+// 👉 version GLOBALE
+window.getTodayApprovedReservations = function(){
+  const cisSel = getCurrentCis();
+  if(!cisSel) return [];
+
+  const keyRes = "reservations_" + cisSel;
+  let raw;
+  try{
+    raw = JSON.parse(localStorage.getItem(keyRes) || "[]");
+  }catch(_){
+    raw = [];
   }
 
-  window.getTodayApprovedReservations = function(){
+  const arr = rawToArray(raw);
 
-    const cisSel = getCurrentCis();
-    if(!cisSel) return [];
+  const today = new Date();
+  const p = n => String(n).padStart(2, "0");
+  const todayIso = `${today.getFullYear()}-${p(today.getMonth()+1)}-${p(today.getDate())}`;
 
-    const keyRes = "reservations_" + cisSel;
-    let raw;
-    try{
-      raw = JSON.parse(localStorage.getItem(keyRes) || "[]");
-    }catch(_){
-      raw = [];
-    }
+  // On garde les réservations ACCEPTÉES dont la plage couvre todayIso
+  const res = arr.filter(r => {
+    if(!r || r.status !== "approved") return false;
 
-    const arr = rawToArray(raw);
+    const start = (r.dateDebut || r.date || "").slice(0,10);
+    const end   = (r.dateFin   || r.dateDebut || r.date || start).slice(0,10);
+    if(!start) return false;
 
-    const today = new Date();
-    const p = n => String(n).padStart(2, "0");
-    const todayIso = `${today.getFullYear()}-${p(today.getMonth()+1)}-${p(today.getDate())}`;
+    return todayIso >= start && todayIso <= end;
+  });
 
-    // On garde les réservations ACCEPTÉES dont la plage couvre todayIso
-    return arr.filter(r => {
-      if(!r || r.status !== "approved") return false;
+  console.log("🚘 getTodayApprovedReservations →", res);
+  return res;
+};
 
-      const start = (r.dateDebut || r.date || "").slice(0,10);
-      const end   = (r.dateFin   || r.dateDebut || r.date || start).slice(0,10);
-      if(!start) return false;
-
-      return todayIso >= start && todayIso <= end;
-    });
   }
 
   
