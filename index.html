@@ -884,12 +884,12 @@ nav.menu-bar a{ padding:10px 12px; }
 
 <main>
 
-   <!-- Colonne gauche : 📘 Main courante FMA (haut) + 📅 Agenda mensuel (bas) -->
+   <!-- Colonne gauche : 📌 Main courante FMA (haut) + 📅 Agenda mensuel (bas) -->
   <div class="left-column">
 
-    <!-- 📘 Consignes du jour (haut) -->
+    <!-- 📌 Consignes du jour (haut) -->
 <div id="formation-panel" class="panel">
-  <div id="formation-header">📘 Consignes du jour</div>
+  <div id="formation-header">📌 Consignes</div>
   <div id="formation-list"></div>
 </div>
 
@@ -1625,7 +1625,7 @@ function renderJournal(){
   }catch(_){}
 }
 
-/* 📘 Panneau gauche : Consignes du jour (à la place des FMA) */
+/* 📌 Panneau gauche : Consignes du jour (à la place des FMA) */
 function renderFormations(){
   try{
     const session = JSON.parse(localStorage.getItem("csver_session")||"null");
@@ -3361,7 +3361,7 @@ function buildConsigneMap(year, monthIndex){
 
     let html = "";
 
-    /* 🧾 CONSIGNES EN HAUT */
+    /* 📌 CONSIGNES EN HAUT */
    if (consList && consList.length){
     // 👉 tri par importance : rouge (haute), orange (moyenne), bleu (faible)
     const orderImp = { haute: 0, moyenne: 1, faible: 2 };
@@ -3377,7 +3377,7 @@ function buildConsigneMap(year, monthIndex){
 
     html += `
       <div class="agenda-modal-section">
-        <div class="agenda-modal-title-sub">🧾 Consignes du jour</div>
+        <div class="agenda-modal-title-sub">📌 Consignes du jour</div>
     `;
 
     sortedCons.forEach(c => {
