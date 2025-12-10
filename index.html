@@ -3234,12 +3234,13 @@ function loadChatbaseWidgetForAdmins() {
     return; // Pas admin → on ne charge pas Chatbase
   }
 
-  // Code d'intégration Chatbase tel que fourni
-  (function(){
+  // Code d'intégration Chatbase
+  (function () {
+    // file d’attente avant initialisation
     if (!window.chatbase || window.chatbase("getState") !== "initialized") {
-      window.chatbase = (...arguments) => {
+      window.chatbase = (...args) => {
         if (!window.chatbase.q) { window.chatbase.q = []; }
-        window.chatbase.q.push(arguments);
+        window.chatbase.q.push(args);
       };
       window.chatbase = new Proxy(window.chatbase, {
         get(target, prop) {
@@ -3249,7 +3250,12 @@ function loadChatbaseWidgetForAdmins() {
       });
     }
 
-    const onLoad = function() {
+    const onLoad = function () {
+      // config Chatbase (id à adapter si besoin)
+      window.chatbaseConfig = {
+        chatbotId: "zVqCo-pyQDmi3XjItI7CQ"
+      };
+
       const script = document.createElement("script");
       script.src = "https://www.chatbase.co/embed.min.js";
       script.id = "zVqCo-pyQDmi3XjItI7CQ";
@@ -3269,7 +3275,6 @@ function loadChatbaseWidgetForAdmins() {
 window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
 </script>
 
-<script>
 /* ===========================
    📅 Agenda mensuel + réservations véhicules
    =========================== */
