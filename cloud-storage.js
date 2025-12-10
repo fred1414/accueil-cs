@@ -70,7 +70,6 @@ function shouldSyncKey(key){
       || key === "manoeuvre_repli_v1"    // 🔵 manœuvres de repli (tous CIS)
       || key.startsWith("repli_lock_")   // 🔵 verrou manœuvre par CIS
       || key.startsWith("vehicules_")
-      || key.startsWith("materiel_") 
       || key.startsWith("journal_")
       || key.startsWith("reservations_")
       || key.startsWith("habillement_")
@@ -147,4 +146,5 @@ window.syncAccueilFromCloud = syncAccueilFromCloud;
     origRem(key);
   };
 })();
+
 
