@@ -1289,23 +1289,36 @@ function applyRoleMenus(roleRaw){
 
 function updateConsignesPlusVisibility(){
   try{
-    const session = JSON.parse(localStorage.getItem("csver_session") || "null");
-    if(!session) return;
-
-    const role = String(session.role || "").toLowerCase();
-    const btn  = document.getElementById("consignes-plus-btn");
+    const btn = document.getElementById("consignes-plus-btn");
     if(!btn) return;
 
-    // Visible pour SOG et ADMIN uniquement
-    if (role === "sog" || role === "admin") {
-      btn.style.display = "flex";
-    } else {
-      btn.style.display = "none";
+    // 1️⃣ On essaie d'abord avec le système de permissions par CIS
+    const perms = getCurrentCisPerms ? getCurrentCisPerms() : {};
+    if(perms && Object.keys(perms).length > 0){
+      // visible pour SOG ou ADMIN dans les permissions du centre
+      const show = !!perms.sog || !!perms.admin;
+      btn.style.display = show ? "flex" : "none";
+      return;
     }
+
+    // 2️⃣ Fallback : ancien système basé sur session.role
+    const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+    if(!session){
+      btn.style.display = "none";
+      return;
+    }
+
+    const role = String(session.role || "").toLowerCase();
+
+    // ici tu peux ajuster qui voit le bouton
+    const showFallback = (role === "sog" || role === "sog spv" || role === "admin");
+    btn.style.display = showFallback ? "flex" : "none";
+
   }catch(e){
     console.error("Erreur visibilité bouton consignes :", e);
   }
 }
+
 
   
 /* Chargement initial */
