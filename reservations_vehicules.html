@@ -377,6 +377,37 @@ header .subtitle{
   </div>
 </div>
 
+  <!-- MODAL MODIFICATION RESERVATION A VENIR -->
+<div id="editUpcomingModal" class="modal" aria-hidden="true">
+  <div class="modal-card">
+    <div class="modal-head">
+      <strong>✏️ Modifier une réservation</strong>
+      <button class="small-btn" onclick="closeEditUpcoming()">Fermer</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="col-3">
+          <label>Véhicule</label>
+          <select id="editVehSelect" class="select"></select>
+        </div>
+        <div class="col-3">
+          <label>Motif</label>
+          <input type="text" id="editMotif">
+        </div>
+        <div class="col-3">
+          <label>Destination / Lieu</label>
+          <input type="text" id="editDestination">
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="small-btn" onclick="closeEditUpcoming()">Annuler</button>
+        <button class="small-btn ok" onclick="saveEditUpcoming()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <footer>© CISMIC — Réservations véhicules — 2025</footer>
 
 <!-- =======================================================
@@ -743,6 +774,8 @@ function setStatus(id, status){
 function renderUpcoming(){
   const tbody=document.querySelector("#upcomingTable tbody");
   const now=Date.now();
+  const canManage = isManager();
+
   const rows=readReservations()
     .filter(r=> r.status==="approved" && r.tsEnd>now)
     .sort((a,b)=> a.tsStart - b.tsStart);
@@ -757,12 +790,158 @@ function renderUpcoming(){
       <td>${escapeHtml(r.destination||"-")}</td>
       <td>${statusBadge(r.status)}</td>
       <td class="actions">
-        <button class="small-btn warn" onclick="editUpcoming('${r.id}')">Modifier</button>
-        <button class="small-btn danger" onclick="deleteUpcoming('${r.id}')">Supprimer</button>
+        ${
+          canManage
+          ? `
+            <button class="small-btn warn" onclick="editUpcoming('${r.id}')">Modifier</button>
+            <button class="small-btn danger" onclick="deleteUpcoming('${r.id}')">Supprimer</button>
+          `
+          : "—"
+        }
       </td>
     </tr>
   `).join("") || `<tr><td colspan="8" style="color:#666;padding:10px">Aucune réservation acceptée à venir.</td></tr>`;
 }
+// =========================
+//  MODAL EDIT RESERVATION
+// =========================
+
+let currentEditUpcomingId = null;
+
+// Remplit la liste des véhicules dans le modal
+function fillVehSelectForEdit(selectEl, selectedId, selectedLabel){
+  const vehs = JSON.parse(localStorage.getItem(ctx.keyVehs) || "[]") || [];
+  const currentId = selectedId || (selectedLabel ? vehId(selectedLabel) : "");
+
+  const options = ['<option value="">— Choisir —</option>'].concat(
+    vehs.slice()
+      .sort((a,b)=>String(a.nom||"").localeCompare(String(b.nom||""),"fr",{sensitivity:"base"}))
+      .map(v=>{
+        const id = vehId(v.nom);
+        const sel = (id === currentId) ? ' selected' : '';
+        return `<option value="${id}" data-label="${escapeHtml(v.nom)}"${sel}>${escapeHtml(v.nom)}${v.etat?(' — '+escapeHtml(v.etat)):""}</option>`;
+      })
+  );
+
+  selectEl.innerHTML = options.join("");
+}
+
+// Ouvre le modal et pré-remplit les champs
+function editUpcoming(id){
+  if(!isManager()) return; // sécurité
+
+  const all = readReservations();
+  const r = all.find(x => x.id === id);
+  if(!r) return;
+
+  currentEditUpcomingId = id;
+
+  const modal      = document.getElementById("editUpcomingModal");
+  const selVeh     = document.getElementById("editVehSelect");
+  const inpMotif   = document.getElementById("editMotif");
+  const inpDest    = document.getElementById("editDestination");
+
+  fillVehSelectForEdit(selVeh, r.vehId, r.vehicule);
+  inpMotif.value = r.motif || "";
+  inpDest.value  = r.destination || "";
+
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden","false");
+
+  // clic en dehors pour fermer
+  modal.onclick = (e)=>{ if(e.target === modal) closeEditUpcoming(); };
+
+  // Esc pour fermer
+  document.addEventListener("keydown", escEditUpcoming);
+}
+
+function escEditUpcoming(e){
+  if(e.key === "Escape") closeEditUpcoming();
+}
+
+function closeEditUpcoming(){
+  const modal = document.getElementById("editUpcomingModal");
+  if(!modal) return;
+  modal.style.display = "none";
+  modal.setAttribute("aria-hidden","true");
+  document.removeEventListener("keydown", escEditUpcoming);
+  currentEditUpcomingId = null;
+}
+
+// Enregistre les modifications (véhicule + motif + destination/lieu)
+function saveEditUpcoming(){
+  if(!currentEditUpcomingId) return;
+
+  const all = readReservations();
+  const idx = all.findIndex(r => r.id === currentEditUpcomingId);
+  if(idx < 0) return;
+
+  const r = all[idx];
+
+  const selVeh   = document.getElementById("editVehSelect");
+  const inpMotif = document.getElementById("editMotif");
+  const inpDest  = document.getElementById("editDestination");
+
+  const vehIdSel = selVeh.value;
+  const vehLabel = selVeh.options[selVeh.selectedIndex]
+    ? (selVeh.options[selVeh.selectedIndex].getAttribute("data-label") || selVeh.options[selVeh.selectedIndex].text)
+    : "";
+
+  const newMotif = (inpMotif.value || "").trim();
+  const newDest  = (inpDest.value  || "").trim();
+
+  if(!vehIdSel){
+    alert("Veuillez choisir un véhicule.");
+    return;
+  }
+  if(!newMotif || !newDest){
+    alert("Motif et destination / lieu sont obligatoires.");
+    return;
+  }
+
+  // Vérifie les conflits de créneau si on change de véhicule
+  const edited = computeTs({...r}); // copie pour les calculs
+
+  const conflicts = all
+    .filter(x =>
+      x.id !== r.id &&
+      x.status === "approved" &&
+      x.vehId === vehIdSel
+    )
+    .map(x => computeTs(x))
+    .filter(x => overlap(edited.tsStart, edited.tsEnd, x.tsStart, x.tsEnd));
+
+  if(conflicts.length){
+    const details = conflicts.map(x =>
+      `• ${fmtDateRange(getDateStart(x), getDateEnd(x))} ${x.h1}–${x.h2} (${x.agent})`
+    ).join("\n");
+    alert("Ce véhicule est déjà réservé sur ce créneau :\n"+details+"\n\nChoisissez un autre véhicule.");
+    return;
+  }
+
+  // Mise à jour effective
+  r.vehId       = vehIdSel;
+  r.vehicule    = vehLabel;
+  r.motif       = newMotif;
+  r.destination = newDest;
+
+  computeTs(r);
+  saveReservations(all);
+
+  closeEditUpcoming();
+  renderUpcoming();
+  renderHistory(); // si tu veux que l’historique reste à jour
+}
+
+// Suppression = on met en "rejected"
+function deleteUpcoming(id){
+  if(!isManager()) return;
+  if(!confirm("Voulez-vous vraiment annuler cette réservation ?")){
+    return;
+  }
+  setStatus(id, "rejected");
+}
+
 
   // Modifier une réservation à venir (simple : motif + destination)
 function editUpcoming(id){
@@ -969,6 +1148,7 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 
 </body>
 </html>
+
 
 
 
