@@ -1249,7 +1249,7 @@ function applyRoleMenus(roleRaw){
 }
 
 /* Chargement initial */
-let cis = "", key = "", keyMat = "";
+let cis="",key="";
 window.addEventListener("DOMContentLoaded", async ()=>{
   // 🔁 On commence par synchroniser avec Firestore
   try{
@@ -1262,21 +1262,23 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   if(!user){alert("Session expirée.");window.location.href="login.html";return;}
   cis=Array.isArray(user.cis)?user.cis[0]:user.cis;
   key="vehicules_"+cis;
-  keyMat = "materiel_" + cis;     
 
   const nomComplet=((user.prenom||"")+" "+(user.nom||"")).trim()||user.matricule;
   document.getElementById("cis-title").textContent=`CISMIC ${cis}`;
   document.getElementById("welcome-text").textContent=`Bienvenue ${nomComplet}`;
 
-   applyRoleMenus(user.role);
+  applyRoleMenus(user.role);
+// 🔐 Masquer les actions de purge pour tous sauf super-admin 1414 OU admin du centre
+if (!isSuperAdmin() && !isAdmin()) {
+    const btn1 = document.getElementById("btnPurgeNotes");
+    const btn2 = document.getElementById("btnPurgeAll");
 
-  // 🔄 On lit les données depuis le localStorage
-  const vehData = JSON.parse(localStorage.getItem(key)    || "[]");
-  const matData = JSON.parse(localStorage.getItem(keyMat) || "[]");
+    if (btn1) btn1.style.display = "none";
+    if (btn2) btn2.style.display = "none";
+}
 
-  // 🧊 Rendu initial
-  renderVehicules(vehData);
-  renderMateriel(matData);
+
+  renderVehicules(JSON.parse(localStorage.getItem(key)||"[]"));
   renderJournal();
   renderFormations();       // 📘 panneau gauche
   fetchMeteoVergeze();      // 🌤️ bandeau
@@ -1287,67 +1289,45 @@ window.addEventListener("DOMContentLoaded", async ()=>{
 });
 
 window.addEventListener("focus",()=>{
-  const vehData = JSON.parse(localStorage.getItem(key)    || "[]");
-  const matData = JSON.parse(localStorage.getItem(keyMat) || "[]");
-  renderVehicules(vehData);
-  renderMateriel(matData);
+  const vehicules=JSON.parse(localStorage.getItem(key)||"[]");
+  renderVehicules(vehicules);
   renderJournal();
   renderFormations();
   fetchMeteoVergeze();
+  // 👉 Réévalue à l’arrivée sur l’onglet
   renderFmaPendingCard();
 });
-
 window.addEventListener("pageshow",()=>{
-  const vehData = JSON.parse(localStorage.getItem(key)    || "[]");
-  const matData = JSON.parse(localStorage.getItem(keyMat) || "[]");
-  renderVehicules(vehData);
-  renderMateriel(matData);
+  const vehicules=JSON.parse(localStorage.getItem(key)||"[]");
+  renderVehicules(vehicules);
   renderJournal();
   renderFormations();
+  // 👉 Réévalue sur pageshow (Firefox/Back-Forward cache)
   renderFmaPendingCard();
 });
-
 document.addEventListener("visibilitychange",()=>{
   if(!document.hidden){
-    const vehData = JSON.parse(localStorage.getItem(key)    || "[]");
-    const matData = JSON.parse(localStorage.getItem(keyMat) || "[]");
-    renderVehicules(vehData);
-    renderMateriel(matData);
+    const vehicules=JSON.parse(localStorage.getItem(key)||"[]");
+    renderVehicules(vehicules);
     renderJournal();
     renderFormations();
     renderFmaPendingCard();
   }
 });
-
-
 window.addEventListener("storage",(e)=>{
   try{
     if(!e.key) return;
-    const user = JSON.parse(localStorage.getItem("csver_session")||"null");
+    const user=JSON.parse(localStorage.getItem("csver_session")||"null");
     if(!user) return;
     const cisSel = Array.isArray(user.cis)?user.cis[0]:user.cis;
-
-    if(
-      e.key === key ||
-      e.key === "journal_"+cisSel ||
-      e.key === "fma_data_v2" ||
-      e.key === "materiel_"+cisSel       // 👈 nouvelle clé
-    ){
-      const vehicules = JSON.parse(localStorage.getItem(key)               || "[]");
-      const materiel  = JSON.parse(localStorage.getItem("materiel_"+cisSel)|| "[]");
-      renderVehicules(vehicules);
-      renderMateriel(materiel);          // 👈
+    if(e.key===key || e.key==="journal_"+cisSel || e.key==="fma_data_v2"){
+      renderVehicules(JSON.parse(localStorage.getItem(key)||"[]"));
       renderJournal();
       renderFormations();
       renderFmaPendingCard();
     }
-
-    if(e.key === "consignes_"+cisSel){
-      renderFormations();
-    }
   }catch(_){}
 });
-
 
 /* 🌤️ Open-Meteo pour Vergèze (~43.74, 4.20) — Bandeau centré */
 async function fetchMeteoVergeze(){
