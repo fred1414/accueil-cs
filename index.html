@@ -178,8 +178,35 @@ main{
 /* 📘 Main courante Formation (gauche) – même look que la droite */
 #formation-panel.panel{ overflow:hidden; padding:0; }
 #formation-header{
-  padding:14px 16px;background:#0d2b52;color:#fff;font-weight:700;
+  padding:14px 16px;
+  background:#0d2b52;
+  color:#fff;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
 }
+/* Bouton + dans le header des consignes */
+.header-plus-btn{
+  border:none;
+  border-radius:999px;
+  width:28px;
+  height:28px;
+  font-size:18px;
+  font-weight:700;
+  line-height:1;
+  cursor:pointer;
+  background:#b71c1c;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+}
+.header-plus-btn:hover{
+  background:#8b0000;
+}
+
 #formation-list{
   padding:12px 14px;
   overflow:auto;max-height:100%;
@@ -897,11 +924,23 @@ nav.menu-bar a{ padding:10px 12px; }
    <!-- Colonne gauche : 📌 Main courante FMA (haut) + 📅 Agenda mensuel (bas) -->
   <div class="left-column">
 
-    <!-- 📌 Consignes du jour (haut) -->
+   <!-- 📌 Consignes du jour (haut) -->
 <div id="formation-panel" class="panel">
-  <div id="formation-header">📌 Consignes</div>
+  <div id="formation-header">
+    <span>📌 Consignes</span>
+    <button
+      type="button"
+      id="consignes-plus-btn"
+      class="header-plus-btn"
+      style="display:none;"
+      onclick="return openLink('consignes.html', event)"
+    >
+      +
+    </button>
+  </div>
   <div id="formation-list"></div>
 </div>
+
 
 
     <!-- 📅 Agenda mensuel (bas) -->
@@ -1248,6 +1287,27 @@ function applyRoleMenus(roleRaw){
   showVehBtns(showVehBtnsFallback);
 }
 
+function updateConsignesPlusVisibility(){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+    if(!session) return;
+
+    const role = String(session.role || "").toLowerCase();
+    const btn  = document.getElementById("consignes-plus-btn");
+    if(!btn) return;
+
+    // Visible pour SOG et ADMIN uniquement
+    if (role === "sog" || role === "admin") {
+      btn.style.display = "flex";
+    } else {
+      btn.style.display = "none";
+    }
+  }catch(e){
+    console.error("Erreur visibilité bouton consignes :", e);
+  }
+}
+
+  
 /* Chargement initial */
 let cis="",key="";
 window.addEventListener("DOMContentLoaded", async ()=>{
@@ -1268,6 +1328,7 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   document.getElementById("welcome-text").textContent=`Bienvenue ${nomComplet}`;
 
   applyRoleMenus(user.role);
+  updateConsignesPlusVisibility();   // 👉 affiche le + pour SOG / ADMIN
 // 🔐 Masquer les actions de purge pour tous sauf super-admin 1414 OU admin du centre
 if (!isSuperAdmin() && !isAdmin()) {
     const btn1 = document.getElementById("btnPurgeNotes");
