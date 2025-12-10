@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
 <title>Réservations véhicules</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -95,7 +95,7 @@ textarea{min-height:70px;resize:vertical}
 .small-btn.ok{background:#e6f7ec;color:#0a8a3a}
 .small-btn.warn{background:#fff3cd;color:#7a5800}
 
-/* MODAL Historique */
+/* MODAL */
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:2000;padding:20px}
 .modal-card{background:#fff;border-radius:14px;max-width:1100px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.25);overflow:hidden;display:flex;flex-direction:column}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#0d2b52;color:#fff}
@@ -119,13 +119,13 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
    HEADER centré (desktop)
    ========================== */
 header{
-  justify-content: center;      /* on centre tout le bloc */
+  justify-content: center;
   position: relative;
   text-align: center;
 }
 
 header img{
-  margin-right: 10px;           /* petit espace logo / titre */
+  margin-right: 10px;
 }
 
 /* Titre + sous-titre centrés */
@@ -213,13 +213,13 @@ header .subtitle{
     text-align: center;
   }
 
-  /* Tables : scroll horizontal, pas besoin de dézoomer */
+  /* Tables : scroll horizontal */
   .panel > div[style*="overflow:auto"]{
     overflow-x: auto;
   }
 
   .table{
-    min-width: 720px;          /* évite l’écrasement des colonnes */
+    min-width: 720px;
     font-size: 13px;
   }
 
@@ -228,7 +228,6 @@ header .subtitle{
     padding: 6px 8px;
   }
 }
-  
 </style>
 
 <!-- 🔌 Firebase + Firestore + stockage partagé -->
@@ -303,7 +302,14 @@ header .subtitle{
       <table class="table" id="reqTable">
         <thead>
           <tr>
-            <th>Date</th><th>Heures</th><th>Véhicule (à affecter)</th><th>Agent</th><th>Motif</th><th>Destination</th><th>Statut</th><th>Actions</th>
+            <th>Date</th>
+            <th>Heures</th>
+            <th>Véhicule (à affecter)</th>
+            <th>Agent</th>
+            <th>Motif</th>
+            <th>Destination</th>
+            <th>Statut</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -313,35 +319,33 @@ header .subtitle{
   </section>
 
   <!-- A VENIR -->
- <section class="panel">
-  <div class="headerline">
-    <h2>⏭️ Réservations à venir</h2>
-    <div class="modal-actions">
-      <button class="small-btn" onclick="openHistory()">📚 Historique</button>
-      <button id="btnPurgeAll" class="small-btn danger" style="display:none" onclick="purgeAllReservations()">🗑️ Purger toutes les réservations</button>
+  <section class="panel">
+    <div class="headerline">
+      <h2>⏭️ Réservations à venir</h2>
+      <div class="modal-actions">
+        <button class="small-btn" onclick="openHistory()">📚 Historique</button>
+        <button id="btnPurgeAll" class="small-btn danger" style="display:none" onclick="purgeAllReservations()">🗑️ Purger toutes les réservations</button>
+      </div>
     </div>
-  </div>
-  <div style="overflow:auto">
-    <table class="table" id="upcomingTable">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Heures</th>
-          <th>Véhicule</th>
-          <th>Agent</th>
-          <th>Motif</th>
-          <th>Destination</th>
-          <th>Statut</th>
-          <!-- 👉 NOUVELLE COLONNE -->
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-  <p class="help">Affiche uniquement les réservations <strong>acceptées</strong> dont le créneau n’est pas encore terminé.</p>
-</section>
-
+    <div style="overflow:auto">
+      <table class="table" id="upcomingTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Heures</th>
+            <th>Véhicule</th>
+            <th>Agent</th>
+            <th>Motif</th>
+            <th>Destination</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="help">Affiche uniquement les réservations <strong>acceptées</strong> dont le créneau n’est pas encore terminé.</p>
+  </section>
 
 </main>
 
@@ -366,7 +370,13 @@ header .subtitle{
         <table class="table" id="histTable">
           <thead>
             <tr>
-              <th>Date</th><th>Heures</th><th>Véhicule</th><th>Agent</th><th>Motif</th><th>Destination</th><th>Statut</th>
+              <th>Date</th>
+              <th>Heures</th>
+              <th>Véhicule</th>
+              <th>Agent</th>
+              <th>Motif</th>
+              <th>Destination</th>
+              <th>Statut</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -377,7 +387,7 @@ header .subtitle{
   </div>
 </div>
 
-  <!-- MODAL MODIFICATION RESERVATION A VENIR -->
+<!-- MODAL MODIFICATION RESERVATION A VENIR -->
 <div id="editUpcomingModal" class="modal" aria-hidden="true">
   <div class="modal-card">
     <div class="modal-head">
@@ -407,7 +417,6 @@ header .subtitle{
   </div>
 </div>
 
-
 <footer>© CISMIC — Réservations véhicules — 2025</footer>
 
 <!-- =======================================================
@@ -417,9 +426,7 @@ header .subtitle{
 <script>
 /* ===== Helpers ===== */
 function escapeHtml(s){
-  return String(s||"").replace(/[&<>"']/g,m=>(
-    {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]
-  ));
+  return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
 }
 function toMinutes(hhmm){
   const [h,m]=String(hhmm||"").split(":").map(x=>parseInt(x||"0",10));
@@ -554,12 +561,8 @@ function isAdmin(){
 function goAccueil(){ window.location.href="index.html"; }
 
 /* ===== Storage (corrigé Firestore objet -> tableau) ===== */
-
 function rawToArray(raw){
-  // 1) déjà un vrai tableau
   if (Array.isArray(raw)) return raw;
-
-  // 2) objet type { "0": {...}, "1": {...} }
   if (raw && typeof raw === "object") {
     const keys = Object.keys(raw);
     if (keys.length && keys.every(k => /^\d+$/.test(k))) {
@@ -568,8 +571,6 @@ function rawToArray(raw){
         .map(k => raw[k]);
     }
   }
-
-  // 3) sinon, rien
   return [];
 }
 
@@ -583,8 +584,6 @@ function readReservations(){
   }
 
   const arr = rawToArray(raw);
-
-  console.log("RESERV readReservations key=", key, "raw=", raw, "-> arr length", arr.length);
 
   return arr.map(r=>{
     if(!r) return r;
@@ -802,13 +801,12 @@ function renderUpcoming(){
     </tr>
   `).join("") || `<tr><td colspan="8" style="color:#666;padding:10px">Aucune réservation acceptée à venir.</td></tr>`;
 }
-// =========================
-//  MODAL EDIT RESERVATION
-// =========================
 
+/* =========================
+   MODAL EDIT RESERVATION
+   ========================= */
 let currentEditUpcomingId = null;
 
-// Remplit la liste des véhicules dans le modal
 function fillVehSelectForEdit(selectEl, selectedId, selectedLabel){
   const vehs = JSON.parse(localStorage.getItem(ctx.keyVehs) || "[]") || [];
   const currentId = selectedId || (selectedLabel ? vehId(selectedLabel) : "");
@@ -828,7 +826,7 @@ function fillVehSelectForEdit(selectEl, selectedId, selectedLabel){
 
 // Ouvre le modal et pré-remplit les champs
 function editUpcoming(id){
-  if(!isManager()) return; // sécurité
+  if(!isManager()) return;
 
   const all = readReservations();
   const r = all.find(x => x.id === id);
@@ -848,10 +846,7 @@ function editUpcoming(id){
   modal.style.display = "flex";
   modal.setAttribute("aria-hidden","false");
 
-  // clic en dehors pour fermer
   modal.onclick = (e)=>{ if(e.target === modal) closeEditUpcoming(); };
-
-  // Esc pour fermer
   document.addEventListener("keydown", escEditUpcoming);
 }
 
@@ -899,8 +894,7 @@ function saveEditUpcoming(){
     return;
   }
 
-  // Vérifie les conflits de créneau si on change de véhicule
-  const edited = computeTs({...r}); // copie pour les calculs
+  const edited = computeTs({...r});
 
   const conflicts = all
     .filter(x =>
@@ -919,7 +913,6 @@ function saveEditUpcoming(){
     return;
   }
 
-  // Mise à jour effective
   r.vehId       = vehIdSel;
   r.vehicule    = vehLabel;
   r.motif       = newMotif;
@@ -930,7 +923,7 @@ function saveEditUpcoming(){
 
   closeEditUpcoming();
   renderUpcoming();
-  renderHistory(); // si tu veux que l’historique reste à jour
+  renderHistory();
 }
 
 // Suppression = on met en "rejected"
@@ -942,41 +935,7 @@ function deleteUpcoming(id){
   setStatus(id, "rejected");
 }
 
-
-  // Modifier une réservation à venir (simple : motif + destination)
-function editUpcoming(id){
-  const all = readReservations();
-  const idx = all.findIndex(r => r.id === id);
-  if (idx < 0) return;
-
-  const r = all[idx];
-
-  const newMotif = prompt("Modifier le motif :", r.motif || "");
-  if (newMotif === null) return; // annulé
-
-  const newDest = prompt("Modifier la destination :", r.destination || "");
-  if (newDest === null) return; // annulé
-
-  all[idx].motif = newMotif.trim();
-  all[idx].destination = newDest.trim();
-
-  // On recalcule les timestamps au cas où
-  computeTs(all[idx]);
-  saveReservations(all);
-  renderUpcoming();
-  renderHistory(); // optionnel, pour garder l'historique cohérent si besoin
-}
-
-// Supprimer (en réalité : marquer comme refusée pour garder une trace)
-function deleteUpcoming(id){
-  if(!confirm("Voulez-vous vraiment supprimer (annuler) cette réservation ?")){
-    return;
-  }
-  // On réutilise ta logique existante de changement de statut
-  setStatus(id, "rejected");
-}
-
-
+/* ===== Historique ===== */
 function openHistory(){
   const m=document.getElementById("histModal"); if(!m) return;
   document.getElementById("histFilter").value="all";
@@ -1134,7 +1093,6 @@ window.addEventListener("pageshow", ensureAgentSoon);
 
 document.addEventListener("DOMContentLoaded", async ()=>{
   try{
-    // si tu utilises la nouvelle version de cloud-storage.js
     if(typeof syncAccueilFromCloud === "function"){
       await syncAccueilFromCloud();
     }
@@ -1148,7 +1106,3 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 
 </body>
 </html>
-
-
-
-
