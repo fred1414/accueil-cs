@@ -165,6 +165,16 @@ main{
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 
+  #materiel-grid{
+  display:grid;
+  gap:12px;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+}
+#materiel-grid .vehicule-card{
+  cursor:pointer;
+}
+
+
 /* 📘 Main courante Formation (gauche) – même look que la droite */
 #formation-panel.panel{ overflow:hidden; padding:0; }
 #formation-header{
@@ -935,6 +945,15 @@ nav.menu-bar a{ padding:10px 12px; }
     <div id="vehicule-grid"></div>
   </div>
 
+    <!-- 🏭 MATERIEL EN ANOMALIE -->
+  <div class="section vehicules" id="materiel-section" style="display:none;margin-top:-10px;">
+    <div class="section-header">
+      <h2>🏭 Matériel en anomalie</h2>
+    </div>
+    <div id="materiel-grid"></div>
+  </div>
+
+
   <!-- 📝 Main courante opérationnelle (colonne droite) -->
   <div id="journal-panel" class="panel">
     <div id="journal-header">📝 Main courante opérationnelle</div>
@@ -1424,6 +1443,33 @@ function renderVehicules(vehicules){
   });
 }
 
+function renderMateriel(list){
+  const section = document.getElementById("materiel-section");
+  const grid    = document.getElementById("materiel-grid");
+  if(!section || !grid) return;
+
+  grid.innerHTML = "";
+  const items = Array.isArray(list) ? list : [];
+
+  if(items.length === 0){
+    section.style.display = "none";
+    return;
+  }
+
+  section.style.display = "block";
+
+  items.forEach(m=>{
+    const div = document.createElement("div");
+    div.className = "vehicule-card";
+    div.style.background = getEtatColor(m.etat || "Mineur");
+    const etatAff = escapeHtml(m.etat || "Mineur");
+    div.innerHTML = `🏭 ${escapeHtml(m.nom)}<small>${etatAff}</small>`;
+    div.addEventListener("click", ()=>openVehiculeAnomalies(m.nom, "materiel"));
+    grid.appendChild(div);
+  });
+}
+
+  
 /* Impression des anomalies */
 function printAnomalies(){
   const session = JSON.parse(localStorage.getItem("csver_session") || "null");
@@ -1433,14 +1479,18 @@ function printAnomalies(){
   if(!nomComplet || nomComplet === "") {
     const agents = JSON.parse(localStorage.getItem("agents_data") || "[]");
     const agentTrouve = agents.find(a => a.matricule === session.matricule);
-    if(agentTrouve) nomComplet = agentTrouve.nom || agentTrouve.prenom || session.matricule;
-    else nomComplet = session.matricule;
+    if(agentTrouve){
+      nomComplet = ((agentTrouve.prenom || "") + " " + (agentTrouve.nom || "")).trim();
+    }
   }
 
   const cis = Array.isArray(session.cis)?session.cis[0]:session.cis;
   const vehs = JSON.parse(localStorage.getItem("vehicules_"+cis)||"[]");
-  let anomalies=[];
+  const mats = JSON.parse(localStorage.getItem("materiel_"+cis)||"[]");
 
+  let anomalies = [];
+
+  // 🚒 Véhicules
   vehs.forEach(v=>{
     (v.history||[]).filter(h=>!h.closed).forEach(h=>{
       let agentAffiche=h.agent;
@@ -1449,13 +1499,36 @@ function printAnomalies(){
       let etatAffiche = h.level;
       if(v.pretNom && v.etat === "Pret"){ etatAffiche += " — " + v.pretNom; }
 
-      anomalies.push({vehicule:v.nom,etat:etatAffiche,desc:h.text,agent:agentAffiche});
+      anomalies.push({
+        support: "Véhicule — " + (v.nom||""),
+        etat: etatAffiche,
+        desc: h.text||"",
+        agent: agentAffiche
+      });
     });
   });
 
-  if(anomalies.length===0){alert("Aucune anomalie à imprimer.");return;}
+  // 🏭 Matériel
+  (mats||[]).forEach(m=>{
+    (m.history||[]).filter(h=>!h.closed).forEach(h=>{
+      let agentAffiche=h.agent;
+      if(/^[0-9]+$/.test(agentAffiche)||agentAffiche.trim()==="")agentAffiche=nomComplet;
 
-  anomalies.sort((a,b)=>a.vehicule.localeCompare(b.vehicule,"fr",{sensitivity:"base"}));
+      anomalies.push({
+        support: "Matériel — " + (m.nom||""),
+        etat: h.level || "",
+        desc: h.text || "",
+        agent: agentAffiche
+      });
+    });
+  });
+
+  if(anomalies.length===0){
+    alert("Aucune anomalie en cours.");
+    return;
+  }
+
+  anomalies.sort((a,b)=>a.support.localeCompare(b.support,"fr",{sensitivity:"base"}));
   const w=window.open("","_blank");
   const date=new Date().toLocaleString("fr-FR");
 
@@ -1464,7 +1537,7 @@ function printAnomalies(){
   <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
   body{font-family:'Inter',sans-serif;padding:40px 60px;color:#222;}
-  header{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #b71c1c;padding-bottom:10px;margin-bottom:30px;}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;border-bottom:2px solid #b71c1c;padding-bottom:10px;}
   header img{height:65px;}
   header h1{flex:1;text-align:center;color:#b71c1c;font-size:26px;margin:0;}
   h2{text-align:center;color:#333;font-size:18px;font-weight:500;margin-bottom:25px;}
@@ -1481,31 +1554,58 @@ function printAnomalies(){
   </header>
   <h2>Centre : ${escapeHtml(cis)}</h2>
   <table>
-    <thead><tr><th>Véhicule</th><th>État</th><th>Anomalie</th><th>Agent</th></tr></thead>
-    <tbody>${anomalies.map(a=>`<tr><td>${escapeHtml(a.vehicule)}</td><td>${escapeHtml(a.etat)}</td><td>${escapeHtml(a.desc)}</td><td>${escapeHtml(a.agent)}</td></tr>`).join("")}</tbody>
+    <thead><tr><th>Support</th><th>État</th><th>Anomalie</th><th>Agent</th></tr></thead>
+    <tbody>${anomalies.map(a=>`<tr>
+      <td>${escapeHtml(a.support)}</td>
+      <td>${escapeHtml(a.etat)}</td>
+      <td>${escapeHtml(a.desc)}</td>
+      <td>${escapeHtml(a.agent)}</td>
+    </tr>`).join("")}</tbody>
   </table>
   <footer>Rapport généré le ${escapeHtml(date)}</footer>
   <script>window.onload=()=>window.print();<\/script></body></html>`);
   w.document.close();
 }
 
+
 /* 👁️ Consultation des anomalies d'un véhicule (lecture seule) */
-function openVehiculeAnomalies(vehName){
+function openVehiculeAnomalies(vehName, typeHint){
   try{
     const session = JSON.parse(localStorage.getItem("csver_session") || "null");
     if(!session){ alert("Session expirée."); return; }
     const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
+
     const vehs = JSON.parse(localStorage.getItem("vehicules_"+cisSel) || "[]");
-    const veh = vehs.find(v => String(v.nom||"").toLowerCase() === String(vehName||"").toLowerCase());
+    const mats = JSON.parse(localStorage.getItem("materiel_"+cisSel) || "[]");
+
+    let source = null;
+    let isMateriel = false;
+
+    // si on sait que c'est du matériel, on commence par là
+    if(typeHint === "materiel"){
+      source = mats.find(m => String(m.nom||"").toLowerCase() === String(vehName||"").toLowerCase());
+      isMateriel = !!source;
+    }
+    if(!source){
+      // sinon on cherche dans les véhicules
+      source = vehs.find(v => String(v.nom||"").toLowerCase() === String(vehName||"").toLowerCase());
+      isMateriel = false;
+      if(!source){
+        // dernier recours : matériel
+        source = mats.find(m => String(m.nom||"").toLowerCase() === String(vehName||"").toLowerCase());
+        if(source) isMateriel = true;
+      }
+    }
+
     const title = document.getElementById("anom-title");
     const tbody = document.getElementById("anom-tbody");
-    title.textContent = "Anomalies (en cours) — " + (veh ? (veh.nom || vehName) : vehName);
+    title.textContent = (isMateriel ? "Anomalies matériel — " : "Anomalies (en cours) — ") + (source ? (source.nom || vehName) : vehName);
     tbody.innerHTML = "";
 
-    if(!veh || !Array.isArray(veh.history) || veh.history.length === 0){
-      tbody.innerHTML = "<tr><td colspan='5' style='padding:10px;color:#666;'>Aucune anomalie en cours pour ce véhicule.</td></tr>";
+    if(!source || !Array.isArray(source.history)){
+      tbody.innerHTML = "<tr><td colspan='5' style='padding:10px;color:#666;'>Aucune anomalie en cours.</td></tr>";
     }else{
-      const rows = [...veh.history]
+      const rows = [...source.history]
         .filter(h => !h.closed)
         .sort((a,b)=>{
           const ta = a.timestamp||a.date||0, tb = b.timestamp||b.date||0;
@@ -1513,34 +1613,36 @@ function openVehiculeAnomalies(vehName){
         });
 
       if(rows.length === 0){
-        tbody.innerHTML = "<tr><td colspan='5' style='padding:10px;color:#666;'>Aucune anomalie en cours pour ce véhicule.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='5' style='padding:10px;color:#666;'>Aucune anomalie en cours.</td></tr>";
+      }else{
+        rows.forEach(h=>{
+          const tr = document.createElement("tr");
+          const statut = "Ouverte";
+          const niveau = h.level || "-";
+          const desc   = h.text || "-";
+          const agent  = h.agent || "-";
+          let dateTxt = "-";
+          if(h.date){ dateTxt = h.date; }
+
+          tr.innerHTML = `
+            <td>${escapeHtml(dateTxt)}</td>
+            <td>${escapeHtml(agent)}</td>
+            <td>${escapeHtml(desc)}</td>
+            <td>${escapeHtml(niveau)}</td>
+            <td>${escapeHtml(statut)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
       }
-      rows.forEach(h=>{
-        const tr = document.createElement("tr");
-        const statut = "Ouverte";
-        const niveau = h.level || "-";
-        const desc   = h.text || "-";
-        const agent  = h.agent || "-";
-        let dateTxt = "-";
-        if(h.date){ dateTxt = h.date; }
-        else if(h.timestamp){ try{ const d = new Date(h.timestamp); dateTxt = d.toLocaleString("fr-FR"); }catch(_){ } }
-        tr.innerHTML = `
-          <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(statut)}</td>
-          <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(niveau)}</td>
-          <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(desc)}</td>
-          <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(agent)}</td>
-          <td style="padding:8px;border-bottom:1px solid #eee;">${escapeHtml(dateTxt)}</td>
-        `;
-        document.getElementById("anom-tbody").appendChild(tr);
-      });
     }
 
     const modal = document.getElementById("anom-modal");
     if(modal){ modal.style.display = "flex"; }
   }catch(e){
-    alert("Impossible d'afficher les anomalies de ce véhicule.");
+    alert("Impossible d'afficher les anomalies.");
   }
 }
+
 
 /* 📝 Main courante : collecte anomalies + entrées personnalisées */
 function renderJournal(){
@@ -1548,10 +1650,14 @@ function renderJournal(){
     const session = JSON.parse(localStorage.getItem("csver_session") || "null");
     if(!session){ return; }
     const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
-    const vehs = JSON.parse(localStorage.getItem("vehicules_"+cisSel) || "[]");
-    const custom = JSON.parse(localStorage.getItem("journal_"+cisSel) || "[]");
+
+    const vehs   = JSON.parse(localStorage.getItem("vehicules_"+cisSel) || "[]");
+    const mats   = JSON.parse(localStorage.getItem("materiel_"+cisSel)  || "[]");
+    const custom = JSON.parse(localStorage.getItem("journal_"+cisSel)   || "[]");
 
     let entries = [];
+
+    // 🚒 Anomalies véhicules
     vehs.forEach(v=>{
       (v.history||[]).forEach(h=>{
         const createdTs = h.timestamp ? Number(h.timestamp) : (Date.parse(h.date||"") || 0);
@@ -1576,6 +1682,32 @@ function renderJournal(){
       });
     });
 
+    // 🏭 Anomalies matériel
+    (mats||[]).forEach(m=>{
+      (m.history||[]).forEach(h=>{
+        const createdTs = h.timestamp ? Number(h.timestamp) : (Date.parse(h.date||"") || 0);
+        const closedTs  = h.closedTs ? Number(h.closedTs) : 0;
+
+        if(h.closed){
+          entries.push({
+            type: "ANOMALIE",
+            ts: closedTs || createdTs,
+            title: "Anomalie matériel clôturée — " + (m.nom||"-"),
+            text: (h.level?("[" + h.level + "] "):"") + (h.text||"-") + (h.closedBy ? (" — clôturée par " + h.closedBy) : "")
+          });
+        }else{
+          const who = h.agent ? (" — par " + h.agent) : "";
+          entries.push({
+            type: "ANOMALIE",
+            ts: createdTs,
+            title: "Anomalie matériel signalée — " + (m.nom||"-"),
+            text: (h.level?("[" + h.level + "] "):"") + (h.text||"-") + who
+          });
+        }
+      });
+    });
+
+    // 📝 Entrées personnalisées déjà existantes
     if(Array.isArray(custom)){
       custom.forEach(e=>{
         entries.push({
@@ -1587,7 +1719,7 @@ function renderJournal(){
       });
     }
 
-    /* ❗ Exclure les FMA de la main courante opérationnelle (affichées à gauche) */
+    // ❗ Exclure les FMA
     entries = entries.filter(e => String(e.type||"").toUpperCase() !== "FMA");
 
     entries.sort((a,b)=> (Number(b.ts||0) - Number(a.ts||0)) );
@@ -1611,19 +1743,21 @@ function renderJournal(){
 
       const body = document.createElement("div");
       body.className = "body";
-      const dateTxt = e.ts ? new Date(e.ts).toLocaleString("fr-FR") : "—";
-      body.innerHTML = `
-        <div class="title">${escapeHtml(e.title||"Activité")}</div>
-        <div class="text">${escapeHtml(e.text||"")}</div>
-        <div class="date">${escapeHtml(dateTxt)}</div>
-      `;
+      const dateTxt = e.ts ? new Date(e.ts).toLocaleString("fr-FR") : "";
+      body.innerHTML = `<div class="title">${escapeHtml(e.title||"")}</div>
+                        <div class="text">${escapeHtml(e.text||"")}</div>
+                        <div class="date">${escapeHtml(dateTxt)}</div>`;
 
       wrap.appendChild(icon);
       wrap.appendChild(body);
       list.appendChild(wrap);
     });
-  }catch(_){}
+
+  }catch(e){
+    console.error("renderJournal error", e);
+  }
 }
+
 
 /* 📌 Panneau gauche : Consignes du jour (à la place des FMA) */
 function renderFormations(){
@@ -1949,6 +2083,9 @@ function purgeJournal(scope, evt){  // 🔐 super admin 1414 OU admin du centre
   // ===== Lecture brute =====
   const journal = JSON.parse(localStorage.getItem(keyJournal)||"[]");
   const vehs    = JSON.parse(localStorage.getItem(keyVehs)||"[]");
+  const keyMat = "materiel_"+cisSel;
+renderMateriel(JSON.parse(localStorage.getItem(keyMat)||"[]"));
+
 
   // 🔁 Réservations
   const reservationsRaw = (() => {
