@@ -1625,7 +1625,7 @@ function renderJournal(){
   }catch(_){}
 }
 
-/* 📌 Panneau gauche : Consignes du jour (à la place des FMA) */
+/* 📌 Panneau gauche : Consignes du jour + réservations véhicules du créneau */
 function renderFormations(){
   try{
     const session = JSON.parse(localStorage.getItem("csver_session")||"null");
@@ -1694,6 +1694,205 @@ function renderFormations(){
         default:     return "—";
       }
     };
+
+    /* ---------- Calcul de la garde en cours (07h → 07h) ---------- */
+    function isActiveNow(consigne){
+      if(!consigne) return false;
+
+      const start = consigne.dateDebut || todayIso;
+      const end   = consigne.dateFin || consigne.dateDebut || todayIso;
+      if(end < todayIso) return false;
+
+      const now = new Date();
+      const hour = now.getHours();
+      const minutes = now.getMinutes();
+      const hm = hour + minutes/60;
+
+      let serviceDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if(hour < 7){
+        serviceDate.setDate(serviceDate.getDate() - 1);
+      }
+      const p = n=>String(n).padStart(2,"0");
+      const serviceIso =
+        `${serviceDate.getFullYear()}-${p(serviceDate.getMonth()+1)}-${p(serviceDate.getDate())}`;
+
+      if(start > serviceIso || end < serviceIso) return false;
+
+      const valid = consigne.validite || "24h";
+      if(valid === "jour"){
+        return hm >= 7 && hm < 19;
+      }
+      if(valid === "nuit"){
+        return hm >= 19 || hm < 7;
+      }
+      return true; // 24h
+    }
+
+    /* ---------- CONSIGNES actives sur le créneau ---------- */
+    const todayConsignes = consignes
+      .filter(c => c && c.cis === cisSel)
+      .filter(isActiveNow)
+      .sort((a,b)=>{
+        // Tri : importance puis date début (récentes d’abord)
+        const ordImp = {haute:0, moyenne:1, faible:2};
+        const ia = ordImp[a.importance] ?? 99;
+        const ib = ordImp[b.importance] ?? 99;
+        if(ia !== ib) return ia - ib;
+        const da = a.dateDebut || "";
+        const db = b.dateDebut || "";
+        return db.localeCompare(da);
+      });
+
+    /* ---------- RÉSERVATIONS VÉHICULES sur le même créneau ---------- */
+    const keyRes = "reservations_"+cisSel;
+    let rawRes;
+    try{
+      rawRes = JSON.parse(localStorage.getItem(keyRes) || "[]");
+    }catch(_){
+      rawRes = [];
+    }
+
+    let reservations = [];
+    if(Array.isArray(rawRes)){
+      reservations = rawRes;
+    }else if(rawRes && typeof rawRes === "object"){
+      const keys = Object.keys(rawRes);
+      if(keys.length && keys.every(k => /^\d+$/.test(k))){
+        reservations = keys.sort((a,b)=>Number(a)-Number(b)).map(k => rawRes[k]);
+      }
+    }
+
+    // Fenêtre de garde : de 07:00 (serviceBase) à 07:00 le lendemain
+    const now = new Date();
+    const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if(now.getHours() < 7){
+      base.setDate(base.getDate()-1);
+    }
+    const guardStart = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 7, 0, 0, 0);
+    const guardEnd   = new Date(guardStart.getTime() + 24*60*60*1000);
+
+    function reservationInGuard(r){
+      if(!r) return false;
+      if((r.status || "pending") !== "approved") return false; // uniquement ACCEPTÉES
+
+      const dStartStr = r.dateDebut || r.date;
+      const dEndStr   = r.dateFin   || r.dateDebut || r.date;
+      if(!dStartStr) return false;
+
+      const h1 = r.h1 || "00:00";
+      const h2 = r.h2 || "23:59";
+
+      const start = new Date(dStartStr + "T" + h1);
+      const end   = new Date((dEndStr || dStartStr) + "T" + h2);
+      if(isNaN(start) || isNaN(end)) return false;
+
+      // chevauchement de la garde
+      return start < guardEnd && end > guardStart;
+    }
+
+    const guardReservations = reservations
+      .filter(r => r && r.cis === cisSel)
+      .filter(reservationInGuard)
+      .sort((a,b)=>{
+        const aKey = (a.dateDebut||a.date||"") + "T" + (a.h1||"00:00");
+        const bKey = (b.dateDebut||b.date||"") + "T" + (b.h1||"00:00");
+        return aKey.localeCompare(bKey);
+      });
+
+    /* ---------- Rendu dans le panneau ---------- */
+    list.innerHTML = "";
+
+    if(todayConsignes.length === 0 && guardReservations.length === 0){
+      list.innerHTML =
+        `<p style="color:#666;font-size:13px;">
+          Aucune consigne particulière ni réservation véhicule pour la garde en cours (${fmtDateFR(todayIso)}).
+        </p>`;
+      return;
+    }
+
+    // 🧾 Consignes
+    todayConsignes.forEach(c=>{
+      const wrap = document.createElement("div");
+      wrap.className = "journal-item";
+
+      const body = document.createElement("div");
+      body.className = "body";
+
+      const periode =
+        c.dateDebut && c.dateFin
+          ? `Du ${fmtDateFR(c.dateDebut)} au ${fmtDateFR(c.dateFin)}`
+          : c.dateDebut
+            ? `À partir du ${fmtDateFR(c.dateDebut)}`
+            : "Période non renseignée";
+
+      const impColor = importanceToColor(c.importance);
+      const impLabel = importanceToLabel(c.importance);
+      const validTxt = validiteLabel(c.validite);
+      const servTxt  = serviceLabel(c.serviceOrigine);
+
+      const dateTxt = `Validité : ${validTxt} — ${periode}`;
+      const metaTxt = `Origine : ${servTxt} — Importance : ${impLabel}`;
+
+      body.innerHTML = `
+  <div class="title" style="display:flex;align-items:center;gap:6px;">
+    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${impColor};"></span>
+    ${escapeHtml(c.titre || "Consigne")}
+  </div>
+  <div class="text">${escapeHtml(c.contenu || "")}</div>
+`;
+
+      wrap.appendChild(body);
+      list.appendChild(wrap);
+    });
+
+    // 🚗 Réservations véhicules (garde en cours)
+    if(guardReservations.length){
+      const wrap = document.createElement("div");
+      wrap.className = "journal-item";
+
+      const body = document.createElement("div");
+      body.className = "body";
+
+      const itemsHtml = guardReservations.map(r=>{
+        const dateTxt =
+          (r.dateDebut && r.dateFin && r.dateDebut !== r.dateFin)
+            ? `Du ${fmtDateFR(r.dateDebut)} au ${fmtDateFR(r.dateFin)}`
+            : fmtDateFR(r.dateDebut || r.date);
+
+        const heureTxt = (r.h1 && r.h2)
+          ? `${escapeHtml(r.h1)}–${escapeHtml(r.h2)}`
+          : "";
+
+        const veh = r.vehicule || "Véhicule à définir";
+        const agent = r.agent || "";
+        const motif = r.motif ? ` — ${escapeHtml(r.motif)}` : "";
+        const dest  = r.destination ? ` (${escapeHtml(r.destination)})` : "";
+
+        return `
+          <li>
+            <strong>${escapeHtml(veh)}</strong>
+            — ${dateTxt}${heureTxt ? " "+heureTxt : ""}
+            — ${escapeHtml(agent)}${motif}${dest}
+          </li>`;
+      }).join("");
+
+      body.innerHTML = `
+        <div class="title">🚗 Réservations véhicules — garde en cours</div>
+        <div class="text">
+          <ul style="margin:4px 0 0 16px;padding:0;">
+            ${itemsHtml}
+          </ul>
+        </div>
+      `;
+
+      wrap.appendChild(body);
+      list.appendChild(wrap);
+    }
+
+  }catch(e){
+    console.error("Erreur renderFormations/Consignes+Réservations :", e);
+  }
+}
 
    // ✅ Est-ce que la consigne est active MAINTENANT (date + heure + validité + récurrence) ?
 function isActiveNow(c){
