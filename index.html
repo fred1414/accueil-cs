@@ -1249,7 +1249,7 @@ function applyRoleMenus(roleRaw){
 }
 
 /* Chargement initial */
-let cis="",key="";
+let cis = "", key = "", keyMat = "";
 window.addEventListener("DOMContentLoaded", async ()=>{
   // 🔁 On commence par synchroniser avec Firestore
   try{
@@ -1262,6 +1262,7 @@ window.addEventListener("DOMContentLoaded", async ()=>{
   if(!user){alert("Session expirée.");window.location.href="login.html";return;}
   cis=Array.isArray(user.cis)?user.cis[0]:user.cis;
   key="vehicules_"+cis;
+  keyMat = "materiel_" + cis;     
 
   const nomComplet=((user.prenom||"")+" "+(user.nom||"")).trim()||user.matricule;
   document.getElementById("cis-title").textContent=`CISMIC ${cis}`;
@@ -1278,8 +1279,8 @@ if (!isSuperAdmin() && !isAdmin()) {
 }
 
 
-  renderVehicules(JSON.parse(localStorage.getItem(key)||"[]"));
-  renderJournal();
+  renderVehicules(vehicules);
+  renderMateriel(materiel); 
   renderFormations();       // 📘 panneau gauche
   fetchMeteoVergeze();      // 🌤️ bandeau
   setInterval(fetchMeteoVergeze, 30*60*1000); // toutes les 30 min
@@ -1291,6 +1292,7 @@ if (!isSuperAdmin() && !isAdmin()) {
 window.addEventListener("focus",()=>{
   const vehicules=JSON.parse(localStorage.getItem(key)||"[]");
   renderVehicules(vehicules);
+  renderMateriel(materiel);   
   renderJournal();
   renderFormations();
   fetchMeteoVergeze();
@@ -1300,6 +1302,7 @@ window.addEventListener("focus",()=>{
 window.addEventListener("pageshow",()=>{
   const vehicules=JSON.parse(localStorage.getItem(key)||"[]");
   renderVehicules(vehicules);
+  renderMateriel(materiel);   
   renderJournal();
   renderFormations();
   // 👉 Réévalue sur pageshow (Firefox/Back-Forward cache)
@@ -1308,7 +1311,8 @@ window.addEventListener("pageshow",()=>{
 document.addEventListener("visibilitychange",()=>{
   if(!document.hidden){
     const vehicules=JSON.parse(localStorage.getItem(key)||"[]");
-    renderVehicules(vehicules);
+    renderVehicules(vehicules)
+    renderMateriel(materiel);   
     renderJournal();
     renderFormations();
     renderFmaPendingCard();
@@ -1317,17 +1321,31 @@ document.addEventListener("visibilitychange",()=>{
 window.addEventListener("storage",(e)=>{
   try{
     if(!e.key) return;
-    const user=JSON.parse(localStorage.getItem("csver_session")||"null");
+    const user = JSON.parse(localStorage.getItem("csver_session")||"null");
     if(!user) return;
     const cisSel = Array.isArray(user.cis)?user.cis[0]:user.cis;
-    if(e.key===key || e.key==="journal_"+cisSel || e.key==="fma_data_v2"){
-      renderVehicules(JSON.parse(localStorage.getItem(key)||"[]"));
+
+    if(
+      e.key === key ||
+      e.key === "journal_"+cisSel ||
+      e.key === "fma_data_v2" ||
+      e.key === "materiel_"+cisSel       // 👈 nouvelle clé
+    ){
+      const vehicules = JSON.parse(localStorage.getItem(key)               || "[]");
+      const materiel  = JSON.parse(localStorage.getItem("materiel_"+cisSel)|| "[]");
+      renderVehicules(vehicules);
+      renderMateriel(materiel);          // 👈
       renderJournal();
       renderFormations();
       renderFmaPendingCard();
     }
+
+    if(e.key === "consignes_"+cisSel){
+      renderFormations();
+    }
   }catch(_){}
 });
+
 
 /* 🌤️ Open-Meteo pour Vergèze (~43.74, 4.20) — Bandeau centré */
 async function fetchMeteoVergeze(){
