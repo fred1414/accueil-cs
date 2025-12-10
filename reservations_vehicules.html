@@ -396,19 +396,47 @@ header .subtitle{
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="col-3">
+
+        <!-- LIGNE 1 : dates + agent -->
+        <div class="col-2">
+          <label>Date début</label>
+          <input type="date" id="editDateDebut">
+        </div>
+        <div class="col-2">
+          <label>Date fin</label>
+          <input type="date" id="editDateFin">
+        </div>
+        <div class="col-2">
+          <label>Agent</label>
+          <input type="text" id="editAgent">
+        </div>
+
+        <!-- LIGNE 2 : heures -->
+        <div>
+          <label>Heure début</label>
+          <input type="time" id="editHeureDebut" step="3600" min="06:00" max="22:00">
+        </div>
+        <div>
+          <label>Heure fin</label>
+          <input type="time" id="editHeureFin" step="3600" min="06:00" max="22:00">
+        </div>
+        <div></div>
+
+        <!-- LIGNE 3 : véhicule / motif / destination -->
+        <div class="col-2">
           <label>Véhicule</label>
           <select id="editVehSelect" class="select"></select>
         </div>
-        <div class="col-3">
+        <div class="col-2">
           <label>Motif</label>
           <input type="text" id="editMotif">
         </div>
-        <div class="col-3">
+        <div class="col-2">
           <label>Destination / Lieu</label>
           <input type="text" id="editDestination">
         </div>
       </div>
+
       <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
         <button class="small-btn" onclick="closeEditUpcoming()">Annuler</button>
         <button class="small-btn ok" onclick="saveEditUpcoming()">Enregistrer</button>
@@ -826,7 +854,7 @@ function fillVehSelectForEdit(selectEl, selectedId, selectedLabel){
 
 // Ouvre le modal et pré-remplit les champs
 function editUpcoming(id){
-  if(!isManager()) return;
+  if(!isManager()) return; // sécurité
 
   const all = readReservations();
   const r = all.find(x => x.id === id);
@@ -835,9 +863,27 @@ function editUpcoming(id){
   currentEditUpcomingId = id;
 
   const modal      = document.getElementById("editUpcomingModal");
+
+  const inpDateDeb = document.getElementById("editDateDebut");
+  const inpDateFin = document.getElementById("editDateFin");
+  const inpH1      = document.getElementById("editHeureDebut");
+  const inpH2      = document.getElementById("editHeureFin");
+  const inpAgent   = document.getElementById("editAgent");
+
   const selVeh     = document.getElementById("editVehSelect");
   const inpMotif   = document.getElementById("editMotif");
   const inpDest    = document.getElementById("editDestination");
+
+  const dStart = getDateStart(r) || "";
+  const dEnd   = getDateEnd(r)   || dStart || "";
+
+  inpDateDeb.value = dStart;
+  inpDateFin.value = dEnd;
+
+  inpH1.value = r.h1 || "08:00";
+  inpH2.value = r.h2 || "12:00";
+
+  inpAgent.value = r.agent || "";
 
   fillVehSelectForEdit(selVeh, r.vehId, r.vehicule);
   inpMotif.value = r.motif || "";
@@ -863,7 +909,7 @@ function closeEditUpcoming(){
   currentEditUpcomingId = null;
 }
 
-// Enregistre les modifications (véhicule + motif + destination/lieu)
+// Enregistre les modifications (dates/heures/agent/véhicule/motif/destination)
 function saveEditUpcoming(){
   if(!currentEditUpcomingId) return;
 
@@ -873,10 +919,27 @@ function saveEditUpcoming(){
 
   const r = all[idx];
 
+  const inpDateDeb = document.getElementById("editDateDebut");
+  const inpDateFin = document.getElementById("editDateFin");
+  const inpH1      = document.getElementById("editHeureDebut");
+  const inpH2      = document.getElementById("editHeureFin");
+  const inpAgent   = document.getElementById("editAgent");
+
   const selVeh   = document.getElementById("editVehSelect");
   const inpMotif = document.getElementById("editMotif");
   const inpDest  = document.getElementById("editDestination");
 
+  const dateDebut = inpDateDeb.value;
+  const dateFin   = inpDateFin.value;
+
+  let h1 = inpH1.value;
+  let h2 = inpH2.value;
+  h1 = validateFullHour(h1);
+  h2 = validateFullHour(h2);
+  inpH1.value = h1;
+  inpH2.value = h2;
+
+  const agent    = (inpAgent.value || "").trim();
   const vehIdSel = selVeh.value;
   const vehLabel = selVeh.options[selVeh.selectedIndex]
     ? (selVeh.options[selVeh.selectedIndex].getAttribute("data-label") || selVeh.options[selVeh.selectedIndex].text)
@@ -885,6 +948,10 @@ function saveEditUpcoming(){
   const newMotif = (inpMotif.value || "").trim();
   const newDest  = (inpDest.value  || "").trim();
 
+  if(!dateDebut || !dateFin || !h1 || !h2){
+    alert("Veuillez renseigner les dates et heures.");
+    return;
+  }
   if(!vehIdSel){
     alert("Veuillez choisir un véhicule.");
     return;
@@ -893,8 +960,42 @@ function saveEditUpcoming(){
     alert("Motif et destination / lieu sont obligatoires.");
     return;
   }
+  if(!agent){
+    alert("L'agent ne peut pas être vide.");
+    return;
+  }
 
-  const edited = computeTs({...r});
+  const todayStr = new Date().toISOString().slice(0,10);
+  if(dateDebut < todayStr || dateFin < todayStr){
+    alert("Impossible de déplacer une réservation sur une date passée.");
+    return;
+  }
+  if(dateFin < dateDebut){
+    alert("La date de fin doit être après (ou égale à) la date de début.");
+    return;
+  }
+
+  const m1 = toMinutes(h1);
+  const m2 = toMinutes(h2);
+  if(dateDebut === dateFin && m2 <= m1){
+    alert("Pour une réservation sur la même journée, l'heure de fin doit être après l’heure de début.");
+    return;
+  }
+
+  const tsStart = Date.parse(dateDebut + "T" + h1);
+  const tsEnd   = Date.parse(dateFin   + "T" + h2);
+  if(isNaN(tsStart) || isNaN(tsEnd)){
+    alert("Dates ou heures invalides.");
+    return;
+  }
+
+  const edited = {...r};
+  edited.dateDebut = dateDebut;
+  edited.dateFin   = dateFin;
+  edited.date      = dateDebut;
+  edited.h1        = h1;
+  edited.h2        = h2;
+  computeTs(edited);
 
   const conflicts = all
     .filter(x =>
@@ -913,6 +1014,18 @@ function saveEditUpcoming(){
     return;
   }
 
+  // Mise à jour effective
+  r.dateDebut   = dateDebut;
+  r.dateFin     = dateFin;
+  r.date        = dateDebut;
+  r.h1          = h1;
+  r.h2          = h2;
+  r.m1          = m1;
+  r.m2          = m2;
+  r.tsStart     = tsStart;
+  r.tsEnd       = tsEnd;
+
+  r.agent       = agent;
   r.vehId       = vehIdSel;
   r.vehicule    = vehLabel;
   r.motif       = newMotif;
