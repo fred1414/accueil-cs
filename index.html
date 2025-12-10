@@ -1840,68 +1840,6 @@ body.className = "body";
       list.appendChild(wrap);
     });
 
-    // ---------------------------------------------
-    // 🚘 Réservations véhicules ACCEPTÉES aujourd’hui
-    // ---------------------------------------------
-    let todaysRes = [];
-if (typeof getTodayApprovedReservations === "function") {
-  todaysRes = getTodayApprovedReservations();
-} else if (typeof window.getTodayApprovedReservations === "function") {
-  todaysRes = window.getTodayApprovedReservations();
-} else {
-  console.warn("⚠️ getTodayApprovedReservations n’est pas définie");
-}
-
-console.log("📅 Réservations du jour (renderFormations) :", todaysRes);
-
-    if(todaysRes.length){
-      const box = document.createElement("div");
-      box.style.marginTop = "10px";
-      box.style.paddingTop = "10px";
-      box.style.borderTop = "1px dashed #ccc";
-
-      let html = `
-        <div style="font-weight:700;color:#0d2b52;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
-          <span>🚘</span> <span>Réservations véhicules acceptées aujourd’hui</span>
-        </div>
-        <table style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead>
-            <tr>
-              <th style="text-align:left;padding:4px;border-bottom:1px solid #e0e0e0;">Heures</th>
-              <th style="text-align:left;padding:4px;border-bottom:1px solid #e0e0e0;">Véhicule</th>
-              <th style="text-align:left;padding:4px;border-bottom:1px solid #e0e0e0;">Agent</th>
-              <th style="text-align:left;padding:4px;border-bottom:1px solid #e0e0e0;">Motif</th>
-              <th style="text-align:left;padding:4px;border-bottom:1px solid #e0e0e0;">Destination</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-
-      todaysRes
-        .sort((a,b)=> String(a.h1||"").localeCompare(String(b.h1||""))) // tri par heure de début
-        .forEach(r=>{
-          const heures = (r.h1 || "--") + (r.h2 ? "–" + r.h2 : "");
-          html += `
-            <tr>
-              <td style="padding:4px;border-bottom:1px solid #f0f0f0;">${escapeHtml(heures)}</td>
-              <td style="padding:4px;border-bottom:1px solid #f0f0f0;">${escapeHtml(r.vehicule || "—")}</td>
-              <td style="padding:4px;border-bottom:1px solid #f0f0f0;">${escapeHtml(r.agent || "—")}</td>
-              <td style="padding:4px;border-bottom:1px solid #f0f0f0;">${escapeHtml(r.motif || "—")}</td>
-              <td style="padding:4px;border-bottom:1px solid #f0f0f0;">${escapeHtml(r.destination || "—")}</td>
-            </tr>
-          `;
-        });
-
-      html += `
-          </tbody>
-        </table>
-      `;
-
-      box.innerHTML = html;
-      list.appendChild(box);
-    }
-
-    
   }catch(e){
     console.error("Erreur renderFormations/Consignes :", e);
   }
@@ -3170,55 +3108,18 @@ window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
     }catch(_){ return null; }
   }
 
-  // Accepte soit un tableau, soit un objet { "0": {.}, "1": {.} }
-function rawToArray(raw){
-  if(Array.isArray(raw)) return raw;
-  if(raw && typeof raw === "object"){
-    const keys = Object.keys(raw);
-    if(keys.length && keys.every(k => /^\d+$/.test(k))){
-      return keys.sort((a,b)=>Number(a)-Number(b)).map(k => raw[k]);
+  // Accepte soit un tableau, soit un objet { "0": {...}, "1": {...} }
+  function rawToArray(raw){
+    if(Array.isArray(raw)) return raw;
+    if(raw && typeof raw === "object"){
+      const keys = Object.keys(raw);
+      if(keys.length && keys.every(k => /^\d+$/.test(k))){
+        return keys.sort((a,b)=>Number(a)-Number(b)).map(k => raw[k]);
+      }
     }
-  }
-  return [];
-}
-
-// 👉 version GLOBALE
-window.getTodayApprovedReservations = function(){
-  const cisSel = getCurrentCis();
-  if(!cisSel) return [];
-
-  const keyRes = "reservations_" + cisSel;
-  let raw;
-  try{
-    raw = JSON.parse(localStorage.getItem(keyRes) || "[]");
-  }catch(_){
-    raw = [];
+    return [];
   }
 
-  const arr = rawToArray(raw);
-
-  const today = new Date();
-  const p = n => String(n).padStart(2, "0");
-  const todayIso = `${today.getFullYear()}-${p(today.getMonth()+1)}-${p(today.getDate())}`;
-
-  // On garde les réservations ACCEPTÉES dont la plage couvre todayIso
-  const res = arr.filter(r => {
-    if(!r || r.status !== "approved") return false;
-
-    const start = (r.dateDebut || r.date || "").slice(0,10);
-    const end   = (r.dateFin   || r.dateDebut || r.date || start).slice(0,10);
-    if(!start) return false;
-
-    return todayIso >= start && todayIso <= end;
-  });
-
-  console.log("🚘 getTodayApprovedReservations →", res);
-  return res;
-};
-
-  }
-
-  
   // Renvoie un objet { "YYYY-MM-DD": [ réservations ce jour ] } pour le mois affiché
   function buildReservationMap(year, monthIndex){
     const cisSel = getCurrentCis();
