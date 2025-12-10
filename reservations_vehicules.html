@@ -313,26 +313,35 @@ header .subtitle{
   </section>
 
   <!-- A VENIR -->
-  <section class="panel">
-    <div class="headerline">
-      <h2>⏭️ Réservations à venir</h2>
-      <div class="modal-actions">
-        <button class="small-btn" onclick="openHistory()">📚 Historique</button>
-        <button id="btnPurgeAll" class="small-btn danger" style="display:none" onclick="purgeAllReservations()">🗑️ Purger toutes les réservations</button>
-      </div>
+ <section class="panel">
+  <div class="headerline">
+    <h2>⏭️ Réservations à venir</h2>
+    <div class="modal-actions">
+      <button class="small-btn" onclick="openHistory()">📚 Historique</button>
+      <button id="btnPurgeAll" class="small-btn danger" style="display:none" onclick="purgeAllReservations()">🗑️ Purger toutes les réservations</button>
     </div>
-    <div style="overflow:auto">
-      <table class="table" id="upcomingTable">
-        <thead>
-          <tr>
-            <th>Date</th><th>Heures</th><th>Véhicule</th><th>Agent</th><th>Motif</th><th>Destination</th><th>Statut</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    <p class="help">Affiche uniquement les réservations <strong>acceptées</strong> dont le créneau n’est pas encore terminé.</p>
-  </section>
+  </div>
+  <div style="overflow:auto">
+    <table class="table" id="upcomingTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Heures</th>
+          <th>Véhicule</th>
+          <th>Agent</th>
+          <th>Motif</th>
+          <th>Destination</th>
+          <th>Statut</th>
+          <!-- 👉 NOUVELLE COLONNE -->
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <p class="help">Affiche uniquement les réservations <strong>acceptées</strong> dont le créneau n’est pas encore terminé.</p>
+</section>
+
 
 </main>
 
@@ -739,7 +748,7 @@ function renderUpcoming(){
     .sort((a,b)=> a.tsStart - b.tsStart);
 
   tbody.innerHTML = rows.map(r=>`
-    <tr>
+    <tr data-id="${r.id}">
       <td>${fmtDateRange(getDateStart(r), getDateEnd(r))}</td>
       <td>${r.h1}–${r.h2}</td>
       <td>${r.vehicule ? escapeHtml(r.vehicule) : "—"}</td>
@@ -747,9 +756,47 @@ function renderUpcoming(){
       <td>${escapeHtml(r.motif||"-")}</td>
       <td>${escapeHtml(r.destination||"-")}</td>
       <td>${statusBadge(r.status)}</td>
+      <td class="actions">
+        <button class="small-btn warn" onclick="editUpcoming('${r.id}')">Modifier</button>
+        <button class="small-btn danger" onclick="deleteUpcoming('${r.id}')">Supprimer</button>
+      </td>
     </tr>
-  `).join("") || `<tr><td colspan="7" style="color:#666;padding:10px">Aucune réservation acceptée à venir.</td></tr>`;
+  `).join("") || `<tr><td colspan="8" style="color:#666;padding:10px">Aucune réservation acceptée à venir.</td></tr>`;
 }
+
+  // Modifier une réservation à venir (simple : motif + destination)
+function editUpcoming(id){
+  const all = readReservations();
+  const idx = all.findIndex(r => r.id === id);
+  if (idx < 0) return;
+
+  const r = all[idx];
+
+  const newMotif = prompt("Modifier le motif :", r.motif || "");
+  if (newMotif === null) return; // annulé
+
+  const newDest = prompt("Modifier la destination :", r.destination || "");
+  if (newDest === null) return; // annulé
+
+  all[idx].motif = newMotif.trim();
+  all[idx].destination = newDest.trim();
+
+  // On recalcule les timestamps au cas où
+  computeTs(all[idx]);
+  saveReservations(all);
+  renderUpcoming();
+  renderHistory(); // optionnel, pour garder l'historique cohérent si besoin
+}
+
+// Supprimer (en réalité : marquer comme refusée pour garder une trace)
+function deleteUpcoming(id){
+  if(!confirm("Voulez-vous vraiment supprimer (annuler) cette réservation ?")){
+    return;
+  }
+  // On réutilise ta logique existante de changement de statut
+  setStatus(id, "rejected");
+}
+
 
 function openHistory(){
   const m=document.getElementById("histModal"); if(!m) return;
@@ -922,5 +969,6 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 
 </body>
 </html>
+
 
 
