@@ -3232,22 +3232,9 @@ window.addEventListener("focus", ()=>renderMailOverlay());
 window.addEventListener("pageshow", ()=>renderMailOverlay());
 window.addEventListener("storage",(e)=>{
   try{
-    if(!e.key) return;
-    const user=JSON.parse(localStorage.getItem("csver_session")||"null");
-    if(!user) return;
-    const cisSel = Array.isArray(user.cis)?user.cis[0]:user.cis;
-
-    if(e.key===key || e.key==="journal_"+cisSel || e.key==="fma_data_v2"){
-      renderVehicules(JSON.parse(localStorage.getItem(key)||"[]"));
-      renderJournal();
-      renderFormations();
-      renderFmaPendingCard();
-    }
-
-    // 🔁 On rafraîchit le panneau 📌 Consignes
-    //    si les consignes OU les réservations véhicules changent
-    if(e.key === "consignes_"+cisSel || e.key === "reservations_"+cisSel){
-      renderFormations();
+    const ctx = mailCtx(); if(!ctx) return;
+    if(e.key === ctx.keyLocal || e.key === ctx.keyGlobal){
+      renderMailOverlay();
     }
   }catch(_){}
 });
