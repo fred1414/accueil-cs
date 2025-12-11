@@ -2116,15 +2116,26 @@ function renderFormations(){
         const body = document.createElement("div");
         body.className = "body";
 
-        const veh   = r.vehicule || "Véhicule à définir";
-        const agent = r.agent || "";
-        const motif = r.motif || "";
-        const dest  = r.destination || "";
+       const veh   = r.vehicule || "Véhicule à définir";
+const agent = r.agent || "";
+const motif = r.motif || "";
+const dest  = r.destination || "";
+const h1    = r.h1 || "";
+const h2    = r.h2 || "";
 
-        let line = `${veh} réservé`;
-        if(agent) line += ` par ${agent}`;
-        if(motif) line += ` pour ${motif}`;
-        if(dest)  line += ` à ${dest}`;
+let line = veh;
+
+// Ajout des heures si disponibles
+if(h1 && h2){
+  line += ` (${h1}–${h2})`;
+}
+
+line += " réservé";
+
+if(agent) line += ` par ${agent}`;
+if(motif) line += ` pour ${motif}`;
+if(dest)  line += ` à ${dest}`;
+
 
         body.innerHTML = `
   <div class="title">${escapeHtml(line)}</div>
