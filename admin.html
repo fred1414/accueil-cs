@@ -564,7 +564,7 @@ function makePermCheckboxes(prefix, obj){
   const LABELS = {
     agent:"Agent du centre", sog:"SOG", formation:"Formation", fdf:"FDF", pharma:"Pharmacie",
     habillement:"Habillement", gestion_habillement:"Gestion habillement", gestion_stages:"Gestion stages",
-    mnr:"MNR", véhicules:"Véhicules", atelier:"Atelier", magasin:"Magasin",
+    mnr:"MNR", véhicules:"Véhicules", patrimoine:"Patrimoine", magasin:"Magasin",
     saisie_fma:"Saisie FMA", admin:"Administrateur"
   };
   const box = (k) => {
@@ -1062,7 +1062,7 @@ function saveUser(){
         const label = x.parentElement && x.parentElement.textContent ? x.parentElement.textContent.trim() : "";
         const mapR = {"Agent du centre":"agent","SOG":"sog","Formation":"formation","FDF":"fdf","Pharmacie":"pharma",
           "Habillement":"habillement","Gestion habillement":"gestion_habillement","Gestion stages":"gestion_stages",
-          "MNR":"mnr","Véhicules":"véhicules","Atelier":"atelier","Magasin":"magasin",
+          "MNR":"mnr","Véhicules":"véhicules","Patrimoine":"patrimoine","Magasin":"magasin",
           "Saisie FMA":"saisie_fma","Administrateur":"admin"};
         const key = mapR[label] || "";
         if(key) o[key]=x.checked;
