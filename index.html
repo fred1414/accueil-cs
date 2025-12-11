@@ -1913,9 +1913,9 @@ function isActiveNow(c){
   const now = new Date();
   const hour = now.getHours();
 
-  // "Jour de garde" = de 07h à 07h (J+1)
+  // "Jour de garde" = de 06h à 06h (J+1)
   const serviceBase = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  if(hour < 7){
+  if(hour < 6){
     serviceBase.setDate(serviceBase.getDate() - 1);
   }
   const p = n => String(n).padStart(2,"0");
@@ -1974,17 +1974,17 @@ function isActiveNow(c){
 
   const validite = c.validite || "24h";
 
-  // Jour : seulement entre 07h et 19h
+  // Jour : seulement entre 06h et 18h
   if(validite === "jour"){
-    return (hour >= 7 && hour < 19);
+    return (hour >= 6 && hour < 18);
   }
 
-  // Nuit : 19h → 07h
+  // Nuit : 18h → 06h
   if(validite === "nuit"){
-    return (hour >= 19 || hour < 7);
+    return (hour >= 18 || hour < 6);
   }
 
-  // 24h : toute la garde, de 07h à 07h
+  // 24h : toute la garde, de 06h à 06h
   return true;
 }
 
