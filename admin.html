@@ -555,7 +555,7 @@ function removeSecondary(u,cisName){
 }
 
 /* Permissions helpers */
-const PERM_KEYS = ["agent","sog","formation","fdf","pharma","habillement","gestion_habillement","gestion_stages","mnr","véhicules","atelier","magasin","saisie_fma","admin"];
+const PERM_KEYS = ["agent","sog","formation","fdf","pharma","habillement","gestion_habillement","gestion_stages","mnr","véhicules","patrimoine","magasin","saisie_fma","admin"];
 function defaultPerms(){
   const o={}; PERM_KEYS.forEach(k=>o[k]=false); return o;
 }
