@@ -388,21 +388,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="cloud-storage.js"></script>
   
-<script>
-  document.documentElement.style.display = "none";
-
-  window.addEventListener("DOMContentLoaded", () => {
-    try {
-      if (typeof isAdminRole === "function" && isAdminRole()) {
-        document.documentElement.style.display = "block";
-      } else {
-        window.location.replace("index.html");
-      }
-    } catch (e) {
-      window.location.replace("index.html");
-    }
-  });
-</script>
 
 
 
