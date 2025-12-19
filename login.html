@@ -8,64 +8,61 @@
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-* { box-sizing:border-box; font-family:'Inter',sans-serif; margin:0; padding:0; }
-body {
-  background: linear-gradient(135deg,#004aad,#d32f2f);
-  display:flex; justify-content:center; align-items:center;
-  height:100vh; color:#fff;
+*{box-sizing:border-box;font-family:'Inter',sans-serif;margin:0;padding:0}
+body{
+  background:linear-gradient(135deg,#004aad,#d32f2f);
+  display:flex;justify-content:center;align-items:center;
+  height:100vh;color:#fff;
 }
-.login-box {
-  background:#ffffffee; color:#222;
-  border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.3);
-  padding:40px 50px; width:100%; max-width:420px; text-align:center;
+.login-box{
+  background:#ffffffee;color:#222;
+  border-radius:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.3);
+  padding:40px 50px;
+  width:100%;max-width:420px;
+  text-align:center;
 }
-.login-box img { height:100px; margin-bottom:15px; }
-.login-box h2 { font-size:24px; color:#004aad; margin-bottom:20px; font-weight:700; }
-.login-box input, select {
-  width:100%; padding:12px; margin:8px 0;
-  border:1px solid #ccc; border-radius:8px; font-size:15px;
+.login-box img{height:100px;margin-bottom:15px}
+.login-box h2{font-size:24px;color:#004aad;margin-bottom:20px;font-weight:700}
+.login-box input,select{
+  width:100%;padding:12px;margin:8px 0;
+  border:1px solid #ccc;border-radius:8px;font-size:15px
 }
-.login-box button {
-  width:100%; padding:12px; background:#d32f2f;
-  color:#fff; border:none; border-radius:8px; font-size:16px;
-  font-weight:600; cursor:pointer;
+.login-box button{
+  width:100%;padding:12px;background:#d32f2f;
+  color:#fff;border:none;border-radius:8px;
+  font-size:16px;font-weight:600;cursor:pointer
 }
-.login-box button:hover { background:#b71c1c; }
-.muted { font-size:13px; color:#555; margin-top:10px; }
-.field-label { text-align:left; font-size:14px; font-weight:600; color:#004aad; margin-top:4px; }
-.muted a { color:#004aad; text-decoration:underline; cursor:pointer; }
+.login-box button:hover{background:#b71c1c}
+.muted{font-size:13px;color:#555;margin-top:10px}
+.field-label{text-align:left;font-size:14px;font-weight:600;color:#004aad;margin-top:4px}
+.muted a{color:#004aad;text-decoration:underline;cursor:pointer}
 </style>
 </head>
 
 <body>
 
 <div class="login-box">
-  <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png" alt="Logo SDIS 30">
+  <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png" alt="">
   <h2>Connexion — CISMIC</h2>
 
-  <input id="matricule" type="text" placeholder="Matricule" autocomplete="username">
+  <input id="matricule" type="text" placeholder="Matricule">
+  <input id="password" type="password" placeholder="Mot de passe">
 
-  <div id="cis-container" style="display:none;">
-    <div class="field-label">CIS</div>
-    <select id="cisSelect"></select>
-  </div>
-
-  <input id="password" type="password" placeholder="Mot de passe" autocomplete="current-password">
   <button onclick="login()">Se connecter</button>
 
   <p class="muted">Mot de passe provisoire : <code>temp&lt;matricule&gt;</code></p>
-  <p class="muted"><a onclick="forgotWithQuestion(event)">Mot de passe oublié ? Répondre à ma question</a></p>
 </div>
 
-<!-- Firebase SDK -->
+<!-- ================= Firebase ================= -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 
 <script>
-/* 🔥 INITIALISATION FIREBASE — STRICTEMENT NÉCESSAIRE */
+/* 🔥 Firebase init — OBLIGATOIRE */
 const firebaseConfig = {
-  apiKey: "AIzaSyD1IxHONTei5-T0t1XrvQ1RC_gCcih4A7T4",
+  apiKey: "TA_CLE_API_ICI",
   authDomain: "accueil-cs.firebaseapp.com",
   projectId: "accueil-cs",
   storageBucket: "accueil-cs.firebasestorage.app",
@@ -78,25 +75,107 @@ if (!firebase.apps.length) {
 }
 </script>
 
+<!-- ================= Cloud storage ================= -->
 <script src="cloud-storage.js"></script>
 
+<!-- ================= Login logic ================= -->
 <script>
 const INDEX_PATH = "index.html";
 
-/* 🔐 Firebase Auth anonyme */
-let __anonAuthReady = false;
-async function ensureAnonymousAuth(){
-  if(__anonAuthReady) return;
+/* ---------- auth anonyme GARANTIE ---------- */
+let authReady = false;
+async function ensureAnonAuth(){
+  if(authReady) return;
   if(!firebase.auth().currentUser){
     await firebase.auth().signInAnonymously();
   }
-  __anonAuthReady = true;
+  authReady = true;
 }
 
-/* ====== LE RESTE DE TON CODE EST STRICTEMENT IDENTIQUE ====== */
-/* hash, pbkdf2Hash, genSalt, normalizeUser, loadUser, saveUser,
-   preloadCis, login, forgotWithQuestion */
-/* 👉 RIEN N’A ÉTÉ MODIFIÉ DANS LA LOGIQUE */
+/* ---------- hash ---------- */
+async function hash(text){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+/* ---------- normalize ---------- */
+function normalizeUser(u){
+  const r = JSON.parse(JSON.stringify(u||{}));
+  r.cis = r.cis || { primary:"", secondaries:[] };
+  r.role = r.role || "agent";
+  return r;
+}
+
+/* ---------- load ---------- */
+async function loadUser(matricule){
+  await ensureAnonAuth();
+  const key = "csver_user_" + matricule;
+
+  const cloud = await cloudGetJSON(key, null);
+  if(cloud){
+    localStorage.setItem(key, JSON.stringify(cloud));
+    return cloud;
+  }
+
+  const local = localStorage.getItem(key);
+  return local ? JSON.parse(local) : null;
+}
+
+/* ---------- login ---------- */
+async function login(){
+  const matricule = document.getElementById("matricule").value.trim();
+  const password  = document.getElementById("password").value.trim();
+
+  if(!matricule || !password){
+    alert("Champs requis.");
+    return;
+  }
+
+  const userData = await loadUser(matricule);
+  if(!userData){
+    alert("Matricule inconnu.");
+    return;
+  }
+
+  const user = normalizeUser(userData);
+
+  if(!user.hash){
+    if(password !== "temp"+matricule){
+      alert("Mot de passe provisoire incorrect.");
+      return;
+    }
+
+    const p1 = prompt("Nouveau mot de passe :");
+    const p2 = prompt("Confirmer le mot de passe :");
+    if(!p1 || p1 !== p2){
+      alert("Erreur mot de passe.");
+      return;
+    }
+
+    user.hash = await hash(p1);
+    localStorage.setItem("csver_user_"+matricule, JSON.stringify(user));
+    await cloudSetJSON("csver_user_"+matricule, user);
+
+    alert("Mot de passe défini. Reconnecte-toi.");
+    return;
+  }
+
+  if(await hash(password) !== user.hash){
+    alert("Mot de passe incorrect.");
+    return;
+  }
+
+  localStorage.setItem("csver_session", JSON.stringify({
+    matricule,
+    prenom: user.prenom || "",
+    nom: user.nom || "",
+    cis: user.cis.primary,
+    role: user.role,
+    cis_all: user.cis
+  }));
+
+  window.location.href = INDEX_PATH;
+}
 </script>
 
 </body>
