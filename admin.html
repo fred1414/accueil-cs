@@ -1,5 +1,8 @@
 <!DOCTYPE html> 
 <html lang="fr">
+<style>
+  html { display: none; }
+</style>
 
 </style>
 <head>
@@ -382,7 +385,30 @@
 <!-- 🔌 Firebase + Firestore + stockage partagé -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<!-- Add firebase-auth for authentication -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="cloud-storage.js"></script>
+  
+<script>
+firebase.auth().onAuthStateChanged(async (user) => {
+    if (!user) {
+      window.location.replace("login.html");
+      return;
+    }
+
+    // Collect custom claims
+    const tokenResult = await user.getIdTokenResult(true);
+
+    // If not Admin -> back to index
+    if (!tokenResult.claims.admin) {
+      window.location.replace("index.html");
+      return;
+    }
+
+    // Admin : ok
+    document.documentElement.style.display = "block";
+  });
+</script>
 
 <script>
 /* ===================================================
