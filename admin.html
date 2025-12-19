@@ -671,7 +671,7 @@ function renderTable(filter=""){
 
       let actionsHTML = "";
       if (!protectedUser || ownerSession) {
-        actionsHTML += `<button class="btn-edit" onclick="editUser('${u.matricule}')">?</button>`;
+        actionsHTML += `<button class="btn-edit" onclick="editUser('${u.matricule}')">✏️</button>`;
         if (canDelete) {
           actionsHTML += ` <button class="btn-delete" onclick="deleteUser('${u.matricule}')">?</button>`;
         }
