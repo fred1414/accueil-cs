@@ -1308,34 +1308,24 @@ document.addEventListener('change', function(e){
 
 </script>
 <!-- Admin check -->
-<script>
 (function adminGuard() {
-  const sessionRaw = localStorage.getItem("csver_session");
-
-  if (!sessionRaw) {
-    // Pas de session → dehors
-    window.location.replace("login.html");
-    return;
-  }
-
-  let session;
   try {
-    session = JSON.parse(sessionRaw);
-  } catch {
-    window.location.replace("login.html");
-    return;
-  }
+    if (typeof isAdminRole !== "function") {
+      console.error("isAdminRole() indisponible");
+      window.location.replace("index.html");
+      return;
+    }
 
-  // Rôles autorisés
-  const role = String(session.role || "").toLowerCase();
+    if (!isAdminRole() && !isSuperAdmin?.()) {
+      window.location.replace("index.html");
+      return;
+    }
 
-  if (!["admin", "superadmin"].includes(role)) {
-    // Pas admin → retour accueil
+    // Admin autorisé
+  } catch (e) {
+    console.error("adminGuard error", e);
     window.location.replace("index.html");
-    return;
   }
-
-  // OK : admin autorisé
 })();
 </script>
 </body>
