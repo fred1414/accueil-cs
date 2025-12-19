@@ -1265,34 +1265,45 @@ document.getElementById("dirSearch").addEventListener("input", e => {
 });
 
   
-window.addEventListener("DOMContentLoaded", async () => {
+
+window.addEventListener("DOMContentLoaded", () => {
   try {
     const raw = localStorage.getItem("csver_session");
-    if (!raw) { location.replace("login.html"); return; }
-
-    // ✅ maintenant tes fonctions sont définies, donc on peut checker admin
-    if (!isAdminRole() && !isSuperAdmin()) {
-      location.replace("index.html");
+    if (!raw) {
+      window.location.replace("login.html");
       return;
     }
 
-    // ✅ tout est bon => on affiche
+    if (!isAdminRole() && !isSuperAdmin()) {
+      window.location.replace("index.html");
+      return;
+    }
+
+    // ✅ ADMIN OK → on affiche l’UI immédiatement
     document.documentElement.style.visibility = "visible";
 
-    // 📦 init normale
-    await syncAccueilFromCloud();
+    // ✅ Toujours afficher la table, même sans Firestore
     populateCisPrincipal("");
     renderTable();
+
+    // 🔥 Firestore devient NON bloquant
+    Promise.resolve()
+      .then(() => syncAccueilFromCloud())
+      .catch(err => {
+        console.error("Firestore non bloquant :", err);
+      });
 
     if (fldPermisCTitulaire) {
       fldPermisCTitulaire.addEventListener("change", updatePermisAdminUi);
       updatePermisAdminUi();
     }
+
   } catch (e) {
     console.error("Admin init error:", e);
-    location.replace("index.html");
+    window.location.replace("index.html");
   }
 });
+
 
 
 
