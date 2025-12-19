@@ -77,7 +77,16 @@ if (!firebase.apps.length) {
 </script>
 
 <!-- ================= Cloud storage ================= -->
-<script src="cloud-storage.js"></script>
+<script type="module">
+  import {
+    ensureAuth,
+    cloudGetJSON,
+    cloudSetJSON,
+    syncAccueilFromCloud
+  } from "./cloud-storage.js";
+
+  // ton code ici
+</script>
 
 <script>
 const INDEX_PATH = "index.html";
@@ -205,4 +214,5 @@ async function forgotWithQuestion(){
 
 </body>
 </html>
+
 
