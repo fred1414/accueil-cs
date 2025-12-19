@@ -8,6 +8,7 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
   *{box-sizing:border-box;font-family:'Inter',sans-serif;margin:0;padding:0}
+  html { visibility: hidden; }
   body{background:#f5f5f5;padding:30px;color:#222;}
   h1{text-align:center;margin-bottom:20px;color:#d32f2f;position:relative;}
   .container{max-width:1100px;margin:auto;background:#fff;border-radius:12px;padding:25px 30px;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
@@ -1300,6 +1301,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     fldPermisCTitulaire.addEventListener('change', updatePermisAdminUi);
     updatePermisAdminUi();
   }
+  document.documentElement.style.visibility = "visible";
 });
 
 
