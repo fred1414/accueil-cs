@@ -16,6 +16,20 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 window.db = db;
 
+// authentification anonyme
+export function ensureAuth() {
+  return new Promise((resolve, reject) => {
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        resolve(user);
+      } else {
+        auth.signInAnonymously()
+          .then(cred => resolve(cred.user))
+          .catch(reject);
+      }
+    });
+  });
+}
 // ---------- helpers pour tableaux ----------
 // Firestore n'accepte PAS set([]) : un doc doit être un objet.
 // On emballe les tableaux : { __type:"array", items:[...] }
@@ -146,5 +160,6 @@ window.syncAccueilFromCloud = syncAccueilFromCloud;
     origRem(key);
   };
 })();
+
 
 
