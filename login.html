@@ -8,169 +8,144 @@
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-*{box-sizing:border-box;font-family:'Inter',sans-serif;margin:0;padding:0}
-body{
-  background:linear-gradient(135deg,#004aad,#d32f2f);
-  display:flex;justify-content:center;align-items:center;
-  height:100vh;color:#fff;
+* { box-sizing:border-box; font-family:'Inter',sans-serif; margin:0; padding:0; }
+body {
+  background: linear-gradient(135deg,#004aad,#d32f2f);
+  display:flex; justify-content:center; align-items:center;
+  height:100vh; color:#fff;
 }
-.login-box{
-  background:#ffffffee;color:#222;
-  border-radius:16px;
-  box-shadow:0 10px 30px rgba(0,0,0,.3);
-  padding:40px 50px;
-  width:100%;max-width:420px;
-  text-align:center;
+.login-box {
+  background:#ffffffee; color:#222;
+  border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.3);
+  padding:40px 50px; width:100%; max-width:420px; text-align:center;
 }
-.login-box img{height:100px;margin-bottom:15px}
-.login-box h2{font-size:24px;color:#004aad;margin-bottom:20px;font-weight:700}
-.login-box input,select{
-  width:100%;padding:12px;margin:8px 0;
-  border:1px solid #ccc;border-radius:8px;font-size:15px
+.login-box img { height:100px; margin-bottom:15px; }
+.login-box h2 { font-size:24px; color:#004aad; margin-bottom:20px; font-weight:700; }
+.login-box input, select {
+  width:100%; padding:12px; margin:8px 0;
+  border:1px solid #ccc; border-radius:8px; font-size:15px;
 }
-.login-box button{
-  width:100%;padding:12px;background:#d32f2f;
-  color:#fff;border:none;border-radius:8px;
-  font-size:16px;font-weight:600;cursor:pointer
+.login-box button {
+  width:100%; padding:12px; background:#d32f2f;
+  color:#fff; border:none; border-radius:8px; font-size:16px;
+  font-weight:600; cursor:pointer;
 }
-.login-box button:hover{background:#b71c1c}
-.muted{font-size:13px;color:#555;margin-top:10px}
-.field-label{text-align:left;font-size:14px;font-weight:600;color:#004aad;margin-top:4px}
-.muted a{color:#004aad;text-decoration:underline;cursor:pointer}
+.login-box button:hover { background:#b71c1c; }
+.muted { font-size:13px; color:#555; margin-top:10px; }
+.field-label { text-align:left; font-size:14px; font-weight:600; color:#004aad; margin-top:4px; }
+.muted a { color:#004aad; text-decoration:underline; cursor:pointer; }
 </style>
 </head>
 
 <body>
 
 <div class="login-box">
-  <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png">
+  <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png" alt="Logo SDIS 30">
   <h2>Connexion — CISMIC</h2>
 
-  <input id="matricule" type="text" placeholder="Matricule">
-  <input id="password" type="password" placeholder="Mot de passe">
+  <input id="matricule" type="text" placeholder="Matricule" autocomplete="username">
+
+  <div id="cis-container" style="display:none;">
+    <div class="field-label">CIS</div>
+    <select id="cisSelect"></select>
+  </div>
+
+  <input id="password" type="password" placeholder="Mot de passe" autocomplete="current-password">
   <button onclick="login()">Se connecter</button>
 
   <p class="muted">Mot de passe provisoire : <code>temp&lt;matricule&gt;</code></p>
-  <p class="muted"><a onclick="forgotWithQuestion()">Mot de passe oublié ?</a></p>
+  <p class="muted"><a onclick="forgotWithQuestion(event)">Mot de passe oublié ? Répondre à ma question</a></p>
 </div>
 
-<!-- ================= Firebase libs ================= -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-
-<!-- ================= Firebase init ================= -->
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyD1IxHONTei5-T0t1XrvQ1RC_gCcih4A7T4",
-  authDomain: "accueil-cs.firebaseapp.com",
-  projectId: "accueil-cs",
-  storageBucket: "accueil-cs.appspot.com",
-  messagingSenderId: "292270758652",
-  appId: "1:292270758652:web:f6b56f208e5c4b374fd579"
-};
-
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-
-</script>
-
-<!-- ================= Cloud storage ================= -->
-<script type="module">
-  import {
-    ensureAuth,
-    cloudGetJSON,
-    cloudSetJSON,
-    syncAccueilFromCloud
-  } from "./cloud-storage.js";
-
-  // ton code ici
-</script>
+<script src="cloud-storage.js"></script>
 
 <script>
 const INDEX_PATH = "index.html";
 
-/* ========= Firebase Auth anonyme ========= */
-let firebaseReady = false;
-async function ensureFirebaseAuth(){
-  if(firebaseReady) return;
+/* 🔐 Firebase Auth anonyme — STRICT NECESSAIRE */
+let __anonAuthReady = false;
+async function ensureAnonymousAuth(){
+  if(__anonAuthReady) return;
   if(!firebase.auth().currentUser){
     await firebase.auth().signInAnonymously();
   }
-  firebaseReady = true;
+  __anonAuthReady = true;
 }
 
-/* ========= Crypto ========= */
+/* --------- util SHA-256 --------- */
 async function hash(text){
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 
+/* --------- util PBKDF2 --------- */
 async function pbkdf2Hash(secret, saltHex, iterations=100000){
   const enc = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw", enc.encode(secret), {name:"PBKDF2"}, false, ["deriveBits"]
-  );
+  const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(secret), {name:"PBKDF2"}, false, ["deriveBits"]);
   const salt = new Uint8Array(saltHex.match(/.{1,2}/g).map(h=>parseInt(h,16)));
-  const bits = await crypto.subtle.deriveBits(
-    {name:"PBKDF2", hash:"SHA-256", salt, iterations},
-    keyMaterial, 256
-  );
+  const bits = await crypto.subtle.deriveBits({name:"PBKDF2", hash:"SHA-256", salt, iterations}, keyMaterial, 256);
   return [...new Uint8Array(bits)].map(b=>b.toString(16).padStart(2,"0")).join("");
 }
-
 function genSalt(n=16){
-  const b=new Uint8Array(n);crypto.getRandomValues(b);
+  const b=new Uint8Array(n); crypto.getRandomValues(b);
   return [...b].map(x=>x.toString(16).padStart(2,"0")).join("");
 }
 
-/* ========= Firestore helpers ========= */
+/* --------- normalisation utilisateur --------- */
+function normalizeUser(u){
+  const r=JSON.parse(JSON.stringify(u||{}));
+  r.cis=r.cis||{primary:"",secondaries:[]};
+  r.role=r.role||"agent";
+  return r;
+}
+
+/* --------- Firestore --------- */
 async function loadUser(matricule){
-  await ensureFirebaseAuth();
+  await ensureAnonymousAuth();               // ✅ AJOUT UNIQUE
   const key="csver_user_"+matricule;
-
-  try{
-    const cloud = await cloudGetJSON(key,null);
-    if(cloud){
-      localStorage.setItem(key,JSON.stringify(cloud));
-      return cloud;
-    }
-  }catch(e){ console.warn("Firestore indispo",e); }
-
-  const local = localStorage.getItem(key);
-  return local ? JSON.parse(local) : null;
+  const cloud = await cloudGetJSON(key,null);
+  if(cloud){
+    localStorage.setItem(key,JSON.stringify(cloud));
+    return cloud;
+  }
+  const local=localStorage.getItem(key);
+  return local?JSON.parse(local):null;
 }
 
 async function saveUser(matricule,user){
-  await ensureFirebaseAuth();
+  await ensureAnonymousAuth();               // ✅ AJOUT UNIQUE
   const key="csver_user_"+matricule;
   localStorage.setItem(key,JSON.stringify(user));
   await cloudSetJSON(key,user);
 }
 
-/* ========= Login ========= */
+/* --------- login --------- */
 async function login(){
   const matricule=document.getElementById("matricule").value.trim();
   const password=document.getElementById("password").value.trim();
-  if(!matricule||!password){ alert("Champs requis."); return; }
+  if(!matricule||!password){ alert("Merci de remplir les champs."); return; }
 
-  const user = await loadUser(matricule);
-  if(!user){ alert("Matricule inconnu."); return; }
+  const userData=await loadUser(matricule);
+  if(!userData){ alert("Matricule inconnu."); return; }
+
+  let user=normalizeUser(userData);
 
   if(!user.hash){
     if(password!=="temp"+matricule){ alert("Mot de passe provisoire incorrect."); return; }
-    const p1=prompt("Nouveau mot de passe");
-    const p2=prompt("Confirmer le mot de passe");
-    if(!p1||p1!==p2){ alert("Erreur mot de passe."); return; }
-
+    const p1=prompt("Nouveau mot de passe :");
+    const p2=prompt("Confirmez le mot de passe :");
+    if(!p1||p1!==p2){ alert("Erreur."); return; }
     const q=prompt("Question secrète :");
     const a=prompt("Réponse :");
     const salt=genSalt();
     user.secret_question={q,hash:await pbkdf2Hash(a,salt),salt,iters:100000};
     user.hash=await hash(p1);
     await saveUser(matricule,user);
-    alert("Mot de passe défini. Reconnecte-toi.");
+    alert("Mot de passe enregistré.");
     return;
   }
 
@@ -183,29 +158,26 @@ async function login(){
     matricule:user.matricule,
     prenom:user.prenom||"",
     nom:user.nom||"",
-    cis:user.cis?.primary||"",
-    role:user.role||"agent",
-    cis_all:user.cis||{}
+    cis:user.cis.primary,
+    role:user.role,
+    cis_all:user.cis
   }));
 
-  window.location.href = INDEX_PATH;
+  window.location.href=INDEX_PATH;
 }
 
-/* ========= Mot de passe oublié ========= */
+/* --------- mot de passe oublié --------- */
 async function forgotWithQuestion(){
   const matricule=prompt("Matricule :");
   if(!matricule) return;
   const user=await loadUser(matricule);
   if(!user||!user.secret_question){ alert("Impossible."); return; }
-
   const ans=prompt(user.secret_question.q);
   const h=await pbkdf2Hash(ans,user.secret_question.salt,user.secret_question.iters);
   if(h!==user.secret_question.hash){ alert("Incorrect."); return; }
-
-  const p1=prompt("Nouveau mot de passe");
-  const p2=prompt("Confirmer");
+  const p1=prompt("Nouveau mot de passe :");
+  const p2=prompt("Confirmez :");
   if(!p1||p1!==p2){ alert("Erreur."); return; }
-
   user.hash=await hash(p1);
   await saveUser(matricule,user);
   alert("Mot de passe réinitialisé.");
@@ -214,5 +186,3 @@ async function forgotWithQuestion(){
 
 </body>
 </html>
-
-
