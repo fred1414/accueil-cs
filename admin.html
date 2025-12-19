@@ -1258,16 +1258,60 @@ document.getElementById("dirSearch").addEventListener("input", e => {
 });
 
 
-window.addEventListener("DOMContentLoaded", async ()=>{
+
+// ==================== ADMIN GUARD FINAL ====================
+function runAdminGuard() {
+  try {
+    const raw = localStorage.getItem("csver_session");
+    if (!raw) {
+      window.location.replace("login.html");
+      return;
+    }
+
+    let session;
+    try {
+      session = JSON.parse(raw);
+    } catch {
+      window.location.replace("login.html");
+      return;
+    }
+
+    if (typeof isAdminRole !== "function") {
+      console.error("isAdminRole() non disponible");
+      window.location.replace("index.html");
+      return;
+    }
+
+    if (!isAdminRole() && !isSuperAdmin()) {
+      window.location.replace("index.html");
+      return;
+    }
+
+    console.log("ADMIN ACCESS GRANTED");
+  } catch (e) {
+    console.error("Admin guard error", e);
+    window.location.replace("index.html");
+  }
+}
+
+
+  
+window.addEventListener("DOMContentLoaded", async () => {
+  // 🔐 Guard ADMIN – exécuté AVANT toute lecture de données
+  runAdminGuard();
+
+  // 📦 Chargement normal de la page admin
   await syncAccueilFromCloud();
   populateCisPrincipal("");
   renderTable();
-  // ? listener Permis C
-  if(fldPermisCTitulaire){
+
+  // 🎛️ UI permis C
+  if (fldPermisCTitulaire) {
     fldPermisCTitulaire.addEventListener('change', updatePermisAdminUi);
     updatePermisAdminUi();
   }
 });
+
 
 /* Permissions intelligentes */
 function splitId(id){
@@ -1306,26 +1350,6 @@ document.addEventListener('change', function(e){
   }
 });
 
-<script>
-(function adminGuard() {
-  try {
-    if (typeof isAdminRole !== "function") {
-      console.error("isAdminRole() indisponible");
-      window.location.replace("index.html");
-      return;
-    }
 
-    if (!isAdminRole() && !isSuperAdmin?.()) {
-      window.location.replace("index.html");
-      return;
-    }
-
-    // Admin autorisé
-  } catch (e) {
-    console.error("adminGuard error", e);
-    window.location.replace("index.html");
-  }
-})();
-</script>
 </body>
 </html>
