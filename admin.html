@@ -834,13 +834,10 @@
           saisie_fma: "Saisie FMA",
           admin: "Administrateur"
         };
-        const box = (k) => {
-          const id = $ {
-            prefix
-          }
-          _$ {
-            k
-          };
+
+        const id = `${prefix}_${k}`;
+
+          
           const checked = obj && obj[k] ? "checked" : "";
           const label = LABELS[k] || k;
           return <label > < input type = "checkbox"
