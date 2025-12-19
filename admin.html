@@ -376,10 +376,33 @@
     </table>
   </div>
 </div>
+<script>
+/* ===== ADMIN GUARD EARLY ===== */
+(function earlyAdminGuard() {
+  const raw = localStorage.getItem("csver_session");
+  if (!raw) {
+    window.location.replace("login.html");
+    return;
+  }
 
+  let session;
+  try {
+    session = JSON.parse(raw);
+  } catch {
+    window.location.replace("login.html");
+    return;
+  }
+
+  // Si rôle clairement non admin → index direct
+  const role = String(session.role || "").toLowerCase();
+  if (role && !["admin","superadmin","administrateur"].includes(role)) {
+    window.location.replace("index.html");
+  }
+})();
+</script>
 <!-- ? Firebase + Firestore + stockage partagé -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-<!-- <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<!-- <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script> -->
 <!-- Add firebase-auth for authentication -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="cloud-storage.js"></script>
@@ -1293,15 +1316,14 @@ function runAdminGuard() {
 
   
 window.addEventListener("DOMContentLoaded", async () => {
-  // 🔐 Guard ADMIN – exécuté AVANT toute lecture de données
+  // 🔐 Vérification admin (rôle)
   runAdminGuard();
 
-  // 📦 Chargement normal de la page admin
+  // 📦 Chargement normal
   await syncAccueilFromCloud();
   populateCisPrincipal("");
   renderTable();
 
-  // 🎛️ UI permis C
   if (fldPermisCTitulaire) {
     fldPermisCTitulaire.addEventListener('change', updatePermisAdminUi);
     updatePermisAdminUi();
