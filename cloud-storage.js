@@ -1,5 +1,5 @@
 // cloud-storage.js
-// ⚠️ Firebase DOIT déjà être initialisé dans le HTML
+// Firebase DOIT déjà être initialisé dans le HTML
 
 (function () {
   if (!window.firebase) {
@@ -94,7 +94,7 @@
         localStorage.setItem(key, JSON.stringify(value));
       });
 
-      console.log("✅ Firestore → localStorage synchronisé");
+      console.log("Firestore → localStorage synchronisé");
     } catch (e) {
       console.error("syncAccueilFromCloud failed", e);
     }
@@ -105,3 +105,4 @@
   window.cloudSetJSON = cloudSetJSON;
   window.syncAccueilFromCloud = syncAccueilFromCloud;
 })();
+
