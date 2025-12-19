@@ -377,24 +377,7 @@
     </table>
   </div>
 </div>
-<script>
-/* ===== ADMIN GUARD EARLY ===== */
-(function earlyAuthGuard() {
-  const raw = localStorage.getItem("csver_session");
 
-  if (!raw) {
-    window.location.replace("login.html");
-    return;
-  }
-
-  try {
-    JSON.parse(raw);
-  } catch {
-    window.location.replace("login.html");
-    return;
-  }
-  })();
-</script>
 <!-- ? Firebase + Firestore + stockage partagé -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <!-- <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script> -->
@@ -1271,37 +1254,41 @@ document.getElementById("dirSearch").addEventListener("input", e => {
   renderDirectory(e.target.value);
 });
 
-
-
-// ==================== ADMIN GUARD FINAL ====================
-function runAdminGuard() {
-  const session = getSession();
-  if (!session) {
-    window.location.replace("login.html");
-    return;
-  }
-
-  if (!isAdminRole() && !isSuperAdmin()) {
-    window.location.replace("index.html");
-    return;
-  }
-}
-
   
 window.addEventListener("DOMContentLoaded", async () => {
-  // 🔐 Vérification admin (rôle)
-  runAdminGuard();
+try {
+    // 🔐 Vérification session
+    const raw = localStorage.getItem("csver_session");
+    if (!raw) {
+      window.location.replace("login.html");
+      return;
+    }
 
-  // 📦 Chargement normal
-  await syncAccueilFromCloud();
-  populateCisPrincipal("");
-  renderTable();
+    const session = JSON.parse(raw);
 
-  if (fldPermisCTitulaire) {
-    fldPermisCTitulaire.addEventListener('change', updatePermisAdminUi);
-    updatePermisAdminUi();
+    // 🔐 Vérification droits admin
+    if (!isAdminRole() && !isSuperAdmin()) {
+      window.location.replace("index.html");
+      return;
+    }
+
+    // ✅ ADMIN AUTORISÉ → on affiche la page
+    document.documentElement.style.visibility = "visible";
+
+    // 📦 Chargement normal
+    await syncAccueilFromCloud();
+    populateCisPrincipal("");
+    renderTable();
+
+    if (fldPermisCTitulaire) {
+      fldPermisCTitulaire.addEventListener('change', updatePermisAdminUi);
+      updatePermisAdminUi();
+    }
+
+  } catch (e) {
+    console.error("Admin guard error:", e);
+    window.location.replace("index.html");
   }
-  document.documentElement.style.visibility = "visible";
 });
 
 
