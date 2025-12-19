@@ -390,6 +390,14 @@
   
 
 <script>
+// Sécurité : toujours rendre la page visible par défaut
+document.documentElement.style.display = "block";
+document.body.style.display = "block";
+document.documentElement.style.visibility = "visible";
+document.body.style.visibility = "visible";
+document.documentElement.style.opacity = "1";
+document.body.style.opacity = "1";
+
 /* ===================================================
    ? Intégration Firestore pour les utilisateurs
    =================================================== */
