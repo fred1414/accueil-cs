@@ -218,30 +218,33 @@
     font-size: 13px;
   }
 }
-
-  
 </style>
 
-<style>
-  html { visibility: hidden; }
-</style>
-
-<script>
-(function adminGuardEarly(){
-  const raw = localStorage.getItem("csver_session");
-  if(!raw){ location.replace("login.html"); return; }
-
-  let session=null;
-  try { session = JSON.parse(raw); } catch(e){ location.replace("login.html"); return; }
-
-  // Ici on ne peut pas appeler isAdminRole() (pas encore défini),
-  // donc on ne vérifie QUE "connecté".
-  // La vérif admin complète se fait après chargement du JS (plus bas).
-})();
-</script>
 </head>
 <body>
+  <script>
+(function adminGuard() {
+  const raw = localStorage.getItem("csver_session");
+  if (!raw) {
+    location.replace("login.html");
+    return;
+  }
 
+  let session;
+  try {
+    session = JSON.parse(raw);
+  } catch {
+    location.replace("login.html");
+    return;
+  }
+
+  const role = (session.role || "").toLowerCase();
+  if (role !== "admin" && role !== "superadmin") {
+    location.replace("index.html");
+    return;
+  }
+})();
+</script>
 <button class="back-btn" onclick="window.location.href='index.html'">⬅ Retour</button>
 
 <h1>Gestion des utilisateurs -- CISMIC</h1>
@@ -1325,36 +1328,8 @@ document.addEventListener('change', function(e){
     applySogDefaults(prefix, grid);
   }
 });
-
-(function adminPageGuard() {
-  // 🔐 1) Session obligatoire
-  const raw = localStorage.getItem("csver_session");
-  if (!raw) {
-    window.location.replace("login.html");
-    return;
-  }
-
-  let session;
-  try {
-    session = JSON.parse(raw);
-  } catch {
-    window.location.replace("login.html");
-    return;
-  }
-
-  // 🔐 2) Rôle admin simple
-  const role = (session.role || "").toString().toLowerCase();
-
-  if (role !== "admin" && role !== "superadmin") {
-    window.location.replace("index.html");
-    return;
-  }
-
-  // ✅ AUTORISÉ
-  document.documentElement.style.display = "block";
-  document.body.style.display = "block";
-})();
 </script>
 
 </body>
+
 </html>
