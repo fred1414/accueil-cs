@@ -1264,43 +1264,25 @@ document.getElementById("dirSearch").addEventListener("input", e => {
   renderDirectory(e.target.value);
 });
 
-  
-
 window.addEventListener("DOMContentLoaded", () => {
+  // ✅ Initialisation UI uniquement
   try {
-    const raw = localStorage.getItem("csver_session");
-    if (!raw) {
-      window.location.replace("login.html");
-      return;
-    }
-
-    if (!isAdminRole() && !isSuperAdmin()) {
-      window.location.replace("index.html");
-      return;
-    }
-
-    // ✅ ADMIN OK → on affiche l’UI immédiatement
-    document.documentElement.style.visibility = "visible";
-
-    // ✅ Toujours afficher la table, même sans Firestore
     populateCisPrincipal("");
     renderTable();
 
-    // 🔥 Firestore devient NON bloquant
+    // Firestore devient optionnel
     Promise.resolve()
       .then(() => syncAccueilFromCloud())
       .catch(err => {
-        console.error("Firestore non bloquant :", err);
+        console.warn("Firestore indisponible (non bloquant):", err);
       });
 
     if (fldPermisCTitulaire) {
       fldPermisCTitulaire.addEventListener("change", updatePermisAdminUi);
       updatePermisAdminUi();
     }
-
   } catch (e) {
-    console.error("Admin init error:", e);
-    window.location.replace("index.html");
+    console.error("Erreur init admin UI:", e);
   }
 });
 
@@ -1344,6 +1326,35 @@ document.addEventListener('change', function(e){
   }
 });
 
+(function adminPageGuard() {
+  // 🔐 1) Session obligatoire
+  const raw = localStorage.getItem("csver_session");
+  if (!raw) {
+    window.location.replace("login.html");
+    return;
+  }
+
+  let session;
+  try {
+    session = JSON.parse(raw);
+  } catch {
+    window.location.replace("login.html");
+    return;
+  }
+
+  // 🔐 2) Rôle admin simple
+  const role = (session.role || "").toString().toLowerCase();
+
+  if (role !== "admin" && role !== "superadmin") {
+    window.location.replace("index.html");
+    return;
+  }
+
+  // ✅ AUTORISÉ
+  document.documentElement.style.display = "block";
+  document.body.style.display = "block";
+})();
+</script>
 
 </body>
 </html>
