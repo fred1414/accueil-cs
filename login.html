@@ -3,359 +3,201 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
 <title>Connexion — CISMIC</title>
+
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-  * { box-sizing:border-box; font-family:'Inter',sans-serif; margin:0; padding:0; }
-  body {
-    background: linear-gradient(135deg,#004aad,#d32f2f);
-    display:flex; justify-content:center; align-items:center;
-    height:100vh; color:#fff;
-  }
-  .login-box {
-    background:#ffffffee; color:#222;
-    border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.3);
-    padding:40px 50px; width:100%; max-width:420px; text-align:center;
-  }
-  .login-box img { height:100px; margin-bottom:15px; }
-  .login-box h2 { font-size:24px; color:#004aad; margin-bottom:20px; font-weight:700; }
-  .login-box input, select {
-    width:100%; padding:12px; margin:8px 0;
-    border:1px solid #ccc; border-radius:8px; font-size:15px;
-  }
-  .login-box button {
-    width:100%; padding:12px; background:#d32f2f;
-    color:#fff; border:none; border-radius:8px; font-size:16px;
-    font-weight:600; cursor:pointer; transition:background .2s;
-  }
-  .login-box button:hover { background:#b71c1c; }
-  .muted { font-size:13px; color:#555; margin-top:10px; }
-  .field-label { text-align:left; font-size:14px; font-weight:600; color:#004aad; margin-top:4px; }
-  .muted a { color:#004aad; text-decoration:underline; cursor:pointer; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+*{box-sizing:border-box;font-family:'Inter',sans-serif;margin:0;padding:0}
+body{
+  background:linear-gradient(135deg,#004aad,#d32f2f);
+  display:flex;justify-content:center;align-items:center;
+  height:100vh;color:#fff;
+}
+.login-box{
+  background:#ffffffee;color:#222;
+  border-radius:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.3);
+  padding:40px 50px;
+  width:100%;max-width:420px;
+  text-align:center;
+}
+.login-box img{height:100px;margin-bottom:15px}
+.login-box h2{font-size:24px;color:#004aad;margin-bottom:20px;font-weight:700}
+.login-box input,select{
+  width:100%;padding:12px;margin:8px 0;
+  border:1px solid #ccc;border-radius:8px;font-size:15px
+}
+.login-box button{
+  width:100%;padding:12px;background:#d32f2f;
+  color:#fff;border:none;border-radius:8px;
+  font-size:16px;font-weight:600;cursor:pointer
+}
+.login-box button:hover{background:#b71c1c}
+.muted{font-size:13px;color:#555;margin-top:10px}
+.field-label{text-align:left;font-size:14px;font-weight:600;color:#004aad;margin-top:4px}
+.muted a{color:#004aad;text-decoration:underline;cursor:pointer}
 </style>
 </head>
+
 <body>
 
 <div class="login-box">
-  <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png" alt="Logo SDIS 30">
+  <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png">
   <h2>Connexion — CISMIC</h2>
 
-  <input id="matricule" type="text" placeholder="Matricule" autocomplete="username">
-  
-  <!-- CIS à choisir si l'utilisateur en a plusieurs -->
-  <div id="cis-container" style="display:none;">
+  <input id="matricule" type="text" placeholder="Matricule">
+  <div id="cis-container" style="display:none">
     <div class="field-label">CIS</div>
     <select id="cisSelect"></select>
   </div>
 
-  <input id="password" type="password" placeholder="Mot de passe" autocomplete="current-password">
-  <button id="loginBtn" onclick="login()">Se connecter</button>
+  <input id="password" type="password" placeholder="Mot de passe">
+  <button onclick="login()">Se connecter</button>
+
   <p class="muted">Mot de passe provisoire : <code>temp&lt;matricule&gt;</code></p>
-  <p class="muted"><a onclick="forgotWithQuestion(event)">Mot de passe oublié ? Répondre à ma question</a></p>
+  <p class="muted"><a onclick="forgotWithQuestion(event)">Mot de passe oublié ?</a></p>
 </div>
 
-<!-- 🔌 Firebase + Firestore + cloud-storage -->
+<!-- 🔌 Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<!-- 🔌 Cloud Storage -->
 <script src="cloud-storage.js"></script>
 
 <script>
 const INDEX_PATH = "index.html";
 
-/* --------- util SHA-256 (MDP principal, pour rester compatible) --------- */
-async function hash(text){
-  const enc = new TextEncoder();
-  const data = enc.encode(text);
-  const buf = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+/* ================= Firebase Auth Anonyme ================= */
+let firebaseReady = false;
+async function ensureFirebaseAuth(){
+  if(firebaseReady) return;
+  if(!firebase.auth().currentUser){
+    await firebase.auth().signInAnonymously();
+  }
+  firebaseReady = true;
 }
 
-/* --------- util PBKDF2 (question secrète) --------- */
+/* ================== Hash utils ================== */
+async function hash(text){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
 async function pbkdf2Hash(secret, saltHex, iterations=100000){
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(secret), {name:"PBKDF2"}, false, ["deriveBits"]);
   const salt = new Uint8Array(saltHex.match(/.{1,2}/g).map(h=>parseInt(h,16)));
-  const bits = await crypto.subtle.deriveBits({name:"PBKDF2", hash:"SHA-256", salt, iterations}, keyMaterial, 256);
-  return Array.from(new Uint8Array(bits)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  const bits = await crypto.subtle.deriveBits(
+    {name:"PBKDF2", hash:"SHA-256", salt, iterations},
+    keyMaterial, 256
+  );
+  return [...new Uint8Array(bits)].map(b=>b.toString(16).padStart(2,"0")).join("");
 }
-function genSalt(n=16){ const b=new Uint8Array(n); crypto.getRandomValues(b); return Array.from(b).map(x=>x.toString(16).padStart(2,"0")).join(""); }
-
-/* --------- liste de questions secrètes --------- */
-const SECRET_QUESTIONS = [
-  "Quel est le nom de votre premier animal de compagnie ?",
-  "Dans quelle ville êtes-vous né(e) ?",
-  "Quel était le nom de votre école primaire ?",
-  "Quel est votre film préféré ?",
-  "Quel est le prénom de votre meilleur ami d’enfance ?",
-  "Quel est votre plat préféré ?",
-  "Autre : je saisis ma propre question"
-];
-function selectSecretQuestion(){
-  const menu = SECRET_QUESTIONS.map((q,i)=>`${i+1}. ${q}`).join("\n");
-  while(true){
-    const ans = prompt("Choisissez une question (entrez le numéro) :\n\n"+menu);
-    if(ans===null) return null;
-    const idx = parseInt(ans,10);
-    if(!Number.isInteger(idx) || idx<1 || idx>SECRET_QUESTIONS.length){ alert("Numéro invalide."); continue; }
-    const picked = SECRET_QUESTIONS[idx-1];
-    if(picked.startsWith("Autre")){
-      let custom = "";
-      do{
-        custom = prompt("Saisissez VOTRE question (au moins 10 caractères) :") || "";
-        if(custom===null) return null;
-      }while(custom.trim().length<10);
-      return custom.trim();
-    }
-    return picked;
-  }
+function genSalt(n=16){
+  const b=new Uint8Array(n);crypto.getRandomValues(b);
+  return [...b].map(x=>x.toString(16).padStart(2,"0")).join("");
 }
 
-/* --------- compat & normalisation du schéma utilisateur --------- */
-function normalizeUser(uRaw){
-  const u = JSON.parse(JSON.stringify(uRaw||{}));
-  if (Array.isArray(u.cis)) {
-    const primary = u.cis[0] || "";
-    const rest = (u.cis.slice(1)||[]).map(c=>({ cis:c, role: u.role || "agent" }));
-    u.cis = { primary, secondaries: rest };
-    u.role = u.role || "agent";
-  } else if (typeof u.cis === "string") {
-    u.cis = { primary: u.cis, secondaries: [] };
-    u.role = u.role || "agent";
-  } else {
-    u.cis = u.cis || { primary:"", secondaries:[] };
-    u.role = u.role || "agent";
-  }
-  const seen = new Set();
-  const primLC = (u.cis.primary||"").toLowerCase();
-  u.cis.secondaries = (u.cis.secondaries||[]).filter(s=>{
-    if(!s || !s.cis) return false;
-    const k=s.cis.toLowerCase();
-    if(k===primLC || seen.has(k)) return false;
-    seen.add(k); return true;
-  });
-  return u;
+/* ================== User helpers ================== */
+function normalizeUser(u){
+  const r=JSON.parse(JSON.stringify(u||{}));
+  r.cis=r.cis||{primary:"",secondaries:[]};
+  r.role=r.role||"agent";
+  return r;
 }
 
-/* --------- Accès utilisateur via Firestore --------- */
+/* ================== Firestore access ================== */
 async function loadUser(matricule){
-  const key = "csver_user_" + matricule;
+  await ensureFirebaseAuth();
+  const key="csver_user_"+matricule;
 
-  // 1) Cloud d'abord
-  const cloudUser = await cloudGetJSON(key, null);
-  if (cloudUser) {
-    localStorage.setItem(key, JSON.stringify(cloudUser)); // cache local
-    return cloudUser;
-  }
+  try{
+    const cloud = await cloudGetJSON(key,null);
+    if(cloud){
+      localStorage.setItem(key,JSON.stringify(cloud));
+      return cloud;
+    }
+  }catch(e){ console.warn("Firestore indispo",e); }
 
-  // 2) Fallback ancien système (uniquement local)
-  const data = localStorage.getItem(key);
-  return data ? JSON.parse(data) : null;
+  const local=localStorage.getItem(key);
+  return local?JSON.parse(local):null;
 }
 
-async function saveUser(matricule, userObj){
-  const key = "csver_user_" + matricule;
-  localStorage.setItem(key, JSON.stringify(userObj));   // cache local
-  await cloudSetJSON(key, userObj);                    // sauvegarde cloud
+async function saveUser(matricule,user){
+  await ensureFirebaseAuth();
+  const key="csver_user_"+matricule;
+  localStorage.setItem(key,JSON.stringify(user));
+  await cloudSetJSON(key,user);
 }
 
-/* ---------- pré-remplir la liste des CIS ---------- */
-document.getElementById("matricule").addEventListener("blur", preloadCis);
-document.getElementById("matricule").addEventListener("input", (e)=>{
-  if(!e.target.value.trim()){
-    document.getElementById("cis-container").style.display="none";
-    const sel = document.getElementById("cisSelect");
-    sel.innerHTML="";
-    sel.disabled = false;
-  }
-});
-
-function preloadCis(){
-  const matricule = document.getElementById("matricule").value.trim();
-  const cisWrap = document.getElementById("cis-container");
-  const sel = document.getElementById("cisSelect");
-
-  if(!matricule){
-    cisWrap.style.display = "none";
-    sel.innerHTML = "";
-    sel.disabled = false;
-    return;
-  }
-
-  const data = localStorage.getItem("csver_user_"+matricule);
-  if(!data){
-    cisWrap.style.display = "none";
-    sel.innerHTML = "";
-    sel.disabled = false;
-    return;
-  }
-
-  const user = normalizeUser(JSON.parse(data));
-
-  const entries = [];
-  if (user.cis.primary) entries.push({ cis: user.cis.primary, role: user.role, kind: "principal" });
-  (user.cis.secondaries||[]).forEach(s=> entries.push({ cis: s.cis, role: s.role || "agent", kind: "secondaire" }));
-
-  if(entries.length === 0){
-    cisWrap.style.display = "none";
-    sel.innerHTML = "";
-    sel.disabled = false;
-    return;
-  }
-
-  sel.innerHTML = "";
-  entries.forEach(e=>{
-    const opt = document.createElement("option");
-    opt.value = e.cis;
-    opt.textContent = e.kind === "principal" ? `${e.cis} (principal)` : `${e.cis} (secondaire)`;
-    opt.dataset.role = e.role;
-    opt.dataset.kind = e.kind;
-    sel.appendChild(opt);
-  });
-
-  sel.disabled = (entries.length === 1);
-  cisWrap.style.display = "block";
-}
-
-/* ----------------------- login ----------------------- */
+/* ================== Login ================== */
 async function login(){
-  const matricule = document.getElementById("matricule").value.trim();
-  const password = document.getElementById("password").value.trim();
-  if(!matricule || !password){
-    alert("Merci de remplir les champs matricule et mot de passe.");
-    return;
-  }
+  const matricule=document.getElementById("matricule").value.trim();
+  const password=document.getElementById("password").value.trim();
+  if(!matricule||!password){ alert("Champs requis."); return; }
 
-  const userData = await loadUser(matricule);
-  if(!userData){
-    alert("Matricule inconnu.");
-    return;
-  }
+  const userData=await loadUser(matricule);
+  if(!userData){ alert("Matricule inconnu."); return; }
 
-  let user = normalizeUser(userData);
+  let user=normalizeUser(userData);
 
-  // Première connexion : mot de passe provisoire -> définir MDP + question secrète
   if(!user.hash){
-    const temp = "temp"+matricule;
-    if(password!==temp){
-      alert("Mot de passe provisoire incorrect.");
-      return;
-    }
+    if(password!=="temp"+matricule){ alert("Mot de passe provisoire incorrect."); return; }
+    const p1=prompt("Nouveau mot de passe");
+    const p2=prompt("Confirmer le mot de passe");
+    if(!p1||p1!==p2){ alert("Erreur mot de passe."); return; }
 
-    const newPwd = prompt("Nouveau mot de passe :");
-    const confirmPwd = prompt("Confirmez le mot de passe :");
-    if(!newPwd || newPwd!==confirmPwd){
-      alert("Les mots de passe ne correspondent pas.");
-      return;
-    }
-
-    const q = selectSecretQuestion();
-    if(!q) return;
-    const a = prompt("Réponse (respectez majuscules/espaces — vide accepté) :");
-    if(a===null) return;
-
-    const saltQ = genSalt();
-    const hashQ = await pbkdf2Hash(a, saltQ, 100000);
-
-    user.secret_question = { q, hash: hashQ, salt: saltQ, iters: 100000 };
-    user.hash = await hash(newPwd);
-
-    await saveUser(matricule, user);
-    alert("Mot de passe et question secrète enregistrés. Connecte-toi maintenant.");
+    const q=prompt("Question secrète :");
+    const a=prompt("Réponse :");
+    const salt=genSalt();
+    user.secret_question={q,hash:await pbkdf2Hash(a,salt),salt,iters:100000};
+    user.hash=await hash(p1);
+    await saveUser(matricule,user);
+    alert("Mot de passe défini. Reconnecte-toi.");
     return;
   }
 
-  // Connexion classique
-  const hashed = await hash(password);
-  if(hashed!==user.hash){
+  if(await hash(password)!==user.hash){
     alert("Mot de passe incorrect.");
     return;
   }
 
-  const entries = [];
-  if (user.cis.primary) entries.push({ cis:user.cis.primary, role:user.role, kind:"principal" });
-  (user.cis.secondaries||[]).forEach(s=> entries.push({ cis:s.cis, role:s.role||"agent", kind:"secondaire" }));
-
-  if(entries.length === 0){
-    alert("Aucun CIS associé à ce compte. Contacte un administrateur.");
-    return;
-  }
-
-  const sel = document.getElementById("cisSelect");
-  let chosen = entries[0];
-  if(entries.length > 1){
-    if(!sel || sel.options.length === 0){
-      alert("Merci de choisir ton CIS.");
-      preloadCis();
-      return;
-    }
-    const cVal = sel.value;
-    const opt = sel.selectedOptions[0];
-    chosen = {
-      cis: cVal,
-      role: opt?.dataset?.role || "agent",
-      kind: opt?.dataset?.kind || "principal"
-    };
-  }
-
-  localStorage.setItem("csver_session", JSON.stringify({
-    matricule: user.matricule,
-    prenom: user.prenom || "",
-    nom: user.nom || "",
-    cis: chosen.cis,
-    role: chosen.role,
-    cis_kind: chosen.kind,
-    cis_all: user.cis
+  localStorage.setItem("csver_session",JSON.stringify({
+    matricule:user.matricule,
+    prenom:user.prenom||"",
+    nom:user.nom||"",
+    cis:user.cis.primary,
+    role:user.role,
+    cis_all:user.cis
   }));
 
-  const displayName = (user.prenom ? user.prenom+" " : "") + (user.nom || user.matricule);
-  alert(`Bienvenue ${displayName} (${chosen.role}) — CIS : ${chosen.cis}`);
-  window.location.href = INDEX_PATH;
+  alert("Bienvenue "+(user.prenom||user.matricule));
+  window.location.href=INDEX_PATH;
 }
 
-/* ---- Mot de passe oublié : répondre à la question ---- */
-async function forgotWithQuestion(ev){
-  ev && ev.preventDefault();
-
-  const matricule = prompt("Votre matricule :");
+/* ================== Forgot password ================== */
+async function forgotWithQuestion(){
+  const matricule=prompt("Matricule :");
   if(!matricule) return;
+  const userData=await loadUser(matricule);
+  if(!userData||!userData.secret_question){ alert("Impossible."); return; }
 
-  const userData = await loadUser(matricule);
-  if(!userData){
-    alert("Matricule inconnu.");
-    return;
-  }
+  const ans=prompt(userData.secret_question.q);
+  const h=await pbkdf2Hash(ans,userData.secret_question.salt,userData.secret_question.iters);
+  if(h!==userData.secret_question.hash){ alert("Incorrect."); return; }
 
-  let user = normalizeUser(userData);
-  if(!user.secret_question || !user.secret_question.q){
-    alert("Aucune question secrète définie pour ce compte.");
-    return;
-  }
+  const p1=prompt("Nouveau mot de passe");
+  const p2=prompt("Confirmer");
+  if(!p1||p1!==p2){ alert("Erreur."); return; }
 
-  alert("Question secrète :\n\n" + user.secret_question.q);
-  const ans = prompt("Votre réponse (retapez exactement votre phrase — vide accepté) :");
-  if(ans === null) return;
-
-  const h = await pbkdf2Hash(ans, user.secret_question.salt, user.secret_question.iters || 100000);
-  if(h !== user.secret_question.hash){
-    alert("Réponse incorrecte.");
-    return;
-  }
-
-  const p1 = prompt("Nouveau mot de passe :");
-  const p2 = prompt("Confirmez le mot de passe :");
-  if(!p1 || p1!==p2){
-    alert("Les mots de passe ne correspondent pas.");
-    return;
-  }
-
-  user.hash = await hash(p1);
-  await saveUser(matricule, user);
-  alert("Mot de passe réinitialisé. Vous pouvez vous connecter.");
+  userData.hash=await hash(p1);
+  await saveUser(matricule,userData);
+  alert("Mot de passe réinitialisé.");
 }
 </script>
+
 </body>
 </html>
-
-
-
