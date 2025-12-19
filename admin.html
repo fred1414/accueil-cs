@@ -221,6 +221,24 @@
 
   
 </style>
+
+<style>
+  html { visibility: hidden; }
+</style>
+
+<script>
+(function adminGuardEarly(){
+  const raw = localStorage.getItem("csver_session");
+  if(!raw){ location.replace("login.html"); return; }
+
+  let session=null;
+  try { session = JSON.parse(raw); } catch(e){ location.replace("login.html"); return; }
+
+  // Ici on ne peut pas appeler isAdminRole() (pas encore défini),
+  // donc on ne vérifie QUE "connecté".
+  // La vérif admin complète se fait après chargement du JS (plus bas).
+})();
+</script>
 </head>
 <body>
 
@@ -386,13 +404,6 @@
   
 
 <script>
-// Sécurité : toujours rendre la page visible par défaut
-document.documentElement.style.display = "block";
-document.body.style.display = "block";
-document.documentElement.style.visibility = "visible";
-document.body.style.visibility = "visible";
-document.documentElement.style.opacity = "1";
-document.body.style.opacity = "1";
 
 /* ===================================================
    ? Intégration Firestore pour les utilisateurs
@@ -1255,40 +1266,34 @@ document.getElementById("dirSearch").addEventListener("input", e => {
 
   
 window.addEventListener("DOMContentLoaded", async () => {
-try {
-    // 🔐 Vérification session
+  try {
     const raw = localStorage.getItem("csver_session");
-    if (!raw) {
-      window.location.replace("login.html");
-      return;
-    }
+    if (!raw) { location.replace("login.html"); return; }
 
-    const session = JSON.parse(raw);
-
-    // 🔐 Vérification droits admin
+    // ✅ maintenant tes fonctions sont définies, donc on peut checker admin
     if (!isAdminRole() && !isSuperAdmin()) {
-      window.location.replace("index.html");
+      location.replace("index.html");
       return;
     }
 
-    // ✅ ADMIN AUTORISÉ → on affiche la page
+    // ✅ tout est bon => on affiche
     document.documentElement.style.visibility = "visible";
 
-    // 📦 Chargement normal
+    // 📦 init normale
     await syncAccueilFromCloud();
     populateCisPrincipal("");
     renderTable();
 
     if (fldPermisCTitulaire) {
-      fldPermisCTitulaire.addEventListener('change', updatePermisAdminUi);
+      fldPermisCTitulaire.addEventListener("change", updatePermisAdminUi);
       updatePermisAdminUi();
     }
-
   } catch (e) {
-    console.error("Admin guard error:", e);
-    window.location.replace("index.html");
+    console.error("Admin init error:", e);
+    location.replace("index.html");
   }
 });
+
 
 
 /* Permissions intelligentes */
