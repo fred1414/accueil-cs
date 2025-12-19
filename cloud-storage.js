@@ -1,87 +1,34 @@
 // cloud-storage.js
-// ✅ MODULE ES UNIQUEMENT
 
-// ⚠️ Firebase DOIT déjà être initialisé AVANT ce fichier
+// 1) Config Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyD1IxHONTei5-T0t1XrvQ1RC_gCcih4A7T4",
+  authDomain: "accueil-cs.firebaseapp.com",
+  projectId: "accueil-cs",
+  storageBucket: "accueil-cs.firebasestorage.app",
+  messagingSenderId: "292270758652",
+  appId: "1:292270758652:web:f6b56f208e5c4b374fd579",
+  measurementId: "G-2FB4N537JW"
+};
 
+// 2) Init Firebase (protégé)
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+
+// 3) Services
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
-/* ================= AUTH ANONYME ================= */
-export async function ensureAuth() {
-  if (auth.currentUser) return auth.currentUser;
+window.db = db;
 
+// 4) Auth anonyme SIMPLE
+async function ensureAuth() {
+  if (auth.currentUser) return auth.currentUser;
   const cred = await auth.signInAnonymously();
   return cred.user;
 }
 
-/* ================= NORMALISATION ================= */
-function normalizeForCloud(value) {
-  if (Array.isArray(value)) {
-    return { __type: "array", items: value };
-  }
-  return value;
-}
+window.ensureAuth = ensureAuth;
 
-function denormalizeFromCloud(data) {
-  if (data && data.__type === "array" && Array.isArray(data.items)) {
-    return data.items;
-  }
-  return data;
-}
 
-/* ================= FIRESTORE API ================= */
-export async function cloudGetJSON(key, fallback = null) {
-  try {
-    const snap = await db.collection("accueilcs").doc(key).get();
-    if (!snap.exists) return fallback;
-    return denormalizeFromCloud(snap.data());
-  } catch (e) {
-    console.error("cloudGetJSON error:", key, e);
-    return fallback;
-  }
-}
-
-export async function cloudSetJSON(key, value) {
-  try {
-    await db
-      .collection("accueilcs")
-      .doc(key)
-      .set(normalizeForCloud(value), { merge: true });
-  } catch (e) {
-    console.error("cloudSetJSON error:", key, e);
-  }
-}
-
-/* ================= SYNC RULES ================= */
-export function shouldSyncKey(key) {
-  if (!key) return false;
-  return key === "fma_data_v2"
-    || key.startsWith("csver_themes_")
-    || key.startsWith("vehicules_")
-    || key.startsWith("journal_")
-    || key.startsWith("reservations_")
-    || key.startsWith("habillement_")
-    || key.startsWith("messages_")
-    || key.startsWith("csver_user_")
-    || key.startsWith("consignes_");
-}
-
-/* ================= CLOUD ➜ LOCAL ================= */
-export async function syncAccueilFromCloud() {
-  try {
-    const snap = await db.collection("accueilcs").get();
-    snap.forEach(doc => {
-      if (shouldSyncKey(doc.id)) {
-        localStorage.setItem(
-          doc.id,
-          JSON.stringify(denormalizeFromCloud(doc.data()))
-        );
-      }
-    });
-    console.log("Sync Firestore → localStorage OK");
-  } catch (e) {
-    console.error("syncAccueilFromCloud", e);
-  }
-}
-
-export { db };
