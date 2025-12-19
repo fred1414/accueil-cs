@@ -389,41 +389,44 @@
 <script src="cloud-storage.js"></script>
   
 <script>
-  (function adminGuard() {
-    // Cache la page par défaut
-    document.documentElement.style.display = "none";
+(function adminGuardDebug() {
+  document.documentElement.style.display = "none";
 
-    // Vérification de TON système actuel
-    try {
-      if (typeof isAdminRole === "function" && isAdminRole()) {
-        document.documentElement.style.display = "block";
-        return;
-      }
-    } catch (e) {}
+  console.log("🔍 adminGuard démarré");
 
-    // Vérification Firebase Auth (si utilisé)
-    if (typeof firebase !== "undefined" && firebase.auth) {
-      firebase.auth().onAuthStateChanged(async (user) => {
-        if (user) {
-          try {
-            const token = await user.getIdTokenResult(true);
-            if (token.claims?.admin === true) {
-              document.documentElement.style.display = "block";
-              return;
-            }
-          } catch {}
-        }
-      });
+  // Test système local
+  try {
+    if (typeof isAdminRole === "function") {
+      console.log("isAdminRole():", isAdminRole());
     }
+  } catch (e) {
+    console.error("Erreur isAdminRole", e);
+  }
 
-    // Sinon → redirection
-    setTimeout(() => {
-      if (document.documentElement.style.display !== "block") {
-        window.location.replace("index.html");
+  // Test Firebase Auth
+  if (typeof firebase !== "undefined" && firebase.auth) {
+    firebase.auth().onAuthStateChanged(async (user) => {
+      console.log("Firebase user:", user);
+
+      if (user) {
+        try {
+          const token = await user.getIdTokenResult(true);
+          console.log("Custom claims:", token.claims);
+        } catch (e) {
+          console.error("Erreur getIdTokenResult", e);
+        }
       }
-    }, 300);
-  })();
+    });
+  }
+
+  // ⚠️ PAS DE REDIRECTION EN MODE DEBUG
+  setTimeout(() => {
+    console.warn("DEBUG MODE: aucune redirection effectuée");
+    document.documentElement.style.display = "block";
+  }, 500);
+})();
 </script>
+
 
 
 <script>
