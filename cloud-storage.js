@@ -1,27 +1,3 @@
-//  CONFIG
-const firebaseConfig = {
-
-  apiKey: "AIzaSyDlXhONTei5-T0t1XrvQ1RC_gCcih4A7T4",
-  authDomain: "accueil-cs.firebaseapp.com",
-  projectId: "accueil-cs",
-  storageBucket: "accueil-cs.firebasestorage.app",
-  messagingSenderId: "292270758652",
-  appId: "1:292270758652:web:f6b56f208e5c4b374fd579",
-  measurementId: "G-2FB4N537JW"
-
-};
-
-
-// 2? Init (UNE FOIS)
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-
-const auth = firebase.auth();
-const db   = firebase.firestore();
-
-window.db = db;
-
 // cloud-storage.js
 // Version SAFE — Firebase compat + Auth anonyme + Firestore
 // Aucune syntaxe module / export
@@ -163,5 +139,6 @@ window.db = db;
   window.shouldSyncKey = shouldSyncKey;
 
 })();
+
 
 
