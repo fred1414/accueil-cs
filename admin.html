@@ -389,43 +389,21 @@
 <script src="cloud-storage.js"></script>
   
 <script>
-(function adminGuardDebug() {
   document.documentElement.style.display = "none";
 
-  console.log("🔍 adminGuard démarré");
-
-  // Test système local
-  try {
-    if (typeof isAdminRole === "function") {
-      console.log("isAdminRole():", isAdminRole());
-    }
-  } catch (e) {
-    console.error("Erreur isAdminRole", e);
-  }
-
-  // Test Firebase Auth
-  if (typeof firebase !== "undefined" && firebase.auth) {
-    firebase.auth().onAuthStateChanged(async (user) => {
-      console.log("Firebase user:", user);
-
-      if (user) {
-        try {
-          const token = await user.getIdTokenResult(true);
-          console.log("Custom claims:", token.claims);
-        } catch (e) {
-          console.error("Erreur getIdTokenResult", e);
-        }
+  window.addEventListener("DOMContentLoaded", () => {
+    try {
+      if (typeof isAdminRole === "function" && isAdminRole()) {
+        document.documentElement.style.display = "block";
+      } else {
+        window.location.replace("index.html");
       }
-    });
-  }
-
-  // ⚠️ PAS DE REDIRECTION EN MODE DEBUG
-  setTimeout(() => {
-    console.warn("DEBUG MODE: aucune redirection effectuée");
-    document.documentElement.style.display = "block";
-  }, 500);
-})();
+    } catch (e) {
+      window.location.replace("index.html");
+    }
+  });
 </script>
+
 
 
 
