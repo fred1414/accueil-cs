@@ -222,29 +222,35 @@
 
 </head>
 <body>
-  <script>
-(function adminGuard() {
+<script>
+(function debugAdminRole() {
   const raw = localStorage.getItem("csver_session");
+  console.log("RAW SESSION =", raw);
+
   if (!raw) {
-    location.replace("login.html");
+    console.warn("❌ Pas de session");
     return;
   }
 
   let session;
   try {
     session = JSON.parse(raw);
-  } catch {
-    location.replace("login.html");
+  } catch (e) {
+    console.error("❌ Session illisible", e);
     return;
   }
 
-  const role = (session.role || "").toLowerCase();
-  if (role !== "admin" && role !== "superadmin") {
-    location.replace("index.html");
-    return;
-  }
+  console.log("SESSION PARSÉE =", session);
+  console.log("ROLE BRUT =", session.role);
+  console.log("ROLE NORMALISÉ =", String(session.role || "").toLowerCase());
+
+  alert(
+    "Rôle détecté :\n" +
+    JSON.stringify(session, null, 2)
+  );
 })();
 </script>
+
 <button class="back-btn" onclick="window.location.href='index.html'">⬅ Retour</button>
 
 <h1>Gestion des utilisateurs -- CISMIC</h1>
