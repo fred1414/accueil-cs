@@ -1,55 +1,37 @@
 // cloud-storage.js
-// Version SAFE — Firebase compat + Auth anonyme + Firestore
-// Aucune syntaxe module / export
+// ⚠️ Firebase DOIT déjà être initialisé dans le HTML
 
 (function () {
-
-  /* ================== Sécurité Firebase ================== */
-
-  if (typeof firebase === "undefined") {
-    console.error("Firebase SDK non chargé");
+  if (!window.firebase) {
+    console.error("Firebase non chargé");
     return;
   }
 
   const auth = firebase.auth();
   const db = firebase.firestore();
 
-  window.db = db;
+  // ================= Auth anonyme =================
+  let authReady = null;
 
-  /* ================== Auth anonyme ================== */
+  async function ensureAnonymousAuth() {
+    if (authReady) return authReady;
 
-  let authReady = false;
-  let authPromise = null;
-
-  function ensureAnonymousAuth() {
-    if (authReady) return Promise.resolve(auth.currentUser);
-
-    if (authPromise) return authPromise;
-
-    authPromise = new Promise((resolve, reject) => {
+    authReady = new Promise((resolve, reject) => {
       auth.onAuthStateChanged(user => {
         if (user) {
-          authReady = true;
           resolve(user);
         } else {
           auth.signInAnonymously()
-            .then(cred => {
-              authReady = true;
-              resolve(cred.user);
-            })
-            .catch(err => {
-              console.error("Auth anonyme échouée", err);
-              reject(err);
-            });
+            .then(cred => resolve(cred.user))
+            .catch(reject);
         }
       });
     });
 
-    return authPromise;
+    return authReady;
   }
 
-  /* ================== Helpers sérialisation ================== */
-
+  // ================= Utils =================
   function normalizeForCloud(value) {
     if (Array.isArray(value)) {
       return { __type: "array", items: value };
@@ -57,15 +39,25 @@
     return value;
   }
 
-  function denormalizeFromCloud(data) {
-    if (data && data.__type === "array" && Array.isArray(data.items)) {
-      return data.items;
+  function denormalizeFromCloud(value) {
+    if (value && value.__type === "array" && Array.isArray(value.items)) {
+      return value.items;
     }
-    return data;
+    return value;
   }
 
-  /* ================== API Cloud ================== */
+  function shouldSyncKey(key) {
+    return (
+      key === "fma_data_v2" ||
+      key.startsWith("csver_user_") ||
+      key.startsWith("csver_themes_") ||
+      key.startsWith("journal_") ||
+      key.startsWith("vehicules_") ||
+      key.startsWith("messages_")
+    );
+  }
 
+  // ================= Firestore API =================
   async function cloudGetJSON(key, fallback = null) {
     try {
       await ensureAnonymousAuth();
@@ -81,30 +73,13 @@
   async function cloudSetJSON(key, value) {
     try {
       await ensureAnonymousAuth();
-      const payload = normalizeForCloud(value);
-      await db.collection("accueilcs").doc(key).set(payload, { merge: true });
-      console.log("[cloudSetJSON] OK", key);
+      await db.collection("accueilcs").doc(key).set(
+        normalizeForCloud(value),
+        { merge: true }
+      );
     } catch (e) {
       console.error("cloudSetJSON failed:", key, e);
     }
-  }
-
-  /* ================== Sync Cloud → localStorage ================== */
-
-  function shouldSyncKey(key) {
-    return key &&
-      (
-        key.startsWith("csver_user_") ||
-        key.startsWith("csver_themes") ||
-        key.startsWith("vehicules_") ||
-        key.startsWith("journal_") ||
-        key.startsWith("reservations_") ||
-        key.startsWith("habillement_") ||
-        key.startsWith("messages_") ||
-        key.startsWith("consignes_") ||
-        key === "fma_data_v2" ||
-        key === "manoeuvre_repli_v1"
-      );
   }
 
   async function syncAccueilFromCloud() {
@@ -115,30 +90,18 @@
       snap.forEach(doc => {
         const key = doc.id;
         if (!shouldSyncKey(key)) return;
-
-        const val = denormalizeFromCloud(doc.data());
-        try {
-          localStorage.setItem(key, JSON.stringify(val));
-        } catch (e) {
-          console.error("LocalStorage write failed:", key, e);
-        }
+        const value = denormalizeFromCloud(doc.data());
+        localStorage.setItem(key, JSON.stringify(value));
       });
 
-      console.log("Sync Firestore → localStorage OK");
+      console.log("✅ Firestore → localStorage synchronisé");
     } catch (e) {
       console.error("syncAccueilFromCloud failed", e);
     }
   }
 
-  /* ================== Exposition globale ================== */
-
-  window.ensureAnonymousAuth = ensureAnonymousAuth;
+  // ================= Exposition globale =================
   window.cloudGetJSON = cloudGetJSON;
   window.cloudSetJSON = cloudSetJSON;
   window.syncAccueilFromCloud = syncAccueilFromCloud;
-  window.shouldSyncKey = shouldSyncKey;
-
 })();
-
-
-
