@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="favicon.ico" type="image/x-icon">
-<title>Connexion — CISMIC</title>
+<title>Connexion -- CISMIC</title>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
@@ -41,7 +41,7 @@ body {
 
 <div class="login-box">
   <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png" alt="Logo SDIS 30">
-  <h2>Connexion — CISMIC</h2>
+  <h2>Connexion -- CISMIC</h2>
 
   <input id="matricule" type="text" placeholder="Matricule" autocomplete="username">
 
@@ -63,10 +63,33 @@ body {
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="cloud-storage.js"></script>
 
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<script>
+const log = msg => {
+  document.getElementById("log").textContent += "\n" + msg;
+};
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDlXhONTei5-T0t1XrvQ1RC_gCcih4A7T4",
+  authDomain: "accueil-cs.firebaseapp.com",
+  projectId: "accueil-cs",
+  storageBucket: "accueil-cs.firebasestorage.app",
+  messagingSenderId: "292270758652",
+  appId: "1:292270758652:web:f6b56f208e5c4b374fd579",
+  measurementId: "G-2FB4N537JW"
+};
+firebase.initializeApp(firebaseConfig);
+
+
+
+
 <script>
 const INDEX_PATH = "index.html";
 
-/* 🔐 Firebase Auth anonyme — STRICT NECESSAIRE */
+/* ? Firebase Auth anonyme -- STRICT NECESSAIRE */
 let __anonAuthReady = false;
 async function ensureAnonymousAuth(){
   if(__anonAuthReady) return;
@@ -105,7 +128,7 @@ function normalizeUser(u){
 
 /* --------- Firestore --------- */
 async function loadUser(matricule){
-  await ensureAnonymousAuth();               // ✅ AJOUT UNIQUE
+  await ensureAnonymousAuth();               // ? AJOUT UNIQUE
   const key="csver_user_"+matricule;
   const cloud = await cloudGetJSON(key,null);
   if(cloud){
@@ -117,7 +140,7 @@ async function loadUser(matricule){
 }
 
 async function saveUser(matricule,user){
-  await ensureAnonymousAuth();               // ✅ AJOUT UNIQUE
+  await ensureAnonymousAuth();               // ? AJOUT UNIQUE
   const key="csver_user_"+matricule;
   localStorage.setItem(key,JSON.stringify(user));
   await cloudSetJSON(key,user);
