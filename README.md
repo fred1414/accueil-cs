@@ -1,4 +1,4 @@
-# Version 1.1: — Sécurisation 
+# Version 1.1: revue securite 
 ## [2025-19-12]
 
 ### Sécurité
