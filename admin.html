@@ -219,38 +219,19 @@
   }
 }
 </style>
-
-</head>
-<body>
+  
 <script>
-(function debugAdminRole() {
+(function adminGuardEarly(){
   const raw = localStorage.getItem("csver_session");
-  console.log("RAW SESSION =", raw);
-
-  if (!raw) {
-    console.warn("❌ Pas de session");
+  if(!raw){
+    location.replace("login.html");
     return;
   }
-
-  let session;
-  try {
-    session = JSON.parse(raw);
-  } catch (e) {
-    console.error("❌ Session illisible", e);
-    return;
-  }
-
-  console.log("SESSION PARSÉE =", session);
-  console.log("ROLE BRUT =", session.role);
-  console.log("ROLE NORMALISÉ =", String(session.role || "").toLowerCase());
-
-  alert(
-    "Rôle détecté :\n" +
-    JSON.stringify(session, null, 2)
-  );
 })();
 </script>
 
+</head>
+<body>
 <button class="back-btn" onclick="window.location.href='index.html'">⬅ Retour</button>
 
 <h1>Gestion des utilisateurs -- CISMIC</h1>
@@ -1274,12 +1255,12 @@ document.getElementById("dirSearch").addEventListener("input", e => {
 });
 
 window.addEventListener("DOMContentLoaded", () => {
-  // ✅ Initialisation UI uniquement
   try {
+    adminPermissionGuard();   // ICI la vraie sécurité
+
     populateCisPrincipal("");
     renderTable();
 
-    // Firestore devient optionnel
     Promise.resolve()
       .then(() => syncAccueilFromCloud())
       .catch(err => {
@@ -1291,9 +1272,10 @@ window.addEventListener("DOMContentLoaded", () => {
       updatePermisAdminUi();
     }
   } catch (e) {
-    console.error("Erreur init admin UI:", e);
+    console.error("Erreur init admin:", e);
   }
 });
+
 
 
 
@@ -1334,6 +1316,37 @@ document.addEventListener('change', function(e){
     applySogDefaults(prefix, grid);
   }
 });
+
+function adminPermissionGuard() {
+  const session = getSession();
+  if (!session || !session.matricule) {
+    location.replace("login.html");
+    return;
+  }
+
+  // récupération du user réel
+  const rawUser = localStorage.getItem("csver_user_" + session.matricule);
+  if (!rawUser) {
+    location.replace("index.html");
+    return;
+  }
+
+  const user = normalizeUser(JSON.parse(rawUser));
+
+  const isAdmin =
+    user.permissions?.primary?.admin === true ||
+    isSuperAdmin();
+
+  if (!isAdmin) {
+    location.replace("index.html");
+    return;
+  }
+
+  //  AUTORISÉ → on affiche
+  document.documentElement.style.visibility = "visible";
+  document.body.style.visibility = "visible";
+}
+
 </script>
 
 </body>
