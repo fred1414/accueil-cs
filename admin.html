@@ -409,10 +409,11 @@ if (!firebase.apps.length) {
 
 <!-- ================= Cloud storage ================= -->
 <script src="cloud-storage.js"></script>
-
 <script>
 window.addEventListener("DOMContentLoaded", async () => {
-  await ensureAnonymousAuth();   // OBLIGATOIRE
+  if (!firebase.auth().currentUser) {
+    await firebase.auth().signInAnonymously();
+  }
   await syncAccueilFromCloud();
 });
 
