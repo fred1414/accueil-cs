@@ -229,6 +229,71 @@
   }
 })();
 </script>
+//dbg
+
+  <!-- ================= Firebase ================= -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<script>
+/* 🔥 Firebase init — OBLIGATOIRE */
+const firebaseConfig = {
+  apiKey: "AIzaSyDlXhONTei5-T0t1XrvQ1RC_gCcih4A7T4",
+  authDomain: "accueil-cs.firebaseapp.com",
+  projectId: "accueil-cs",
+  storageBucket: "accueil-cs.firebasestorage.app",
+  messagingSenderId: "292270758652",
+  appId: "1:292270758652:web:f6b56f208e5c4b374fd579",
+  measurementId: "G-2FB4N537JW"
+
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+</script>
+
+<!-- ================= Cloud storage ================= -->
+<script src="cloud-storage.js"></script>
+<script>
+
+  async function ensureAnonymousAuthReady() {
+  if (firebase.auth().currentUser) return;
+
+  await new Promise((resolve, reject) => {
+    const unsub = firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        unsub();
+        resolve();
+      }
+    });
+
+    firebase.auth().signInAnonymously().catch(reject);
+  });
+}
+
+window.addEventListener("DOMContentLoaded", async () => {
+  try {
+    await ensureAnonymousAuthReady();   // 🔑 POINT CRITIQUE
+
+    await syncAccueilFromCloud();       // OK maintenant
+
+    adminPermissionGuard();
+    populateCisPrincipal("");
+    renderTable();
+
+    if (fldPermisCTitulaire) {
+      fldPermisCTitulaire.addEventListener("change", updatePermisAdminUi);
+      updatePermisAdminUi();
+    }
+  } catch (e) {
+    console.error("Erreur init admin:", e);
+  }
+});
+
+// dbg
+</script>
 
 </head>
 <body>
@@ -384,68 +449,7 @@
     </table>
   </div>
 </div>
-  <!-- ================= Firebase ================= -->
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-
 <script>
-/* 🔥 Firebase init — OBLIGATOIRE */
-const firebaseConfig = {
-  apiKey: "AIzaSyDlXhONTei5-T0t1XrvQ1RC_gCcih4A7T4",
-  authDomain: "accueil-cs.firebaseapp.com",
-  projectId: "accueil-cs",
-  storageBucket: "accueil-cs.firebasestorage.app",
-  messagingSenderId: "292270758652",
-  appId: "1:292270758652:web:f6b56f208e5c4b374fd579",
-  measurementId: "G-2FB4N537JW"
-
-};
-
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-</script>
-
-<!-- ================= Cloud storage ================= -->
-<script src="cloud-storage.js"></script>
-<script>
-
-  async function ensureAnonymousAuthReady() {
-  if (firebase.auth().currentUser) return;
-
-  await new Promise((resolve, reject) => {
-    const unsub = firebase.auth().onAuthStateChanged(user => {
-      if (user) {
-        unsub();
-        resolve();
-      }
-    });
-
-    firebase.auth().signInAnonymously().catch(reject);
-  });
-}
-
-window.addEventListener("DOMContentLoaded", async () => {
-  try {
-    await ensureAnonymousAuthReady();   // 🔑 POINT CRITIQUE
-
-    await syncAccueilFromCloud();       // OK maintenant
-
-    adminPermissionGuard();
-    populateCisPrincipal("");
-    renderTable();
-
-    if (fldPermisCTitulaire) {
-      fldPermisCTitulaire.addEventListener("change", updatePermisAdminUi);
-      updatePermisAdminUi();
-    }
-  } catch (e) {
-    console.error("Erreur init admin:", e);
-  }
-});
-
-// dbg
 
 
 const cisListe = [
