@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+<title>Formulaire MNR – paysage</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#00a7d9; --border:#c7c7c7; --text:#111; --muted:#666;
+    --warn:#e74c3c; --warn-bg:#fff4f2; --mnr-th:#eef2f6; --mnr-td:#f7f8fa;
+  }
+
+  /* A4 paysage compact */
+  @page{ size:A4 landscape; margin:8mm; }
+
+  /* Mode print compact pour tenir sur 1 page */
+  @media print{
+    html,body{ height:auto; }
+    body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; font-size:11px; }
+    .sheet{ max-width:285mm; margin:0 auto; }
+    .titlebar{ font-size:18px; padding:8px 12px; }
+    .logo img{ max-height:48px; }
+    .meta-row{ gap:8px; padding:6px 0 4px 0; }
+    .meta{ grid-template-columns: 78px 1fr; font-size:11px; gap:6px 10px; }
+    .meta input{ padding:5px 7px; font-size:11px; }
+    .notice{ padding:6px 8px; font-size:10.5px; border-width:1.25px; }
+    .notice .head{ gap:6px; margin-bottom:4px; }
+    .notice .head .icon{ width:18px; height:18px; border-width:1.25px; font-size:12px; }
+    table{ font-size:11px; page-break-inside:avoid; }
+    th{ padding:5px 6px; font-size:11.5px; }
+    td{ padding:4px 6px; height:38px; }
+    .cell-input{ min-height:28px; }
+    /* Article & Observation un peu plus grands à l'impression */
+    tbody td:nth-child(1) .cell-input,
+    tbody td:nth-child(2) .cell-input{ font-size:12.5px; font-weight:600; }
+    .footer-grid{ gap:8px; margin-top:8px; }
+    .ident{ padding:6px 8px; }
+    .ident .row{ grid-template-columns: 180px 1fr; margin:5px 0; font-size:11px; gap:6px 8px; }
+    .ident input{ padding:5px 7px; font-size:11px; }
+    .sign h4{ margin:4px 0 6px 0; font-size:11.5px; }
+    .sign .box{ height:60px; }
+    .small{ margin-top:4px; font-size:10.5px; }
+  }
+
+  body{ font-family:'Inter',system-ui,Segoe UI,Roboto,Arial,sans-serif; color:var(--text); margin:0; background:#fff; }
+  .sheet{ max-width:270mm; margin:0 auto; }
+  .topbar{ display:grid; grid-template-columns: 170px 1fr; align-items:stretch; }
+  .logo{ display:flex; align-items:center; justify-content:center; border-right:1px solid #e8e8e8; padding:8px; }
+  .logo img{ max-width:140px; max-height:58px; height:auto; width:auto; }
+  .titlebar{ background:var(--primary); color:#fff; display:flex; align-items:center; padding:10px 14px; font-weight:700; letter-spacing:.3px; font-size:20px; }
+
+  .meta-row{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; padding:8px 0 6px 0; }
+  .meta{ display:grid; grid-template-columns: 84px 1fr; gap:8px 10px; align-items:center; font-size:12.5px; }
+  .meta label{ font-weight:600; }
+  .meta input{ border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-size:12.5px; width:100%; font-family:inherit; }
+
+  .notice{ border:2px dashed var(--warn); background:var(--warn-bg); border-radius:10px; padding:8px 10px; font-size:12px; }
+  .notice .head{ display:flex; align-items:center; gap:8px; margin-bottom:6px; color:#b70000; font-weight:700; }
+  .notice .head .icon{ width:22px; height:22px; border:2px solid var(--warn); border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:900; }
+  .notice ul{ margin:4px 0 0 16px; }
+  .notice li{ margin:.12rem 0; }
+
+  table{ width:100%; border-collapse:collapse; table-layout: fixed; margin-top:6px; }
+  th, td{ border:1px solid var(--border); padding:7px 8px; vertical-align:middle; }
+  th{ text-align:center; background:#f6f8fa; font-size:12.5px; }
+  td{ height:44px; }
+  .col-art{ width:26%; } .col-obs{ width:44%; } .col-mnr{ width:30%; }
+  table th:nth-child(3){ background: var(--mnr-th); }
+  table td:nth-child(3){ background: var(--mnr-td); }
+
+  /* saisies centrées (sans placeholder) */
+  .cell-input{
+    min-height:32px; outline:none; font-family:inherit;
+    text-align:center; display:flex; align-items:center; justify-content:center;
+    padding:2px 3px;
+  }
+  .cell-input[contenteditable="true"]:empty:before{ content:none; }
+
+  /* Texte plus gros pour ARTICLE & OBSERVATION à l'écran */
+  tbody td:nth-child(1) .cell-input,
+  tbody td:nth-child(2) .cell-input{ font-size:14px; font-weight:600; }
+
+  .footer-grid{ display:grid; grid-template-columns: 1.05fr .95fr; gap:10px; margin-top:8px; }
+  .ident, .sign{ border:1px solid var(--border); border-radius:8px; padding:8px 10px; }
+  .ident .row{ display:grid; grid-template-columns: 190px 1fr; gap:8px; align-items:center; margin:6px 0; font-size:12px; }
+  .ident label{ font-weight:600; }
+  .ident input{ border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-size:12px; width:100%; font-family:inherit; }
+  .sign h4{ margin:6px 0 8px 0; text-align:center; }
+  .sign .box{ height:70px; border:1px dashed #bbb; border-radius:8px; }
+  .small{ margin-top:6px; color:#666; font-size:11px; text-align:center; }
+
+/* ===========================
+   📱 Version mobile (≤ 768px)
+   =========================== */
+@media (max-width: 768px) {
+
+  /* Page un peu respirante sur téléphone */
+  body{
+    background:#f5f5f5;
+    padding:12px;
+  }
+
+  .sheet{
+    max-width:100%;
+    margin:0 auto;
+    padding:8px;
+    box-sizing:border-box;
+  }
+
+  /* En-tête empilé : logo au-dessus du titre */
+  .topbar{
+    display:flex;
+    flex-direction:column;
+  }
+
+  .logo{
+    border-right:none;
+    border-bottom:1px solid #e8e8e8;
+    padding:8px 0;
+  }
+
+  .logo img{
+    max-width:110px;
+    max-height:52px;
+  }
+
+  .titlebar{
+    font-size:18px;
+    padding:8px 10px;
+    text-align:center;
+    justify-content:center;
+  }
+
+  /* Infos centre / date + encart rouge en colonne */
+  .meta-row{
+    grid-template-columns:1fr;
+    gap:8px;
+    padding:8px 0;
+  }
+
+  .meta{
+    grid-template-columns:1fr;
+    gap:4px 0;
+    font-size:12px;
+  }
+
+  .meta label{
+    margin-bottom:2px;
+  }
+
+  .meta input{
+    font-size:12px;
+    padding:6px 8px;
+  }
+
+  .notice{
+    font-size:11.5px;
+    padding:8px 10px;
+  }
+
+  /* Tableau scrollable horizontalement si trop large */
+  table{
+    display:block;
+    width:100%;
+    overflow-x:auto;
+    font-size:12px;
+  }
+
+  table thead,
+  table tbody,
+  table tr,
+  table th,
+  table td{
+    white-space:nowrap;
+  }
+
+  th,td{
+    padding:6px 7px;
+    height:auto;
+  }
+
+  .cell-input{
+    min-height:28px;
+    padding:2px 4px;
+  }
+
+  /* Bloc identités + signature en pile */
+  .footer-grid{
+    grid-template-columns:1fr;
+    gap:8px;
+    margin-top:10px;
+  }
+
+  .ident{
+    padding:8px 10px;
+  }
+
+  .ident .row{
+    grid-template-columns:1fr;
+    gap:4px;
+    font-size:12px;
+  }
+
+  .ident input{
+    font-size:12px;
+  }
+
+  .sign .box{
+    height:80px;
+  }
+
+  .small{
+    font-size:10.5px;
+    margin-top:6px;
+  }
+}
+  
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="topbar">
+      <div class="logo">
+        <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png" alt="Logo SDIS 30">
+      </div>
+      <div class="titlebar">FORMULAIRE DU SUIVI DU MATERIEL NON ROULANT</div>
+    </div>
+
+    <div class="meta-row">
+      <div class="meta">
+        <label for="centre">CENTRE&nbsp;:</label>
+        <input id="centre" name="centre" placeholder="Ex. VER" />
+        <label for="date">DATE&nbsp;:</label>
+        <input id="date" name="date" type="date" />
+      </div>
+      <div class="notice">
+        <div class="head"><div class="icon">!</div><div>Le matériel ne sera pas pris en compte si :</div></div>
+        <ul>
+          <li>L’article reçu au service est sale ou souillé</li>
+          <li>Tuyau percé non repéré à l’aide de rubalise</li>
+          <li>Formulaire non rempli correctement</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 5 lignes -->
+    <table aria-label="Formulaire matériel non roulant">
+      <thead>
+        <tr>
+          <th class="col-art"><div>DÉSIGNATION</div><div>ARTICLE</div></th>
+          <th class="col-obs">OBSERVATION / DYSFONCTIONNEMENT</th>
+          <th class="col-mnr">PARTIE RÉSERVÉE AU SERVICE MNR</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><div class="cell-input" contenteditable="true"></div></td><td><div class="cell-input" contenteditable="true"></div></td><td><div class="cell-input" contenteditable="true"></div></td></tr>
+        <tr><td><div class="cell-input" contenteditable="true"></div></td><td><div class="cell-input" contenteditable="true"></div></td><td><div class="cell-input" contenteditable="true"></div></td></tr>
+        <tr><td><div class="cell-input" contenteditable="true"></div></td><td><div class="cell-input" contenteditable="true"></div></td><td><div class="cell-input" contenteditable="true"></div></td></tr>
+        <tr><td><div class="cell-input" contenteditable="true"></div></td><td><div class="cell-input" contenteditable="true"></div></td><td><div class="cell-input" contenteditable="true"></div></td></tr>
+        <tr><td><div class="cell-input" contenteditable="true"></div></td><td><div class="cell-input" contenteditable="true"></div></td><td><div class="cell-input" contenteditable="true"></div></td></tr>
+      </tbody>
+    </table>
+
+    <div class="footer-grid">
+      <div class="ident">
+        <div class="row">
+          <label for="agent">Nom et Prénom de l’agent&nbsp;:</label>
+          <input id="agent" name="agent" />
+        </div>
+        <div class="row">
+          <label for="matricule">Matricule&nbsp;:</label>
+          <input id="matricule" name="matricule" />
+        </div>
+        <div class="row">
+          <label for="signature-agent">Signature&nbsp;:</label>
+          <input id="signature-agent" name="signature-agent" />
+        </div>
+      </div>
+      <div class="sign">
+        <h4>SIGNATURE SERVICE MNR</h4>
+        <div class="box"></div>
+      </div>
+    </div>
+
+    <div class="small">POSTE MNR : 5460 / GFST-MNR@sdis30.fr</div>
+  </div>
+
+ <!-- 🔌 Firebase + Firestore + stockage partagé -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+  <script src="cloud-storage.js"></script>
+
+ 
+
+<script>
+(async function(){
+
+  // 🔁 Synchro globale Accueil ↔ Firestore (mnr_draft_rows, mnr_tickets, journal_*, etc.)
+  if (typeof syncAccueilFromCloud === "function") {
+    try {
+      await syncAccueilFromCloud();
+    } catch(e) {
+      console.error("Erreur syncAccueilFromCloud (MNR) :", e);
+    }
+  }
+
+  function load(key, def){ try{ return JSON.parse(localStorage.getItem(key)||JSON.stringify(def)); }catch(_){ return def; } }
+  function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+  function qs(name){ return new URLSearchParams(location.search).get(name); }
+  function addJournal(cis, text){
+    if(!cis) return;
+    const keyJ = "journal_"+cis;
+    const arr = load(keyJ, []);
+    arr.push({ type:"MNR", text:String(text||""), ts:Date.now(), meta:{}, title:"MNR" });
+    save(keyJ, arr.slice(-500));
+  }
+
+  // Date auto si vide
+  const dateInput = document.getElementById('date');
+  if(dateInput && !dateInput.value){
+    const d=new Date(),p=n=>String(n).padStart(2,'0');
+    dateInput.value = d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+  }
+
+  // Session -> centre/agent/matricule
+  let session=null, cis="", agent="", matricule="";
+  try{
+    session   = JSON.parse(localStorage.getItem("csver_session")||"null");
+    cis       = Array.isArray(session?.cis) ? session.cis[0] : (session?.cis||"");
+    agent     = ((session?.prenom||"")+" "+(session?.nom||"")).trim() || session?.matricule || "";
+    matricule = session?.matricule || "";
+    if(cis) document.getElementById("centre").value = cis;
+    if(agent) document.getElementById("agent").value = agent;
+    if(matricule) document.getElementById("matricule").value = matricule;
+  }catch(_){}
+
+  // Récup data (ticket prioritaire, sinon brouillon)
+  const ticketId = qs("ticket");
+  let items = [];
+  if(ticketId){
+    const tickets = load("mnr_tickets", []);
+    const t = tickets.find(x=>x.id===ticketId);
+    if(t) items = t.items||[];
+  }else{
+    items = load("mnr_draft_rows", []);
+  }
+
+  if(items.length){
+    const rows = document.querySelectorAll('table tbody tr');
+    for(let i=0; i<Math.min(5, items.length, rows.length); i++){
+      const r = items[i], tr = rows[i];
+      const tds = tr.querySelectorAll('td .cell-input');
+      if(tds[0]) tds[0].textContent = r.art||"";
+      if(tds[1]) tds[1].textContent = r.obs||"";
+    }
+  }
+
+  // Impression auto + log unique (sans ID) + retour mnr-envoyer
+  const autoPrint = qs("print")==="1";
+  let printedLogged = false;
+
+  function onAfterPrint(){
+    if(printedLogged) return;
+    printedLogged = true;
+
+    const arts = (items||[]).map(x=>x.art).filter(Boolean);
+    const listTxt = arts.length ? arts.join(" ; ") : "(articles non précisés)";
+    const who = agent || "(agent inconnu)";
+    const titre = `Envoi MNR — par ${who} : ${listTxt}`;
+
+    addJournal(cis, titre);
+
+    if(ticketId){
+      const tickets = load("mnr_tickets", []);
+      const t = tickets.find(x=>x.id===ticketId);
+      if(t){ t.printedTs = Date.now(); save("mnr_tickets", tickets); }
+    }
+
+    // ✅ Notifier mnr-envoyer & fermer cet onglet
+    try { localStorage.setItem("mnr_notice", "printed:" + Date.now()); } catch(_){}
+    setTimeout(()=> { try{ window.close(); }catch(_){ } }, 50);
+  }
+
+  window.addEventListener('afterprint', onAfterPrint, {once:true});
+  if(autoPrint){ setTimeout(()=> window.print(), 100); }
+}());
+</script>
+</body>
+</html>
+
+
+

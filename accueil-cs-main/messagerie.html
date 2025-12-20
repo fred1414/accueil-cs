@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+<title>Messagerie interne — CIS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif}
+body{
+  background:linear-gradient(135deg,#1d3f73 0%,#d43d3d 100%);
+  min-height:100vh;display:flex;flex-direction:column;color:#222;
+}
+/* HEADER */
+header{
+  background:#fff;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+header img{height:60px}
+header .title{font-size:24px;color:#0d2b52;font-weight:800}
+header .subtitle{font-size:14px;color:#444;margin-top:4px}
+.acceuil-btn{
+  background:#b71c1c;color:#fff;font-weight:800;border:none;border-radius:12px;
+  padding:10px 14px;cursor:pointer;transition:.2s;font-size:14px;
+}
+.acceuil-btn:hover{background:#8b0000}
+
+/* MAIN */
+main{flex:1;max-width:1200px;margin:20px auto;padding:0 16px;display:grid;gap:16px;grid-template-columns:1fr}
+.panel{background:rgba(255,255,255,.92);border-radius:16px;padding:18px;box-shadow:0 4px 10px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:14px}
+.panel h2{font-size:20px;font-weight:800;color:#0d2b52;border-left:6px solid #b71c1c;padding-left:10px}
+.panel .headerline{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.help{font-size:13px;color:#444}
+
+/* FORM */
+label{font-weight:700;color:#0d2b52;font-size:14px}
+input,textarea,select{width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;font-size:14px}
+textarea{min-height:100px;resize:vertical}
+.form-grid{display:grid;gap:12px;grid-template-columns:repeat(6,minmax(0,1fr))}
+.col-2{grid-column:span 2}
+.col-3{grid-column:span 3}
+.col-4{grid-column:span 4}
+.col-6{grid-column:1 / -1}
+.btn{border:none;border-radius:10px;padding:12px 16px;cursor:pointer;color:#fff;font-size:15px;font-weight:800;box-shadow:0 3px 8px rgba(0,0,0,.12);transition:transform .2s ease}
+.btn:hover{transform:translateY(-2px)}
+.btn.primary{background:#1a73e8}
+.btn.secondary{background:#6a1b9a}
+.btn.ghost{background:#eef2ff;color:#223}
+
+/* TAG INPUT (destinataires) */
+.tagbox{display:flex;flex-wrap:wrap;gap:6px;border:1px solid #e2e8f0;border-radius:10px;padding:6px;background:#fff}
+.tag{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:999px;background:#eef2ff;font-weight:700;font-size:12px}
+.tag button{border:none;background:transparent;cursor:pointer;font-weight:800}
+.tagbox input{border:none;outline:none;flex:1 1 200px;padding:6px}
+.suggestions{position:relative}
+.suggestions-list{position:absolute;z-index:10;background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-top:6px;max-height:220px;overflow:auto;box-shadow:0 6px 18px rgba(0,0,0,.12);width:100%}
+.suggestions-list div{padding:8px 10px;cursor:pointer}
+.suggestions-list div:hover{background:#f7f9ff}
+
+/* TABLES */
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{border:1px solid #eef2fb;padding:8px 10px;text-align:left;vertical-align:top}
+.table th{background:#f7f9ff;color:#123}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:800;font-size:12px}
+.badge.unread{border:1px solid #ffd39b;background:#fff4e5;color:#a36100}
+.badge.read{border:1px solid #a7e2be;background:#e6f7ec;color:#0a8a3a}
+.small-btn{border:none;border-radius:8px;padding:6px 8px;cursor:pointer;font-weight:700;font-size:12px;background:#eef2ff;color:#223}
+.small-btn.danger{background:#fdecec;color:#b71c1c}
+
+/* MODALS */
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:2000;padding:20px}
+.modal-card{background:#fff;border-radius:14px;max-width:900px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.25);overflow:hidden;display:flex;flex-direction:column}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#0d2b52;color:#fff}
+.modal-body{padding:14px 16px;max-height:70vh;overflow:auto}
+
+/* Avatars */
+.avatar{width:28px;height:28px;border-radius:999px;background:#0d2b52;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+
+/* TABS (onglets messages) */
+.tabs{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tab{background:#eef2ff;color:#0d2b52;border:none;padding:10px 14px;border-radius:999px;font-weight:800;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.tab.active{background:#1a73e8;color:#fff}
+.tabpanes>.pane{display:none}
+.tabpanes>.pane.active{display:block}
+
+/* Responsive */
+@media (max-width:900px){.form-grid{grid-template-columns:1fr 1fr}.col-3,.col-4{grid-column:span 2}}
+footer{text-align:center;color:#fff;font-size:13px;padding:20px}
+
+/* ===========================
+   📱 Version mobile (≤ 768px)
+   =========================== */
+@media (max-width: 768px) {
+
+  body{
+    min-height: 100vh;
+    padding: 12px;
+  }
+
+  /* HEADER en colonne, tout centré */
+  header{
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+
+  header img{
+    height: 50px;
+    margin-right: 0;          /* plus d’espace à droite en mobile */
+  }
+
+  header .title{
+    font-size: 20px;
+  }
+
+  header .subtitle{
+    font-size: 13px;
+  }
+
+  /* Bouton Accueil en plein largeur sous le header */
+  .acceuil-btn{
+    position: static;         /* annule le position:absolute du desktop */
+    transform: none;
+    align-self: stretch;
+    width: 100%;
+    text-align: center;
+    padding: 8px 0;
+    font-size: 14px;
+    border-radius: 999px;
+  }
+
+  /* MAIN plus compact */
+  main{
+    margin: 16px auto;
+    padding: 0 8px;
+  }
+
+  .panel{
+    padding: 14px;
+  }
+
+  .panel h2{
+    font-size: 18px;
+  }
+
+  /* Formulaire en 1 seule colonne */
+  .form-grid{
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .col-2,
+  .col-3,
+  .col-4,
+  .col-6{
+    grid-column: 1 / -1;
+  }
+
+  /* Boutons en full-width sur mobile */
+  .btn{
+    width: 100%;
+    text-align: center;
+  }
+
+  /* En-tête "📮 Messages" + onglets plus souples */
+  .panel .headerline{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .tabs{
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .tab{
+    flex-shrink: 0;
+  }
+
+  /* Zone destinataires plus fluide */
+  .tagbox{
+    flex-direction: column;
+  }
+
+  .tagbox input{
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* TABLEAUX (réception / envoyés) : scroll horizontal */
+  .panel > div[style*="overflow:auto"]{
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table{
+    min-width: 650px;      /* largeur mini lisible, mais scrollable */
+    font-size: 13px;
+  }
+
+  .table th,
+  .table td{
+    padding: 6px 8px;
+  }
+
+  /* Modales un peu plus compactes sur mobile */
+  .modal{
+    padding: 10px;
+  }
+
+  .modal-card{
+    max-height: 90vh;
+  }
+
+  .modal-body{
+    max-height: 70vh;
+  }
+}
+
+  
+</style>
+</head>
+<body>
+<header>
+  <img src="https://i.postimg.cc/LsB40JQq/logo-cismic.png" alt="Logo SDIS 30">
+  <div>
+    <div class="title">Messagerie interne</div>
+    <div class="subtitle" id="cisLabel">—</div>
+  </div>
+  <button class="acceuil-btn" onclick="goAccueil()">⟵ Accueil</button>
+</header>
+
+<main>
+  <!-- Composer -->
+  <section class="panel">
+    <h2>✉️ Nouveau message</h2>
+    <p class="help">Sélectionnez un ou plusieurs destinataires de votre CIS. Les noms proviennent des fiches <code>csver_user_*</code> (localStorage) et de la session.</p>
+    <form id="composeForm" onsubmit="return sendMessage(event)">
+      <div class="form-grid">
+        <div class="col-3">
+          <label>De</label>
+          <input type="text" id="fromDisplay" readonly>
+        </div>
+
+        <div class="col-3">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <label>Destinataires</label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button type="button" class="small-btn" title="Ajouter tous les SOG" onclick="addBySOG()">+ SOG</button>
+              <button type="button" class="small-btn" title="Ajouter tous les SPV" onclick="addByStatut('SPV')">+ SPV</button>
+              <button type="button" class="small-btn" title="Ajouter tous les SPP" onclick="addByStatut('SPP')">+ SPP</button>
+            </div>
+          </div>
+          <div class="tagbox" id="toBox">
+            <input id="toInput" type="text" placeholder="Nom, prénom ou matricule…" autocomplete="off">
+          </div>
+          <div class="suggestions">
+            <div id="toSuggest" class="suggestions-list" style="display:none"></div>
+          </div>
+        </div>
+
+        <div class="col-6">
+          <label>Objet</label>
+          <input id="subject" type="text" placeholder="Objet du message" required>
+        </div>
+        
+                <div class="col-6">
+          <label>Message</label>
+          <textarea id="body" placeholder="Votre message…" required></textarea>
+        </div>
+
+        <!-- ✅ Visible uniquement pour le super admin (1414) -->
+        <div class="col-6" id="broadcastRow" style="display:none">
+          <label style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="broadcastAll" style="width:auto;">
+            Envoyer à tous les CIS (super admin)
+          </label>
+          <p class="help">
+            Si cette case est cochée, le message sera envoyé à <strong>tous les agents de tous les centres</strong>.
+          </p>
+        </div>
+
+        <div class="col-6" style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn primary" type="submit">Envoyer</button>
+          <button class="btn secondary" type="button" onclick="resetComposer()">Réinitialiser</button>
+          <button class="btn ghost" type="button" onclick="addAllRecipients()">Ajouter tout le CIS</button>
+        </div>
+
+      </div>
+    </form>
+  </section>
+
+  <!-- Messages (onglets) -->
+  <section class="panel">
+    <div class="headerline">
+      <h2>📮 Messages</h2>
+      <div class="tabs">
+        <button class="tab active" id="tabInbox" onclick="switchTab('inbox')">Boîte de réception <span class="help" id="inCount">—</span></button>
+        <button class="tab" id="tabSent" onclick="switchTab('sent')">Envoyés <span class="help" id="outCount">—</span></button>
+      </div>
+    </div>
+    <div class="tabpanes">
+      <!-- INBOX -->
+      <div class="pane active" id="paneInbox">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+          <input id="inSearch" placeholder="Rechercher…" oninput="renderInbox()">
+        </div>
+        <div style="overflow:auto">
+          <table class="table" id="inTable">
+            <thead><tr>
+              <th>Date</th><th>De</th><th>À</th><th>Objet</th><th>État</th><th>Actions</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- SENT -->
+      <div class="pane" id="paneSent">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+          <input id="outSearch" placeholder="Rechercher…" oninput="renderSent()">
+        </div>
+        <div style="overflow:auto">
+          <table class="table" id="outTable">
+  <thead><tr>
+    <th>Date</th>
+    <th>À</th>
+    <th>Objet</th>
+    <th>État</th> <!-- 🔍 Loupe d'état -->
+    <th>Actions</th>
+  </tr></thead>
+
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- READ MODAL -->
+<div id="readModal" class="modal" aria-hidden="true">
+  <div class="modal-card">
+    <div class="modal-head">
+      <strong id="rmSubject">—</strong>
+      <button class="small-btn" onclick="closeRead()">Fermer</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+        <div class="avatar" id="rmAvatar">?</div>
+        <div>
+          <div><strong id="rmFrom">—</strong> → <span id="rmTo">—</span></div>
+          <div class="help" id="rmDate">—</div>
+        </div>
+      </div>
+      <pre id="rmBody" style="white-space:pre-wrap;font-family:inherit"></pre>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <button class="small-btn" onclick="replyFromModal()">Répondre</button>
+        <button class="small-btn" onclick="forwardFromModal()">Transférer</button>
+        <button class="small-btn danger" onclick="deleteFromModal()">Supprimer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS MODAL -->
+<div id="statusModal" class="modal" aria-hidden="true">
+  <div class="modal-card" style="max-width:500px">
+    <div class="modal-head">
+      <strong>État de lecture</strong>
+      <button class="small-btn" onclick="closeStatus()">Fermer</button>
+    </div>
+    <div class="modal-body">
+      <table class="table" id="statusTable">
+        <thead>
+          <tr>
+            <th>Destinataire</th>
+            <th>État</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+
+  
+<footer>© CISMIC — Messagerie interne — 2025</footer>
+
+<!-- 🔌 Firebase + Firestore + stockage partagé -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="cloud-storage.js"></script>
+
+<script>
+/* =======================================================
+   🔁 Synchro Messagerie <-> Firestore
+   ======================================================= */
+
+// Quelles clés on synchronise vers le cloud
+function shouldSyncMsgKey(key){
+  return key && key.startsWith("messages_");
+}
+
+// Cloud -> local : au chargement de la page
+async function syncMessagesFromCloud(){
+  try{
+    if(typeof db === "undefined"){
+      console.warn("Firestore non initialisé (messagerie en mode local uniquement).");
+      return;
+    }
+    const snap = await db.collection("accueilcs").get();
+    snap.forEach(doc=>{
+      const id = doc.id;
+      if(shouldSyncMsgKey(id)){
+        try{
+          const data = doc.data();
+          // 🔧 Déballage du wrapper {items:[], __type:'array'}
+          let value = data;
+          if(data && data.__type === "array" && Array.isArray(data.items)){
+            value = data.items;
+          }
+          localStorage.setItem(id, JSON.stringify(value));
+        }catch(e){
+          console.error("Erreur cache local pour", id, e);
+        }
+      }
+    });
+    console.log("Messagerie : sync Firestore -> localStorage OK");
+  }catch(e){
+    console.error("syncMessagesFromCloud", e);
+  }
+}
+
+// local -> cloud : interception des setItem / removeItem
+(function(){
+  const origSet = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, value){
+    origSet(key, value);
+    if(shouldSyncMsgKey(key) && typeof cloudSetJSON === "function"){
+      try{
+        const obj = JSON.parse(value);
+        cloudSetJSON(key, obj);   // collection "accueilcs"
+      }catch(e){
+        console.error("cloudSetJSON (messagerie)", e);
+      }
+    }
+  };
+
+  const origRemove = localStorage.removeItem.bind(localStorage);
+  localStorage.removeItem = function(key){
+    if(shouldSyncMsgKey(key) && typeof db !== "undefined"){
+      db.collection("accueilcs").doc(key).delete().catch(err=>{
+        console.warn("Suppression Firestore (messagerie) échouée (non bloquant)", err);
+      });
+    }
+    origRemove(key);
+  };
+})();
+</script>
+
+<script>
+/* ===== Helpers ===== */
+function escapeHtml(s){return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));}
+function norm(s){try{return String(s||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();}catch(_){return String(s||"").toLowerCase().trim();}}
+function fmtDate(ts){const d=new Date(ts);const p=n=>String(n).padStart(2,'0');return `${p(d.getDate())}-${p(d.getMonth()+1)}-${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`}
+function initials(name){const parts=String(name||"").trim().split(/\s+/).slice(0,2);return parts.map(p=>p[0]||'').join('').toUpperCase()||'?'}
+
+/* ===== Session & Contexte ===== */
+let ctx={user:null,cis:"",keyMsg:""};
+  function isSuperAdmin(){
+  const s = robustSession();
+  return s && String(s.matricule) === '1414';
+}
+
+function robustSession(){ try{const raw=localStorage.getItem("csver_session"); if(!raw) return null; const s=JSON.parse(raw); return s&&typeof s==="object"?s:null;}catch(_){return null;} }
+function getDisplayName(u){
+  const n=(((u?.prenom||"")+" "+(u?.nom||"")).trim()); if(n) return n;
+  try{const fiche=JSON.parse(localStorage.getItem("csver_user_"+(u?.matricule||""))||"null"); const n2=(((fiche?.prenom||"")+" "+(fiche?.nom||"")).trim()); if(n2) return n2;}catch(_){}
+  try{const agents=JSON.parse(localStorage.getItem("agents_data")||"[]"); const hit=agents.find(a=>a.matricule===u?.matricule); if(hit){const n3=(((hit.prenom||"")+" "+(hit.nom||"")).trim()); return n3||hit.nom||hit.prenom||u?.matricule||"Agent";}}catch(_){}
+  return u?.matricule||"Agent";
+}
+
+/* ===== Normalisation Users (compatible Admin) ===== */
+function cisKey(x){ if(!x) return ""; try{ return String(x).replace(/^CIS\s*/i,"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase(); }catch(_){ return String(x).toLowerCase().trim(); } }
+function defaultPerms(){ return {agent:false,sog:false,formation:false,fdf:false,pharma:false,habillement:false,gestion_habillement:false,mnr:false,"véhicules":false,atelier:false,magasin:false,"saisie_fma":false,admin:false}; }
+
+function normalizeUser(u){
+  const copy = JSON.parse(JSON.stringify(u||{}));
+
+  // cis -> {primary, secondaries:[]}
+  if(Array.isArray(copy.cis)){
+    const primary = copy.cis[0]||"";
+    const rest = (copy.cis.slice(1)||[]).map(c=>({cis:c,statut:copy.statut||"SPV"}));
+    copy.cis = {primary, secondaries:rest};
+  }else if(typeof copy.cis==="string"){
+    copy.cis = {primary:copy.cis, secondaries:[]};
+  }else{
+    copy.cis = copy.cis || {primary:"", secondaries:[]};
+  }
+
+  // statut principal par défaut
+  if(!copy.statut) copy.statut = "SPV";
+
+  // permissions
+  const P = defaultPerms();
+  copy.permissions = copy.permissions || {primary:P, secondaries:{}};
+  copy.permissions.primary = Object.assign({}, P, copy.permissions.primary||{});
+  const sec = {};
+  Object.keys(copy.permissions.secondaries||{}).forEach(k=>{
+    sec[k] = Object.assign({}, P, copy.permissions.secondaries[k]||{});
+  });
+  copy.permissions.secondaries = sec;
+  return copy;
+}
+
+function userBelongsToMyCis(u, mine){
+  const up = normalizeUser(u);
+  if(cisKey(up.cis.primary)===cisKey(mine)) return true;
+  return (up.cis.secondaries||[]).some(s=> cisKey(s.cis)===cisKey(mine));
+}
+
+function statutInMyCis(u, mine){
+  const up = normalizeUser(u);
+  if(cisKey(up.cis.primary)===cisKey(mine)) return up.statut||"SPV";
+  const s = (up.cis.secondaries||[]).find(x=>cisKey(x.cis)===cisKey(mine));
+  return s ? (s.statut||"SPV") : (up.statut||"SPV");
+}
+
+function sogInMyCis(u, mine){
+  const up = normalizeUser(u);
+  // permission SOG sur le CIS concerné
+  if(cisKey(up.cis.primary)===cisKey(mine)){
+    return !!(up.permissions && up.permissions.primary && up.permissions.primary.sog);
+  }
+  const entry = (up.cis.secondaries||[]).find(x=>cisKey(x.cis)===cisKey(mine));
+  if(!entry) return false;
+  const secPerms = (up.permissions && up.permissions.secondaries) ? up.permissions.secondaries[entry.cis] : null;
+  return !!(secPerms && secPerms.sog);
+}
+  /* ===== Admin helpers ===== */
+function adminInMyCis(u, mine){
+  const up = normalizeUser(u);
+
+  // admin sur le CIS principal
+  if(cisKey(up.cis.primary)===cisKey(mine)){
+    return !!(up.permissions && up.permissions.primary && up.permissions.primary.admin);
+  }
+
+  // admin sur un CIS secondaire
+  const entry = (up.cis.secondaries||[]).find(x=>cisKey(x.cis)===cisKey(mine));
+  if(!entry) return false;
+  const secPerms = (up.permissions && up.permissions.secondaries)
+    ? up.permissions.secondaries[entry.cis]
+    : null;
+  return !!(secPerms && secPerms.admin);
+}
+
+// admin sur au moins un CIS (n'importe lequel)
+function adminAnywhere(u){
+  const up = normalizeUser(u);
+  if(up.permissions && up.permissions.primary && up.permissions.primary.admin) return true;
+  const sec = (up.permissions && up.permissions.secondaries) || {};
+  return Object.keys(sec).some(cisName => !!sec[cisName].admin);
+}
+
+// est-ce que l'utilisateur connecté est admin sur son CIS actif ?
+function isCurrentUserAdmin(){
+  const s = robustSession();
+  if(!s) return false;
+  try{
+    const raw = localStorage.getItem("csver_user_"+s.matricule);
+    if(!raw) return false;
+    const u = JSON.parse(raw);
+    const myCis = Array.isArray(s.cis) ? (s.cis[0] || "") : (s.cis || "");
+    return adminInMyCis(u, myCis);
+  }catch(_){
+    return false;
+  }
+}
+
+/* ===== Contacts (liste simple pour autocomplete) ===== */
+function getContactsForCurrentCis(){
+  const contacts = [];
+  const mine = String(ctx.cis || "");
+  const iAmAdmin = isCurrentUserAdmin() || isSuperAdmin(); // super admin inclus
+  const seen = new Set(); // pour éviter les doublons
+
+  for(let i=0; i<localStorage.length; i++){
+    const key = localStorage.key(i);
+    if(!key || !key.startsWith('csver_user_')) continue;
+
+    try{
+      const u = JSON.parse(localStorage.getItem(key) || 'null');
+      if(!u || !u.matricule) continue;
+      const mat = u.matricule;
+      const baseName = ((u.prenom||"")+" "+(u.nom||"")).trim() || (mat || "Agent");
+      const up = normalizeUser(u);
+
+      // 1️⃣ Tous les agents de mon CIS (comme avant)
+      if(userBelongsToMyCis(up, mine)){
+        if(!seen.has(mat)){
+          contacts.push({matricule: mat, display: baseName});
+          seen.add(mat);
+        }
+        continue;
+      }
+
+      // 2️⃣ Si je suis admin → j'ajoute aussi les admins des autres CIS
+      if(iAmAdmin && adminAnywhere(up)){
+        if(!seen.has(mat)){
+          const label = baseName + " (Admin " + (up.cis.primary || "") + ")";
+          contacts.push({matricule: mat, display: label});
+          seen.add(mat);
+        }
+      }
+
+    }catch(_){}
+  }
+
+  contacts.sort((a,b)=> a.display.localeCompare(b.display,"fr",{sensitivity:"base"}));
+  return contacts;
+}
+
+
+/* ===== Storage ===== */
+const GLOBAL_CIS = '_ALL_'; // canal global pour tous les CIS
+
+function storageKeyForCis(cis){
+  return 'messages_' + cis;
+}
+
+// lecture brute pour une clé donnée (un seul "canal")
+function readMessagesRaw(key){
+  const arr = JSON.parse(localStorage.getItem(key) || "[]");
+  return Array.isArray(arr) ? arr : [];
+}
+
+// sauvegarde brute pour une clé donnée
+function saveMessagesRaw(key, arr){
+  localStorage.setItem(key, JSON.stringify(arr));
+}
+
+// 🔎 chercher un message par id, en local + global
+function findMessageById(id){
+  // 1) messages du CIS courant
+  const localKey = storageKeyForCis(ctx.cis);
+  let arr = readMessagesRaw(localKey);
+  let msg = arr.find(m => m.id === id);
+  if (msg) return { key: localKey, arr, msg };
+
+  // 2) messages globaux
+  const globalKey = storageKeyForCis(GLOBAL_CIS);
+  let arrG = readMessagesRaw(globalKey);
+  let msgG = arrG.find(m => m.id === id);
+  if (msgG) return { key: globalKey, arr: arrG, msg: msgG };
+
+  return null;
+}
+
+// ✅ utilisé par le reste du code : renvoie tous les messages visibles
+function readMessages(){
+  const localKey   = storageKeyForCis(ctx.cis);
+  const globalKey  = storageKeyForCis(GLOBAL_CIS);
+  const localMsgs  = readMessagesRaw(localKey);
+  const globalMsgs = readMessagesRaw(globalKey);
+  return localMsgs.concat(globalMsgs);
+}
+
+
+/* ===== Composer state ===== */
+const composer={to:[]};
+function resetComposer(){document.getElementById('subject').value='';document.getElementById('body').value='';composer.to=[];renderToChips();document.getElementById('toInput').value='';}
+function addRecipient(c){ if(!c||!c.matricule) return; if(composer.to.some(x=>x.matricule===c.matricule)) return; composer.to.push({matricule:c.matricule,display:c.display}); renderToChips(); hideSuggest(); document.getElementById('toInput').value=''; }
+function removeRecipient(mat){composer.to=composer.to.filter(x=>x.matricule!==mat); renderToChips();}
+function renderToChips(){const box=document.getElementById('toBox'); const input=document.getElementById('toInput'); box.innerHTML=''; composer.to.forEach(t=>{const el=document.createElement('span'); el.className='tag'; el.innerHTML=`${escapeHtml(t.display)} <button title="Retirer" onclick="removeRecipient('${t.matricule}')">×</button>`; box.appendChild(el);}); box.appendChild(input);}
+function addAllRecipients(){ getContactsForCurrentCis().forEach(addRecipient); }
+
+/* ===== Raccourcis rôles (SOG / SPV / SPP) ===== */
+function getAllUsers(){ const arr=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k && k.startsWith('csver_user_')){ try{ arr.push(JSON.parse(localStorage.getItem(k)||'null')); }catch(_){}} } return arr; }
+function addByStatut(statutWanted){
+  const mine = ctx.cis||"";
+  const all = getAllUsers();
+  all.forEach(u=>{
+    if(!userBelongsToMyCis(u, mine)) return;
+    if((statutInMyCis(u, mine)||"").toUpperCase() === String(statutWanted).toUpperCase()){
+      const display = ((u.prenom||"")+" "+(u.nom||"")).trim() || (u.matricule||"Agent");
+      addRecipient({matricule:u.matricule||"", display});
+    }
+  });
+}
+function addBySOG(){
+  const mine = ctx.cis||"";
+  const all = getAllUsers();
+  all.forEach(u=>{
+    if(!userBelongsToMyCis(u, mine)) return;
+    if(sogInMyCis(u, mine)){
+      const display = ((u.prenom||"")+" "+(u.nom||"")).trim() || (u.matricule||"Agent");
+      addRecipient({matricule:u.matricule||"", display});
+    }
+  });
+}
+
+/* ===== Suggestions (autocomplete) ===== */
+let cachedContacts=[];
+function updateSuggestions(){
+  const q=norm(document.getElementById('toInput').value);
+  const box=document.getElementById('toSuggest');
+  if(!q){hideSuggest();return}
+  const hits=cachedContacts.filter(c=> norm(c.display).includes(q) || norm(c.matricule).includes(q)).slice(0,20);
+  if(!hits.length){hideSuggest();return}
+  box.innerHTML=hits.map(c=>`<div onclick="selectSuggestion('${c.matricule.replace(/\'/g,"\\'")}')">${escapeHtml(c.display)}</div>`).join('');
+  box.style.display='block';
+}
+function selectSuggestion(mat){const c=cachedContacts.find(x=>x.matricule===mat); if(c) addRecipient(c);}
+function hideSuggest(){document.getElementById('toSuggest').style.display='none'}
+
+/* ===== Send ===== */
+function sendMessage(evt){
+  if(evt && evt.preventDefault) evt.preventDefault();
+
+  const from = ctx.user;
+  if(!from){
+    alert('Session expirée.');
+    return false;
+  }
+
+  const broadcast = isSuperAdmin() && document.getElementById('broadcastAll')?.checked;
+
+  // Si diffusion globale : on remplit automatiquement tous les destinataires
+  if (broadcast){
+    composer.to = [];
+    const all = getAllUsers(); // existe déjà dans ton code
+    all.forEach(u => {
+      if(!u || !u.matricule) return;
+      const display = ((u.prenom || "") + " " + (u.nom || "")).trim() || (u.matricule || "Agent");
+      if (!composer.to.some(t => t.matricule === u.matricule)){
+        composer.to.push({ matricule: u.matricule, display });
+      }
+    });
+  }
+
+  if(!composer.to.length){
+    alert('Veuillez ajouter au moins un destinataire.');
+    return false;
+  }
+
+  const subject = (document.getElementById('subject').value || '').trim();
+  const body    = (document.getElementById('body').value || '').trim();
+  if(!subject || !body){
+    alert('Objet et message sont requis.');
+    return false;
+  }
+
+  // 🧠 Détection : message admin inter-CIS (admin → admin d'un autre CIS)
+  const isAdminSender = isCurrentUserAdmin() || isSuperAdmin();
+  let crossAdmin = false;
+
+  if (!broadcast && isAdminSender){
+    const mine = ctx.cis || "";
+    composer.to.forEach(t => {
+      try{
+        const raw = localStorage.getItem("csver_user_" + t.matricule);
+        if(!raw) return;
+        const u = JSON.parse(raw);
+
+        // destinataire admin mais qui n'est PAS de mon CIS
+        if(!userBelongsToMyCis(u, mine) && adminAnywhere(u)){
+          crossAdmin = true;
+        }
+      }catch(_){}
+    });
+  }
+
+  // 🗂️ Règle de stockage :
+  //  - broadcast super admin → GLOBAL
+  //  - message admin inter-CIS (crossAdmin) → GLOBAL
+  //  - sinon → canal CIS courant
+  const cisForMsg = (broadcast || crossAdmin) ? GLOBAL_CIS : ctx.cis;
+  const key       = storageKeyForCis(cisForMsg);
+
+  const msgs = readMessagesRaw(key);
+  const msg = {
+    id: 'msg_' + Date.now() + "_" + Math.random().toString(36).slice(2,7),
+    cis: cisForMsg,
+    ts: Date.now(),
+    from: { matricule: from.matricule || '', display: getDisplayName(from) },
+    to: composer.to.slice(),
+    subject,
+    body,
+    readBy: {} // matricule -> true (lu)
+  };
+
+  msgs.push(msg);
+  saveMessagesRaw(key, msgs);
+
+  resetComposer();
+  // (On laisse la case broadcast telle quelle)
+  renderInbox();
+  renderSent();
+  alert('Message envoyé.');
+
+  return false;
+}
+
+
+
+/* ===== Inbox / Sent rendering ===== */
+function currentMat(){return ctx.user?.matricule||''}
+function isToMe(msg){return msg.to.some(t=>t.matricule===currentMat())}
+function isFromMe(msg){return (msg.from?.matricule||'')===currentMat()}
+function markRead(msgId){
+  const found = findMessageById(msgId);
+  if (!found) return;
+
+  const { key, arr, msg } = found;
+  msg.readBy = msg.readBy || {};
+  msg.readBy[currentMat()] = true;
+
+  saveMessagesRaw(key, arr);
+}
+
+
+function renderInbox(){
+  const q=norm(document.getElementById('inSearch').value||'');
+  const tbody=document.querySelector('#inTable tbody');
+  const rows=readMessages().filter(isToMe)
+    .filter(m=> !q || norm(m.subject).includes(q) || norm(m.from?.display).includes(q) || norm(m.body).includes(q))
+    .sort((a,b)=>b.ts-a.ts);
+  document.getElementById('inCount').textContent = rows.length+" message(s)";
+  tbody.innerHTML = rows.map(m=>{
+    const toStr=m.to.map(t=>t.display).join(', ');
+    const state = m.readBy[currentMat()]? '<span class="badge read">Lu</span>' : '<span class="badge unread">Non lu</span>';
+    return `<tr>
+      <td>${fmtDate(m.ts)}</td>
+      <td>${escapeHtml(m.from.display)}</td>
+      <td>${escapeHtml(toStr)}</td>
+      <td>${escapeHtml(m.subject)}</td>
+      <td>${state}</td>
+      <td>
+        <button class="small-btn" onclick="openRead('${m.id}')">Lire</button>
+        <button class="small-btn" onclick="quickReply('${m.id}')">Répondre</button>
+        <button class="small-btn danger" onclick="deleteMessage('${m.id}')">Supprimer</button>
+      </td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="6" style="color:#666;padding:10px">Aucun message.</td></tr>`;
+}
+
+function openReadStatus(msgId){
+  const msg = readMessages().find(m => m.id === msgId);
+  if (!msg) return;
+
+  const tbody = document.querySelector('#statusTable tbody');
+  const readBy = msg.readBy || {};
+
+  tbody.innerHTML = msg.to.map(t => {
+    const hasRead = !!readBy[t.matricule];
+
+    const icon = hasRead ? '✔️' : '⏳';
+    const title = hasRead ? 'Message lu' : 'Pas encore lu';
+
+    return `
+      <tr>
+        <td>${escapeHtml(t.display)}</td>
+        <td><span title="${title}">${icon}</span></td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('statusModal').style.display = 'flex';
+  document.getElementById('statusModal').setAttribute('aria-hidden','false');
+}
+
+function closeStatus(){
+  document.getElementById('statusModal').style.display='none';
+  document.getElementById('statusModal').setAttribute('aria-hidden','true');
+}
+
+
+function renderSent(){
+  const q = norm(document.getElementById('outSearch').value || '');
+  const tbody = document.querySelector('#outTable tbody');
+
+  const rows = readMessages().filter(isFromMe)
+    .filter(m =>
+      !q ||
+      norm(m.subject).includes(q) ||
+      norm(m.body).includes(q) ||
+      norm(m.to.map(t => t.display).join(', ')).includes(q)
+    )
+    .sort((a, b) => b.ts - a.ts);
+
+  document.getElementById('outCount').textContent = rows.length + " message(s)";
+
+  tbody.innerHTML = rows.map(m => {
+    const toWithIcons = m.to.map(t => {
+      const hasRead = !!(m.readBy && m.readBy[t.matricule]);
+      const icon = hasRead ? '✔️' : '⏳';
+      const title = hasRead ? 'Message lu' : 'Pas encore lu';
+      return `${escapeHtml(t.display)} <span title="${title}">${icon}</span>`;
+    }).join(', ');
+
+    return `<tr>
+      <td>${fmtDate(m.ts)}</td>
+      <td>${toWithIcons}</td>
+      <td>${escapeHtml(m.subject)}</td>
+      <td>
+        <button class="small-btn" title="Voir l'état du message" onclick="openReadStatus('${m.id}')">🔍</button>
+      </td>
+      <td>
+        <button class="small-btn" onclick="openRead('${m.id}')">Ouvrir</button>
+        <button class="small-btn" onclick="forward('${m.id}')">Transférer</button>
+        <button class="small-btn danger" onclick="deleteMessage('${m.id}')">Supprimer</button>
+      </td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="5" style="color:#666;padding:10px">Aucun message envoyé.</td></tr>`;
+}
+  
+
+
+/* ===== Read modal & actions ===== */
+let openedMsg=null;
+function openRead(id){const m=readMessages().find(x=>x.id===id); if(!m) return; openedMsg=m; markRead(id); const from=m.from?.display||'—'; const to=m.to.map(t=>t.display).join(', ');
+  document.getElementById('rmSubject').textContent=m.subject; document.getElementById('rmFrom').textContent=from; document.getElementById('rmTo').textContent=to; document.getElementById('rmDate').textContent=fmtDate(m.ts); document.getElementById('rmBody').textContent=m.body; document.getElementById('rmAvatar').textContent=initials(from);
+  document.getElementById('readModal').style.display='flex'; document.getElementById('readModal').setAttribute('aria-hidden','false');
+  renderInbox();
+}
+function closeRead(){document.getElementById('readModal').style.display='none';document.getElementById('readModal').setAttribute('aria-hidden','true'); openedMsg=null;}
+
+/* >>>>>>> Correctif minimal (répondre / transférer depuis la modale) <<<<<<< */
+function replyFromModal(){
+  if(!openedMsg) return;
+  const id = openedMsg.id;
+  closeRead();
+  quickReply(id);
+}
+function forwardFromModal(){
+  if(!openedMsg) return;
+  const id = openedMsg.id;
+  closeRead();
+  forward(id);
+}
+/* >>>>>>> fin du correctif <<<<<<< */
+
+function deleteFromModal(){ if(!openedMsg) return; const id=openedMsg.id; closeRead(); deleteMessage(id); }
+
+function quickReply(id){const m=readMessages().find(x=>x.id===id); if(!m) return; resetComposer(); addRecipient({matricule:m.from.matricule,display:m.from.display}); document.getElementById('subject').value = m.subject.startsWith('Re: ')? m.subject : 'Re: '+m.subject; document.getElementById('body').value = `\n\n— Le ${fmtDate(m.ts)}, ${m.from.display} a écrit :\n${m.body}`; window.scrollTo({top:0,behavior:'smooth'});}
+function forward(id){
+  const m = readMessages().find(x => x.id === id);
+  if (!m) return;
+
+  resetComposer();
+
+  document.getElementById('subject').value =
+    m.subject.startsWith('Tr: ') ? m.subject : 'Tr: ' + m.subject;
+
+  document.getElementById('body').value =
+    `${m.body}\n\n— Transféré par ${getDisplayName(ctx.user)} (${fmtDate(Date.now())})`;
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+
+/* ===== Delete ===== */
+function deleteMessage(id){
+  const found = findMessageById(id);
+  if (!found) return;
+
+  const { key, arr } = found;
+  const idx = arr.findIndex(m => m.id === id);
+  if (idx < 0) return;
+
+  if (!confirm('Supprimer ce message ?')) return;
+
+  arr.splice(idx, 1);
+  saveMessagesRaw(key, arr);
+
+  renderInbox();
+  renderSent();
+}
+
+
+/* ===== Navigation ===== */
+function goAccueil(){ try{window.location.href='index.html'}catch(_){} }
+
+/* ===== Onglets ===== */
+function switchTab(name){
+  const inboxActive = name==='inbox';
+  const tInbox=document.getElementById('tabInbox');
+  const tSent=document.getElementById('tabSent');
+  const pInbox=document.getElementById('paneInbox');
+  const pSent=document.getElementById('paneSent');
+  if(!tInbox||!tSent||!pInbox||!pSent) return;
+  tInbox.classList.toggle('active', inboxActive);
+  tSent.classList.toggle('active', !inboxActive);
+  pInbox.classList.toggle('active', inboxActive);
+  pSent.classList.toggle('active', !inboxActive);
+  try{ localStorage.setItem('csver_msg_tab', name); }catch(_) {}
+}
+
+/* ===== Init ===== */
+function init(){
+  const sess=robustSession(); if(!sess){ alert('Session expirée.'); try{window.location.href='login.html'}catch(_){} return; }
+  ctx.user=sess; ctx.cis=Array.isArray(sess.cis)?sess.cis[0]:sess.cis; ctx.keyMsg='messages_'+ctx.cis;
+  document.getElementById('cisLabel').textContent = 'Centre de Secours '+ctx.cis;
+  document.getElementById('fromDisplay').value = getDisplayName(sess);
+  cachedContacts = getContactsForCurrentCis();
+  renderToChips(); renderInbox(); renderSent();
+   // ✅ Affiche la ligne “Envoyer à tous les CIS” uniquement pour le super admin
+  if (isSuperAdmin()){
+    const row = document.getElementById('broadcastRow');
+    if (row) row.style.display = 'block';
+  }
+  try{ const wanted=localStorage.getItem('csver_msg_tab')||'inbox'; switchTab(wanted==='sent'?'sent':'inbox'); }catch(_){ switchTab('inbox'); }
+}
+
+/* events */
+window.addEventListener('DOMContentLoaded', async ()=>{
+  await syncMessagesFromCloud(); // 🔁 d'abord on ramène les messages du cloud
+  init();                        // puis on initialise la messagerie
+});
+document.getElementById('toInput').addEventListener('input', updateSuggestions);
+document.addEventListener('click', (e)=>{ const box=document.getElementById('toSuggest'); if(box && !box.contains(e.target) && e.target.id!=='toInput'){ hideSuggest(); } });
+// live updates
+window.addEventListener('storage', (e)=>{
+  try{
+    if(e.key==='csver_session'){ init(); }
+    if(e.key && (e.key === ctx.keyMsg || e.key === storageKeyForCis(GLOBAL_CIS))){
+      renderInbox(); renderSent();
+    }
+    if(e.key && (e.key==='agents_data' || e.key.startsWith('csver_user_'))){
+      cachedContacts=getContactsForCurrentCis();
+    }
+  }catch(_){}
+});
+
+</script>
+</body>
+</html>

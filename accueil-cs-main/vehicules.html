@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+<title>Gestion des véhicules - CS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+  *{box-sizing:border-box;font-family:'Inter',sans-serif;margin:0;padding:0}
+  body{background:linear-gradient(135deg,#002b5b 0%,#a51212 100%);min-height:100vh;color:#222;}
+
+  header{
+    background:#ffffffea;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:20px 40px;
+    box-shadow:0 4px 15px rgba(0,0,0,.1);
+  }
+  header img{height:80px;}
+  header h1{flex:1;text-align:center;font-size:28px;color:#222;font-weight:700;}
+  header p{text-align:center;color:#555;font-size:15px;margin-top:4px;}
+  .logout-btn{
+    background:#d32f2f;
+    color:#fff;
+    font-weight:700;
+    border:none;
+    padding:10px 24px;
+    border-radius:30px;
+    font-size:15px;
+    cursor:pointer;
+    transition:all 0.25s ease;
+  }
+  .logout-btn:hover{background:#b71c1c;transform:translateY(-3px);}
+
+  .container{
+    max-width:1200px;
+    margin:40px auto;
+    background:#fff;
+    border-radius:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.15);
+    padding:30px 40px;
+  }
+
+  .section-title{
+    font-size:22px;
+    font-weight:600;
+    color:#333;
+    background:#f4f4f4;
+    padding:16px 20px;
+    border-bottom:1px solid #ddd;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+
+  .grid{
+    display:grid;
+    gap:18px;
+    padding:25px;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  }
+  .vehicule-card{
+    border-radius:12px;
+    padding:18px 16px;
+    color:#fff;
+    font-weight:600;
+    text-align:center;
+    cursor:pointer;
+    transition:all .2s ease;
+  }
+  .vehicule-card:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(0,0,0,.15);}
+  .Disponible{background:#4caf50;}
+  .Mineur{background:#ff9800;}
+  .Atelier{background:#2196f3;}
+  .Pret{background:#9c27b0;}
+  .Indispo{background:#f44336;}
+
+  footer{text-align:center;padding:25px;color:#fff;font-size:14px;margin-top:40px}
+
+  /* ---- MODALS ---- */
+  .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:999;}
+  .modal-content{background:#fff;border-radius:16px;padding:35px;width:95%;max-width:900px;
+    box-shadow:0 10px 25px rgba(0,0,0,.4);max-height:90vh;overflow:auto;position:relative;}
+  .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+  .modal-header h2{font-size:24px;color:#333;margin:0;}
+  .x-close{background:none;border:none;font-size:26px;color:#888;cursor:pointer;}
+  .x-close:hover{color:#000;}
+  .form-row{display:flex;gap:16px;align-items:center;margin:12px 0;}
+  .form-row label{min-width:140px;font-weight:600;color:#333;text-align:right;}
+  select,textarea,input[type="text"]{width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;font-size:15px;}
+  textarea{resize:none;height:80px;margin-top:5px;}
+  .save-btn{background:#2e7d32;color:white;font-weight:600;border:none;border-radius:10px;
+    padding:12px 24px;font-size:16px;cursor:pointer;margin-top:14px;}
+  .save-btn:hover{background:#256428;}
+  .history{margin-top:30px;background:#fafafa;border-radius:12px;padding:20px 25px;
+    box-shadow:inset 0 2px 6px rgba(0,0,0,.06);}
+  .history table{width:100%;border-collapse:collapse;text-align:left;}
+  .history th,.history td{padding:10px 12px;border-bottom:1px solid #ddd;vertical-align:top;}
+  .history th{background:#f4f4f4;font-weight:600;color:#333;}
+  .close-anomaly{background:#43a047;color:#fff;border:none;border-radius:6px;
+    padding:5px 8px;font-size:12px;cursor:pointer;transition:.2s;}
+  .close-anomaly:hover{background:#2e7d32;}
+
+  .icon-btn{
+    background:#eef2ff;border:none;border-radius:10px;padding:6px 10px;cursor:pointer;
+    font-size:16px;line-height:1;transition:.2s;
+  }
+  .icon-btn:hover{background:#dfe6ff;}
+
+  #minorRow, #editMinorRow{align-items:flex-start;}
+
+/* ==========================
+   📱 Version mobile (≤ 768px)
+   ========================== */
+@media (max-width:768px){
+
+  body{
+    padding:10px;
+  }
+
+  /* HEADER empilé & centré */
+  header{
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    padding:12px 16px;
+    gap:8px;
+  }
+
+  header img{
+    height:56px;
+  }
+
+  header h1{
+    font-size:22px;
+    margin:4px 0 0;
+  }
+
+  header p{
+    font-size:13px;
+    margin-top:2px;
+  }
+
+  .logout-btn{
+    width:100%;
+    max-width:260px;
+    padding:8px 16px;
+    font-size:14px;
+    border-radius:999px;
+  }
+
+  /* CONTENEUR PRINCIPAL */
+  .container{
+    margin:16px auto 24px;
+    padding:16px 14px;
+    max-width:100%;
+    border-radius:14px;
+  }
+
+  .section-title{
+    font-size:18px;
+    padding:10px 12px;
+  }
+
+  /* Grille des véhicules : 1 carte par ligne */
+  .grid{
+    grid-template-columns:1fr;
+    padding:14px 6px;
+    gap:12px;
+  }
+
+  .vehicule-card{
+    padding:14px 12px;
+    font-size:14px;
+  }
+
+  footer{
+    font-size:12px;
+    padding:14px;
+    margin-top:16px;
+  }
+
+  /* MODALES plus compactes et adaptées mobile */
+  .modal-content{
+    width:100%;
+    max-width:100%;
+    margin:0 8px;
+    padding:18px 14px;
+    border-radius:14px;
+  }
+
+  .modal-header{
+    flex-direction:row;
+    align-items:center;
+    gap:8px;
+  }
+
+  .modal-header h2{
+    font-size:18px;
+  }
+
+  .form-row{
+    flex-direction:column;
+    align-items:stretch;
+    gap:6px;
+    margin:8px 0;
+  }
+
+  .form-row label{
+    min-width:auto;
+    text-align:left;
+  }
+
+  select,
+  textarea,
+  input[type="text"]{
+    font-size:14px;
+    padding:10px;
+  }
+
+  .save-btn{
+    width:100%;
+    margin-top:10px;
+  }
+
+  /* Tableau des anomalies : scroll horizontal si besoin */
+  .history{
+    margin-top:18px;
+    padding:12px;
+    overflow-x:auto;
+  }
+
+  .history table{
+    min-width:600px;
+    font-size:13px;
+  }
+}
+  
+</style>
+</head>
+<body>
+
+<header>
+  <img src="https://i.postimg.cc/LsB40JQq/logo-cismic.png" alt="Logo SDIS 30">
+  <div style="flex:1;text-align:center;">
+    <h1 id="cis-title">Gestion des véhicules</h1>
+    <p>Suivi et anomalies — CS</p>
+  </div>
+  <button class="logout-btn" onclick="window.location.href='index.html'">⬅ Retour</button>
+</header>
+
+<div class="container">
+  <div class="section-title">
+    🚗 Véhicules du centre
+  </div>
+  <div id="vehicule-grid" class="grid"></div>
+</div>
+
+<footer>© SDIS 30 — Gestion véhicules 2025</footer>
+
+<!-- MODALE PRINCIPALE -->
+<div class="modal" id="vehiculeModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modalTitle">Détails du véhicule</h2>
+      <button class="x-close" onclick="closeModal()">×</button>
+    </div>
+
+    <form id="vehiculeForm">
+      <div class="form-row">
+        <label>État :</label>
+        <select id="vehiculeEtat" onchange="togglePretField()">
+          <option value="Disponible">Disponible</option>
+          <option value="Mineur">Disponible avec défaut mineur</option>
+          <option value="Atelier">Aux ateliers</option>
+          <option value="Pret">Indisponible avec prêt</option>
+          <option value="Indispo">Indisponible sans prêt</option>
+        </select>
+      </div>
+
+      <!-- Spécifique Mineur -->
+      <div class="form-row" id="minorRow" style="display:none;">
+        <label>Défaut mineur :</label>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;">
+          <div>
+            <div style="font-weight:600;margin-bottom:4px;">Pièce commandée :</div>
+            <label style="margin-right:10px;"><input type="radio" name="pieceCmd" value="oui"> Oui</label>
+            <label><input type="radio" name="pieceCmd" value="non"> Non</label>
+          </div>
+          <div>
+            <div style="font-weight:600;margin-bottom:4px;">Atelier informé :</div>
+            <label style="margin-right:10px;"><input type="radio" name="atelierInf" value="oui"> Oui</label>
+            <label><input type="radio" name="atelierInf" value="non"> Non</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row" id="pretRow" style="display:none;">
+        <label>Véhicule de prêt :</label>
+        <input type="text" id="pretNom" placeholder="Ex : VSAV 261">
+      </div>
+
+      <div class="form-row" style="align-items:flex-start;">
+        <label>Anomalie :</label>
+        <textarea id="anomalyText" placeholder="Décrire l'anomalie..."></textarea>
+      </div>
+    </form>
+    <button class="save-btn" onclick="addAnomaly()">💾 Ajouter / Mettre à jour</button>
+
+    <div class="history">
+      <h3>🕓 Anomalies en cours</h3>
+      <table id="historyTable">
+        <thead>
+          <tr>
+            <th>Date</th><th>Agent</th><th>Description</th><th>État</th><th>Pièce cmd.</th><th>Atelier inf.</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE D'ÉDITION (loupe) -->
+<div class="modal" id="editModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Modifier l’anomalie</h2>
+      <button class="x-close" onclick="closeEditModal()">×</button>
+    </div>
+
+    <div class="form-row">
+      <label>État :</label>
+      <select id="editLevel" onchange="toggleEditFields()">
+        <option value="Disponible">Disponible</option>
+        <option value="Mineur">Disponible avec défaut mineur</option>
+        <option value="Atelier">Aux ateliers</option>
+        <option value="Pret">Indisponible avec prêt</option>
+        <option value="Indispo">Indisponible sans prêt</option>
+      </select>
+    </div>
+
+    <div class="form-row" id="editMinorRow" style="display:none;">
+      <label>Défaut mineur :</label>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:600;margin-bottom:4px;">Pièce commandée :</div>
+          <label style="margin-right:10px;"><input type="radio" name="editPieceCmd" value="oui"> Oui</label>
+          <label><input type="radio" name="editPieceCmd" value="non"> Non</label>
+        </div>
+        <div>
+          <div style="font-weight:600;margin-bottom:4px;">Atelier informé :</div>
+          <label style="margin-right:10px;"><input type="radio" name="editAtelierInf" value="oui"> Oui</label>
+          <label><input type="radio" name="editAtelierInf" value="non"> Non</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row" id="editPretRow" style="display:none;">
+      <label>Véhicule de prêt :</label>
+      <input type="text" id="editPretNom" placeholder="Ex : VSAV 261">
+    </div>
+
+    <div class="form-row" style="align-items:flex-start;">
+      <label>Description :</label>
+      <textarea id="editText" placeholder="Mettre à jour la description..."></textarea>
+    </div>
+
+    <button class="save-btn" onclick="saveEditedAnomaly()">💾 Enregistrer</button>
+  </div>
+</div>
+
+<!-- 🔌 Firebase + Firestore + stockage partagé -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="cloud-storage.js"></script>
+
+<script>
+/* =======================================================
+     🔁 SYNCHRO VÉHICULES <-> FIRESTORE
+   ======================================================= */
+
+// On synchronise seulement les données véhicules
+function shouldSyncVehicules(key){
+  return key && key.startsWith("vehicules_");
+}
+
+/* 🔄 Cloud ➜ Local */
+async function syncVehiculesFromCloud(){
+  try{
+    if(typeof db === "undefined"){
+      console.warn("Firestore non initialisé");
+      return;
+    }
+    const snap = await db.collection("accueilcs").get();
+    snap.forEach(doc=>{
+      const key = doc.id;
+      if(shouldSyncVehicules(key)){
+        // on stocke tel quel, on normalisera à la lecture
+        localStorage.setItem(key, JSON.stringify(doc.data()));
+      }
+    });
+    console.log("Véhicules : sync Firestore → localStorage OK");
+  }catch(e){
+    console.error("syncVehiculesFromCloud", e);
+  }
+}
+
+/* 🔄 Local ➜ Cloud */
+(function(){
+  const oldSet = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, val){
+    oldSet(key, val);
+    if(shouldSyncVehicules(key)){
+      try{
+        cloudSetJSON(key, JSON.parse(val));
+      }catch(_){}
+    }
+  };
+
+  const oldRemove = localStorage.removeItem.bind(localStorage);
+  localStorage.removeItem = function(key){
+    if(shouldSyncVehicules(key)){
+      try{
+        db.collection("accueilcs").doc(key).delete();
+      }catch(_){}
+    }
+    oldRemove(key);
+  };
+})();
+</script>
+
+<script>
+let user=null,key="",vehicules=[],currentVehiculeIndex=null;
+let editingVehIndex=null, editingHistTs=null;
+const SEVERITY={ "Disponible":0,"Mineur":1,"Atelier":2,"Pret":3,"Indispo":4 };
+
+/* ====== Normalisation des données (gère le format {items:[...]} de Firestore) ====== */
+function normalizeVehicules(raw){
+  if(Array.isArray(raw)) return raw;              // déjà un tableau
+  if(raw && Array.isArray(raw.items)) return raw.items; // objet {items:[]}
+  return [];
+}
+
+function gravestEtat(h){
+  let m="Disponible",s=0;
+  h.forEach(x=>{
+    const v=SEVERITY[x.level]??0;
+    if(v>s){s=v;m=x.level}
+  });
+  return m;
+}
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g,m=>(
+    {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]||m
+  ));
+}
+function saveVehs(){
+  localStorage.setItem(key,JSON.stringify(vehicules));
+}
+function getSessionAgentDisplay(u){
+  const name=((u?.prenom||"")+" "+(u?.nom||"")).trim();
+  return name||u?.matricule||"Agent";
+}
+
+/* Autorisation édition: admin OU SPP */
+function canEdit(){
+  if(!user) return false;
+  const role=(user.role||"").toLowerCase().trim();
+  return user.isAdmin===true || role==="admin" || role==="spp";
+}
+
+function getRadioValue(name){
+  const el=document.querySelector(`input[name="${name}"]:checked`);
+  return el?el.value:null;
+}
+function setRadioGroup(name,val){
+  const yes=document.querySelector(`input[name="${name}"][value="oui"]`);
+  const no=document.querySelector(`input[name="${name}"][value="non"]`);
+  if(yes&&no){
+    yes.checked=(val==="oui");
+    no.checked=(val==="non");
+  }
+}
+
+/* ---- Init ---- */
+window.addEventListener("DOMContentLoaded", async ()=>{
+  // 1️⃣ On récupère d'abord les données du cloud dans le localStorage
+  await syncVehiculesFromCloud();
+
+  // 2️⃣ Puis on continue comme avant
+  user=JSON.parse(localStorage.getItem("csver_session")||"null");
+  if(!user){
+    alert("Session expirée.");
+    window.location.href="login.html";
+    return;
+  }
+
+  const cis = Array.isArray(user.cis) ? user.cis[0] : user.cis;
+  document.getElementById("cis-title").textContent = `Gestion des véhicules - CS ${cis}`;
+
+  key = "vehicules_" + cis;   // 🔑 même clé que dans suivi-vehicules.html
+
+  const raw = JSON.parse(localStorage.getItem(key) || "[]");
+  vehicules = normalizeVehicules(raw);
+
+  renderVehicules();
+});
+
+function renderVehicules(){
+  const grid=document.getElementById("vehicule-grid");
+  grid.innerHTML="";
+  if(vehicules.length===0){
+    grid.innerHTML="<p style='color:#666;text-align:center;'>Aucun véhicule enregistré.</p>";
+    return;
+  }
+  vehicules.forEach((v,i)=>{
+    const card=document.createElement("div");
+    card.className=`vehicule-card ${v.etat||"Disponible"}`;
+    let pretLabel=(v.etat==="Pret" && v.pretNom)
+      ? `<br><small>Pret — ${escapeHtml(v.pretNom)}</small>`
+      : `<br><small>${escapeHtml(v.etat||"Disponible")}</small>`;
+    card.innerHTML=`<strong>${escapeHtml(v.nom)}</strong>${pretLabel}`;
+    card.onclick=()=>openModal(i);
+    grid.appendChild(card);
+  });
+}
+
+/* ---- Modale véhicule ---- */
+function openModal(i){
+  currentVehiculeIndex=i;
+  const v=vehicules[i];
+  document.getElementById("vehiculeModal").style.display="flex";
+  document.getElementById("modalTitle").textContent=v.nom;
+  document.getElementById("vehiculeEtat").value=v.etat||"Disponible";
+  document.getElementById("pretNom").value=v.pretNom||"";
+  document.getElementById("anomalyText").value="";
+
+  // Préremplir le panneau "Mineur" (form d'ajout)
+  const mi=v.minorInfo||{};
+  setRadioGroup("pieceCmd", mi.pieceCommande ? "oui" : (mi.pieceCommande===false ? "non" : null));
+  setRadioGroup("atelierInf", mi.atelierInforme ? "oui" : (mi.atelierInforme===false ? "non" : null));
+
+  togglePretField();
+  loadHistory(v);
+}
+function closeModal(){
+  document.getElementById("vehiculeModal").style.display="none";
+}
+
+function togglePretField(){
+  const etat=document.getElementById("vehiculeEtat").value;
+  document.getElementById("pretRow").style.display = (etat==="Pret") ? "flex" : "none";
+  document.getElementById("minorRow").style.display = (etat==="Mineur") ? "flex" : "none";
+}
+
+/* ---- Ajout d'une nouvelle anomalie ---- */
+function addAnomaly(){
+  const v=vehicules[currentVehiculeIndex];
+  const etat=document.getElementById("vehiculeEtat").value;
+  const text=document.getElementById("anomalyText").value.trim();
+  const pretNom=document.getElementById("pretNom").value.trim();
+  if(etat!=="Disponible" && text===""){
+    alert("Veuillez décrire l'anomalie.");
+    return;
+  }
+
+  v.history=v.history||[];
+  v.pretNom=(etat==="Pret")?pretNom:"";
+
+  // Minor info (au niveau entrée + copie au niveau véhicule pour confort d'affichage)
+  let minorInfoObj;
+  if(etat==="Mineur"){
+    const piece=getRadioValue("pieceCmd");
+    const atl=getRadioValue("atelierInf");
+    minorInfoObj={
+      pieceCommande:(piece==="oui")?true:(piece==="non"?false:undefined),
+      atelierInforme:(atl==="oui")?true:(atl==="non"?false:undefined)
+    };
+    v.minorInfo={...minorInfoObj};
+  }else{
+    delete v.minorInfo;
+  }
+
+  const agent=getSessionAgentDisplay(user);
+  const nowTs=Date.now();
+
+  if(text!==""){
+    v.history.push({
+      date:new Date(nowTs).toLocaleString("fr-FR"),
+      timestamp: nowTs,
+      agent,
+      text,
+      level: etat,
+      minorInfo: minorInfoObj,
+      closed:false
+    });
+  }
+
+  const open=v.history.filter(h=>!h.closed);
+  v.etat=open.length?gravestEtat(open):"Disponible";
+  saveVehs();
+  renderVehicules();
+  loadHistory(v);
+  document.getElementById("anomalyText").value="";
+}
+
+/* ---- Tableau des anomalies en cours ---- */
+function loadHistory(v){
+  const tbody=document.querySelector("#historyTable tbody");
+  tbody.innerHTML="";
+  (v.history||[]).filter(h=>!h.closed).forEach((h)=>{
+    const mi=h.minorInfo||{};
+    const pc = (mi.pieceCommande===true) ? "Oui" : (mi.pieceCommande===false ? "Non" : "—");
+    const ai = (mi.atelierInforme===true) ? "Oui" : (mi.atelierInforme===false ? "Non" : "—");
+
+    // Loupe visible seulement SPP/Admin
+    const editBtn = canEdit()
+      ? `<button class="icon-btn" title="Modifier" onclick="openEditAnomaly(${currentVehiculeIndex},${h.timestamp})">🔍</button>`
+      : "";
+
+    const tr=document.createElement("tr");
+    tr.innerHTML=
+      `<td>${escapeHtml(h.date)}</td>
+       <td>${escapeHtml(h.agent)}</td>
+       <td>${escapeHtml(h.text)}</td>
+       <td>${escapeHtml(h.level)}</td>
+       <td>${pc}</td>
+       <td>${ai}</td>
+       <td style="white-space:nowrap;display:flex;gap:6px;">
+         ${editBtn}
+         <button class='close-anomaly' onclick='closeAnomaly(${currentVehiculeIndex},${h.timestamp})'>Clôturer</button>
+       </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function closeAnomaly(vehIndex, ts){
+  const v=vehicules[vehIndex];
+  if(!v||!v.history)return;
+  const idx=v.history.findIndex(h=>h.timestamp===ts);
+  if(idx===-1)return;
+  if(!confirm("Clôturer cette anomalie ?"))return;
+
+  const agent=getSessionAgentDisplay(user);
+  const nowTs=Date.now();
+
+  v.history[idx].closed=true;
+  v.history[idx].closedBy=agent;
+  v.history[idx].closedTs=nowTs;
+
+  const open=v.history.filter(h=>!h.closed);
+  v.etat=open.length?gravestEtat(open):"Disponible";
+  if(v.etat!=="Pret") v.pretNom="";
+  saveVehs();
+  renderVehicules();
+  if(currentVehiculeIndex===vehIndex) loadHistory(v);
+}
+
+/* ---- ÉDITION via loupe ---- */
+function openEditAnomaly(vehIndex, ts){
+  if(!canEdit()){
+    alert("Accès réservé à un SPP ou à un administrateur.");
+    return;
+  }
+  editingVehIndex=vehIndex;
+  editingHistTs=ts;
+
+  const v=vehicules[vehIndex];
+  const idx=v.history.findIndex(h=>h.timestamp===ts);
+  if(idx===-1){
+    alert("Anomalie introuvable.");
+    return;
+  }
+  const h=v.history[idx];
+
+  document.getElementById("editLevel").value = h.level || "Disponible";
+  document.getElementById("editText").value = h.text || "";
+  document.getElementById("editPretNom").value = v.pretNom || "";
+
+  const mi=h.minorInfo||{};
+  setRadioGroup("editPieceCmd", mi.pieceCommande ? "oui" : (mi.pieceCommande===false ? "non" : null));
+  setRadioGroup("editAtelierInf", mi.atelierInforme ? "oui" : (mi.atelierInforme===false ? "non" : null));
+
+  toggleEditFields();
+  document.getElementById("editModal").style.display="flex";
+}
+
+function closeEditModal(){
+  document.getElementById("editModal").style.display="none";
+  editingVehIndex=null; editingHistTs=null;
+}
+
+function toggleEditFields(){
+  const level=document.getElementById("editLevel").value;
+  document.getElementById("editMinorRow").style.display = (level==="Mineur") ? "flex" : "none";
+  document.getElementById("editPretRow").style.display  = (level==="Pret") ? "flex" : "none";
+}
+
+function saveEditedAnomaly(){
+  if(!canEdit()){
+    alert("Accès réservé à un SPP ou à un administrateur.");
+    return;
+  }
+  const v=vehicules[editingVehIndex];
+  if(!v){
+    alert("Véhicule introuvable.");
+    return;
+  }
+  const idx=v.history.findIndex(h=>h.timestamp===editingHistTs);
+  if(idx===-1){
+    alert("Anomalie introuvable.");
+    return;
+  }
+
+  const newLevel=document.getElementById("editLevel").value;
+  const newText=(document.getElementById("editText").value||"").trim();
+
+  const entry=v.history[idx];
+  entry.level = newLevel;
+  entry.text  = newText;
+
+  if(newLevel==="Pret"){
+    v.pretNom = (document.getElementById("editPretNom").value||"").trim();
+  }
+
+  if(newLevel==="Mineur"){
+    const piece=getRadioValue("editPieceCmd");
+    const atl=getRadioValue("editAtelierInf");
+    entry.minorInfo = {
+      pieceCommande:(piece==="oui")?true:(piece==="non"?false:undefined),
+      atelierInforme:(atl==="oui")?true:(atl==="non"?false:undefined)
+    };
+    v.minorInfo = {...entry.minorInfo};
+  } else {
+    delete entry.minorInfo;
+    delete v.minorInfo;
+  }
+
+  const open=v.history.filter(h=>!h.closed);
+  v.etat=open.length?gravestEtat(open):"Disponible";
+  const hasPret=open.some(h=>h.level==="Pret");
+  if(!hasPret) v.pretNom="";
+
+  saveVehs();
+  renderVehicules();
+  if(currentVehiculeIndex===editingVehIndex){
+    loadHistory(v);
+  }
+  closeEditModal();
+}
+
+/* ---- Impression (optionnel, inchangé) ---- */
+function printAnomalies(){
+  const cis=document.getElementById("cis-title").textContent.replace("Gestion des véhicules - CS ","");
+  const vehs=vehicules;
+  let anomalies=[];
+  vehs.forEach(v=>(v.history||[]).filter(h=>!h.closed).forEach(h=>{
+    let etatAffiche=h.level;
+    if(v.etat==="Pret" && v.pretNom) etatAffiche+=" — "+v.pretNom;
+    anomalies.push({vehicule:v.nom,etat:etatAffiche,desc:h.text,agent:h.agent,date:h.date});
+  }));
+  if(anomalies.length===0){
+    alert("Aucune anomalie en cours.");
+    return;
+  }
+  anomalies.sort((a,b)=>a.vehicule.localeCompare(b.vehicule,"fr",{sensitivity:"base"}));
+  const w=window.open("","_blank");
+  const date=new Date().toLocaleString("fr-FR");
+  w.document.write(`<html><head><title>Anomalies - ${escapeHtml(cis)}</title>
+  <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+  body{font-family:'Inter',sans-serif;padding:40px;color:#222;}
+  h1{text-align:center;color:#b71c1c;}table{width:100%;border-collapse:collapse;}
+  th,td{border:1px solid #ccc;padding:8px;}th{background:#f4f4f4;}
+  </style></head><body>
+  <h1>Anomalies en cours - ${escapeHtml(cis)}</h1>
+  <table><thead><tr><th>Véhicule</th><th>État</th><th>Description</th><th>Agent</th><th>Date</th></tr></thead>
+  <tbody>${
+    anomalies.map(a=>`<tr><td>${a.vehicule}</td><td>${a.etat}</td><td>${a.desc}</td><td>${a.agent}</td><td>${a.date}</td></tr>`).join("")
+  }</tbody></table>
+  <footer style='text-align:right;margin-top:40px;'>Généré le ${escapeHtml(date)}</footer>
+  <script>window.onload=()=>window.print();<\/script></body></html>`);
+  w.document.close();
+}
+</script>
+
+</body>
+</html>
+
