@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+<title>Enregistrer une FMA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#0b5bd3;
+  --primary-dark:#0a46a1;
+  --danger:#c62828;
+  --bg-grad:linear-gradient(135deg,#163a6b 0%,#c73636 100%);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg-grad);color:#222;padding:28px}
+h1{color:#fff;text-align:center;margin:0 0 22px 0;font-weight:800;letter-spacing:.2px}
+.container{max-width:1200px;margin:0 auto;background:#fff;box-shadow:0 12px 28px rgba(0,0,0,.18);border-radius:14px;overflow:hidden}
+.bar{display:flex;gap:8px;justify-content:space-between;align-items:center;padding:12px 16px;background:#0f1a2b;color:#fff}
+.bar .actions{display:flex;gap:8px;flex-wrap:wrap}
+button{cursor:pointer;border:none;border-radius:10px;padding:10px 14px;font-weight:700}
+.btn-primary{background:var(--primary);color:#fff} .btn-primary:hover{background:var(--primary-dark)}
+.btn-ghost{background:#ffffff1a;color:#fff;border:1.5px solid #ffffff3a} .btn-ghost:hover{background:#ffffff30}
+.btn-grey{background:#e6e9f2} .btn-grey:hover{background:#d6dbe8}
+.btn-danger{background:var(--danger);color:#fff} .btn-danger:hover{filter:brightness(.95)}
+main{padding:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card{background:#f9fafe;border:1px solid #ebeff6;border-radius:12px;padding:14px}
+label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:#223}
+input,select{width:100%;border:1px solid #d7ddea;border-radius:10px;padding:10px;font-size:14px;background:#fff}
+.help{font-size:12px;color:#667; margin-top:6px}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:800}
+.pill-ok{background:#e6f7ec;color:#0a8a3a;border:1px solid #a7e2be}
+.pill-wait{background:#fff4e5;color:#a36100;border:1px solid #ffd39b}
+.table{width:100%;border-collapse:collapse;margin-top:10px}
+.table th,.table td{border:1px solid #e6e9f2;padding:8px 10px;text-align:left;vertical-align:top;font-size:14px}
+.table th{background:#f2f4fa;color:#223}
+.table tr:nth-child(even) td{background:#fbfcff}
+.icon-btn{padding:6px 10px;border-radius:8px}
+#notif{position:fixed;top:-64px;left:0;right:0;margin:auto;max-width:800px;background:#0b5bd3;color:#fff;border-radius:0 0 12px 12px;padding:12px 16px;text-align:center;box-shadow:0 10px 20px rgba(0,0,0,.25);transition:top .45s ease;z-index:2000}
+.modal{position:fixed;inset:0;background:rgba(6,16,32,.55);display:none;align-items:center;justify-content:center;z-index:3000}
+#detailModal{z-index:4000}
+.modal .content{background:#fff;border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.25);width:min(920px,94vw);max-height:90vh;display:flex;flex-direction:column}
+.modal header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #eef2fb}
+.modal header h2{margin:0;color:#0b5bd3}
+.modal .body{padding:14px 18px;overflow:auto}
+.modal .footer{padding:12px 18px;border-top:1px solid #eef2fb;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:999px;font-size:12px;border:1px solid #e4e7f2;background:#f7f8fc}
+.kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;background:#eef1f7;border:1px solid #d7ddea;border-radius:6px;padding:1px 6px;font-size:12px}
+hr{border:none;border-top:1px solid #eef2fb;margin:10px 0}
+.small{font-size:12px;color:#667}
+.flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.section-title{margin:18px 0 6px 0;font-weight:800}
+/* Fixed red back button */
+.btn-back-fixed{
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  background: #c62828;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 800;
+  z-index: 3500;
+  box-shadow: 0 6px 16px rgba(0,0,0,.25);
+}
+.btn-back-fixed:hover{ filter: brightness(.95); }
+/* Print */
+@media print{
+  @page { size: A3 portrait; margin: 12mm; }
+}
+
+/* ===========================
+   📱 Version mobile (≤ 768px)
+   =========================== */
+@media (max-width: 768px) {
+
+  /* Moins de marges autour de la page */
+  body{
+    padding: 12px;
+  }
+
+  /* Bouton retour plein largeur en haut */
+  .btn-back-fixed{
+    left: 12px;
+    right: 12px;
+    top: 8px;
+    width: auto;
+    display: block;
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: 999px;
+  }
+
+  /* Titre un peu plus petit + décalé sous le bouton fixe */
+  h1{
+    font-size: 20px;
+    margin: 56px 0 14px;
+    text-align: center;
+    padding: 0 6px;
+  }
+
+  .container{
+    border-radius: 12px;
+  }
+
+  /* Barre du haut en colonne */
+  .bar{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .bar .actions{
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .bar .actions button{
+    flex: 1 1 48%;
+    min-width: 0;
+  }
+
+  main{
+    padding: 14px 10px;
+  }
+
+  /* Formulaire en 1 colonne */
+  .grid{
+    grid-template-columns: 1fr;
+  }
+
+  .card{
+    padding: 12px;
+  }
+
+  button{
+    font-size: 14px;
+    padding: 9px 12px;
+  }
+
+  /* Tableau FMA scrollable horizontalement si trop large */
+  .table{
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    font-size: 13px;
+  }
+  .table thead,
+  .table tbody,
+  .table tr,
+  .table th,
+  .table td{
+    white-space: nowrap;
+  }
+
+  /* Modales adaptées à la largeur du mobile */
+  .modal .content{
+    width: 100%;
+    max-width: none;
+    margin: 0 8px;
+    border-radius: 12px;
+  }
+
+  .modal .body{
+    padding: 12px;
+  }
+
+  .modal .footer{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+/* Drag & drop des thèmes */
+.theme-row{
+  cursor: grab;
+}
+.theme-row.dragging{
+  cursor: grabbing;
+  opacity: .6;
+  border-style: dashed !important;
+}
+.theme-row.drop-target{
+  outline: 2px dashed #0b5bd3;
+}
+
+
+  
+</style>
+</head>
+<body>
+<button class="btn-back-fixed" id="btnBack">↩ Retour</button>
+<div id="notif"></div>
+<h1>Enregistrer une FMA</h1>
+<div class="container">
+  <div class="bar">
+    <div class="flex">
+      <button class="btn-ghost" id="btnThemes" style="display:none">🗂️ Thèmes</button>
+      <button class="btn-ghost" id="btnHistory">📜 Historique</button>
+      <!-- [AJOUT] bouton FMA par agent -->
+      <button class="btn-ghost" id="btnAgentView">👤 FMA par agent</button>
+      <label class="badge">Mode: <span id="roleBadge">admin</span></label>
+    </div>
+    <div class="actions">
+      <button class="btn-grey" id="btnPrint">🖨️ Imprimer le bilan</button>
+      <!-- Admin-only: hidden par défaut, affiché si admin de son CIS -->
+      <button class="btn-danger" id="btnWipeAll" style="display:none">🗑️ Supprimer toutes les FMA</button>
+    </div>
+  </div>
+  <main>
+    <form id="fmaForm" autocomplete="off">
+      <div class="grid">
+        <div class="card">
+          <label>Formateur</label>
+            <input id="formateur" placeholder="Ex: Dupont Jean" required readonly>
+          <div class="help">Par défaut, ton nom de session.</div>
+        </div>
+        <div class="card">
+          <label>Date</label>
+          <input type="date" id="date" required>
+        </div>
+        <div class="card">
+          <label>Heure début</label>
+          <input type="time" id="h1" step="900" list="quarters" min="07:00" max="22:00" required>
+        </div>
+        <div class="card">
+          <label>Heure fin</label>
+          <input type="time" id="h2" step="900" list="quarters" min="07:00" max="22:00" required>
+        </div>
+        <div class="card">
+          <label>Thème</label>
+          <select id="theme" required></select>
+          <div class="help">Gère les thèmes via 🗂️ en haut.</div>
+        </div>
+        <div class="card" style="grid-column:1/-1">
+          <label>Participants</label>
+            <div class="flex">
+    <input id="agentInput" list="agentOptions" style="min-width:260px" placeholder="Rechercher un agent…">
+    <datalist id="agentOptions"></datalist>
+    <button type="button" class="btn-grey icon-btn" id="btnAddPart">➕ Ajouter</button>
+  </div>
+          <div id="participants" class="help" style="margin-top:8px">Aucun participant ajouté.</div>
+        </div>
+      </div>
+      <div class="flex" style="justify-content:center;margin-top:10px">
+        <button class="btn-primary" type="submit" id="btnSubmit">💾 Enregistrer</button>
+        <button class="btn-grey" type="reset" id="btnReset">🔄 Réinitialiser</button>
+      </div>
+    </form>
+
+    <div id="pendingSection">
+      <h3 class="section-title">FMA à saisir</h3>
+      <div class="small">Tableau visible par les SOG : cliquez sur la loupe pour le détail / validation Web@ct.</div>
+      <table class="table" id="pendingTable" style="display:none">
+        <thead><tr><th>Date</th><th>Formateur</th><th>Thème</th><th>Durée</th><th>Participants</th><th>État</th><th>🔍</th></tr></thead>
+        <tbody id="pendingBody"></tbody>
+      </table>
+      <div id="noPending" class="help" style="display:none">Aucune FMA en attente de saisie Web@ct.</div>
+    </div>
+
+  </main>
+</div>
+
+<datalist id="quarters"></datalist>
+
+<!-- Modale Détail FMA -->
+<div class="modal" id="detailModal">
+  <div class="content">
+    <header><h2>Détails FMA</h2><button class="btn-grey" id="closeDetail">✖</button></header>
+    <div class="body" id="detailBody"></div>
+    <div class="footer">
+      <div class="flex" id="webactCheckWrap">
+        <label class="flex"><input type="checkbox" id="chkWebact"> ✅ Saisie Web@ct effectuée</label>
+      </div>
+      <div class="flex">
+        <button class="btn-grey" id="btnEditFma">✎ Modifier</button>
+        <button class="btn-primary" id="btnSaveWebact">💾 Valider</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modale Historique -->
+<div class="modal" id="historyModal">
+  <div class="content">
+    <header><h2>Historique des FMA</h2><button class="btn-grey" id="closeHistory">✖</button></header>
+    <div class="body">
+      <div class="flex" style="justify-content:space-between">
+        <input id="histSearch" placeholder="🔎 Rechercher (agent, formateur, thème, date…)">
+        <span class="small" id="histCount"></span>
+      </div>
+      <div id="histList" style="margin-top:10px"></div>
+    </div>
+    <div class="footer"><button class="btn-grey" id="btnPrint2">🖨️ Imprimer le bilan</button></div>
+  </div>
+</div>
+
+<!-- [AJOUT] Modale FMA par agent -->
+<div class="modal" id="agentModal">
+  <div class="content">
+    <header><h2>FMA par agent</h2><button class="btn-grey" id="closeAgent">✖</button></header>
+    <div class="body">
+      <div class="flex" style="justify-content:space-between;gap:12px">
+        <select id="agentFilter" style="min-width:280px"></select>
+        <input id="agentSearch" placeholder="🔎 Rechercher (thème, formateur, date…)" style="flex:1">
+        <span class="small" id="agentCount"></span>
+      </div>
+      <div class="flex" style="margin-top:8px">
+        <span class="badge">CIS&nbsp;: <span id="agentCisLabel"></span></span>
+        <span class="badge">Total&nbsp;: <span id="agentTotal"></span></span>
+        <span class="badge">Sessions&nbsp;: <span id="agentSessions"></span></span>
+        <span class="badge">À saisir&nbsp;: <span id="agentPending"></span></span>
+      </div>
+      <div id="agentList" style="margin-top:10px"></div>
+    </div>
+    <div class="footer">
+      <button class="btn-grey" id="btnPrintAgent">🖨️ Imprimer le bilan individuel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale Thèmes -->
+<div class="modal" id="themesModal">
+  <div class="content">
+    <header><h2>Gestion des thèmes</h2><button class="btn-grey" id="closeThemes">✖</button></header>
+    <div class="body">
+      <div id="themesList"></div>
+      <hr>
+      <div class="flex">
+        <input id="newTheme" placeholder="Nouveau thème">
+        <button class="btn-primary" id="addTheme">➕ Ajouter</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 🔌 Firebase + Firestore + stockage partagé -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="cloud-storage.js"></script>
+
+
+
+
+
+
+<script>
+/* ====== Session & rôle ====== */
+const K_FMA="fma_data_v2";
+/* 🔁 Thèmes par CIS : on utilise un préfixe + le nom du CIS normalisé */
+const K_THEMES_PREFIX = "csver_themes_";
+function currentThemesKey() {
+  return K_THEMES_PREFIX + activeCisName(); // ex: "csver_themes_vergeze"
+}
+
+/* (ajout minimal) Helpers d'autorisation pour détecter Administrateur du CIS */
+function getSession(){ try{ return JSON.parse(localStorage.getItem("csver_session")||"null"); }catch{ return null; } }
+function normalizeRole(r){
+  if(!r) return "";
+  const x=String(r).trim().toLowerCase();
+  if(["admin","administrator","administrateur","adm"].includes(x)) return "admin";
+  if(["superadmin","super admin","root"].includes(x)) return "superadmin";
+  return x;
+}
+function myCis(){
+  const s=getSession();
+  const c=s?.cis;
+  const first=Array.isArray(c)?(c[0]||""):(c||"");
+  return first||"";
+}
+function sessionAgent(){
+  const s=getSession();
+  if(!s || !s.matricule) return null;
+  const raw=localStorage.getItem("csver_user_"+s.matricule);
+  if(!raw) return null;
+  try{ return JSON.parse(raw); }catch{ return null; }
+}
+function isSuperAdmin(){
+  const s=getSession();
+  return !!(s && (String(s.matricule)==='1414' || normalizeRole(s?.role)==='superadmin'));
+}
+/* Admin de CIS = rôle "Administrateur" OU droit 'admin' sur son CIS (principal OU secondaire) */
+function isAdminRole(){
+  if(isSuperAdmin()) return true;
+  const s=getSession();
+  if(normalizeRole(s?.role)==='admin') return true;
+  const u=sessionAgent(); const mine=myCis();
+  if(!u || !mine) return false;
+  const primarySame = normCis(u?.cis?.primary||"")===normCis(mine);
+  const adminPrimary   = !!(u?.permissions?.primary?.admin);
+  const adminSecondary = !!(u?.permissions?.secondaries?.[mine]?.admin);
+  return (primarySame && adminPrimary) || adminSecondary;
+}
+
+/* (conservé) variables existantes pour compatibilité */
+let session=getSession();
+let role=session?.role||"admin";
+const isAdminLike = ["admin","commandement"].includes(String(role).toLowerCase());
+const isAdminStrict = String(role).toLowerCase() === 'admin'; // 🔒 admin «pur» (inchangé)
+let userName=((session?.prenom||"")+" "+(session?.nom||"")).trim()||"Admin";
+document.getElementById('roleBadge').textContent=role;
+
+/* Affichage des boutons :
+   - 🗂️ Thèmes : élargi à admin de CIS + super admin
+   - 🗑️ Supprimer toutes les FMA : admin de CIS ou super admin */
+const canManageThemes = isAdminLike || isAdminRole() || isSuperAdmin();
+if (canManageThemes) document.getElementById('btnThemes').style.display='inline-block';
+const _wipeBtn = document.getElementById('btnWipeAll');
+if (_wipeBtn && (isAdminRole() || isSuperAdmin())) _wipeBtn.style.display='inline-block';
+
+/* ===== Accès FMA à saisir — via permission "Saisie FMA" du CIS principal ===== */
+function hasPrimarySaisieFma(){
+  try{
+    const sess = getSession();
+    if(!sess || !sess.matricule) return false;
+    const u = JSON.parse(localStorage.getItem("csver_user_" + sess.matricule) || "null");
+    return !!(u && u.permissions && u.permissions.primary && u.permissions.primary.saisie_fma);
+  }catch(e){
+    console.error("hasPrimarySaisieFma error", e);
+    return false;
+  }
+}
+
+// 🔐 admin/commandement ont accès partout
+// 👤 autres agents : uniquement sur leur CIS principal s'ils ont "saisie_fma"
+const canSeePending =
+  isAdminLike || isAdminRole() || isSuperAdmin() ||
+  (hasPrimarySaisieFma() && normCis(myCis()) === activeCisName());
+
+
+
+const pendingSection = document.getElementById('pendingSection');
+if (pendingSection) pendingSection.style.display = canSeePending ? 'block' : 'none';
+
+/* masquer la case Web@ct dans la modale si non autorisé */
+const webactCheckWrap = document.getElementById('webactCheckWrap');
+if (webactCheckWrap) webactCheckWrap.style.display = canSeePending ? 'flex' : 'none';
+
+/* cis dynamique (corrigé) */
+function currentCisLabel() {
+  const sess = getSession();
+  const raw = sess?.cis;
+  let value = '';
+
+  if (typeof raw === 'string') {
+    // ex : "CIS Vergèze" ou "Vergèze"
+    value = raw;
+  } else if (Array.isArray(raw)) {
+    // ex : ["CIS Vergèze", "CIS Lunel"]
+    value = raw[0] || '';
+  } else if (raw && typeof raw === 'object') {
+    // ex : { primary:"CIS Vergèze", active:"CIS Lunel", ... }
+    value = raw.active || raw.current || raw.primary || '';
+  }
+
+  if (!value) value = 'CIS Vergèze'; // valeur de secours
+
+  return value.startsWith('CIS') ? value : 'CIS ' + value;
+}
+
+// Libellé humain du CIS courant, ex : "CIS Vergèze"
+let cis = currentCisLabel();
+
+
+/* ====== Utils ====== */
+const $=sel=>document.querySelector(sel);
+const $$=sel=>document.querySelectorAll(sel);
+function notify(msg){const n=$("#notif");n.textContent="🔔 "+msg;n.style.top="0";setTimeout(()=>n.style.top="-64px",3200);}
+function diffMin(h1,h2){const[a,b]=h1.split(":").map(Number),[c,d]=h2.split(":").map(Number);let s=a*60+b,e=c*60+d;if(e<s)e+=1440;return e-s;}
+function hhmm(m){return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");}
+function nowFR(){ return new Date().toLocaleString('fr-FR'); }
+function dFR(iso){ try{ return new Date(iso).toLocaleDateString('fr-FR'); }catch(_){ return iso; }}
+function toMin(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
+function clampQuarter(t){
+  const [hh,mm] = t.split(':').map(Number);
+  if(Number.isNaN(hh) || Number.isNaN(mm)) return t;
+  let total = hh*60 + mm;
+  total = Math.round(total/15)*15;
+  const min=7*60, max=22*60;
+  if(total<min) total=min;
+  if(total>max) total=max;
+  const H = String(Math.floor(total/60)).padStart(2,'0');
+  const M = String(total%60).padStart(2,'0');
+  return `${H}:${M}`;
+}
+
+/* ====== Droits d'édition FMA ====== */
+function stripAccents(s){ return s.normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function tidySpaces(s){ return s.replace(/\s+/g,' ').trim(); }
+function nameKey(raw){
+  const s = stripAccents(tidySpaces(String(raw||'').toLowerCase()));
+  const parts = s.split(' ').filter(Boolean);
+  if(parts.length===2){ const a=parts[0], b=parts[1]; return [a,b].sort().join('_'); }
+  return parts.join('_');
+}
+function isCurrentUserFormateur(rec){
+  try{
+    const a = nameKey(rec.formateur||'');
+    const b = nameKey(userName||'');
+    const bySame = (rec.createdBy && rec.createdBy === userName);
+    return (a && b && a===b) || bySame;
+  }catch(e){ return false; }
+}
+function canUserEditFma(rec){
+  if(isAdminStrict) return true;              // admin : tous droits, même après Web@ct
+  if(rec?.webact?.done) return false;         // verrouillé après Web@ct pour tous sauf admin
+  const hasPerm = hasPrimarySaisieFma();      // permission “Saisie FMA”
+  const isOwner = isCurrentUserFormateur(rec);
+  return isOwner || hasPerm;
+}
+
+/* ====== LOG MAIN COURANTE ====== */
+function logActivityToJournal(type, text) {
+  try {
+    const sess = JSON.parse(localStorage.getItem("csver_session") || "null");
+    if (!sess) return;
+    const cis = Array.isArray(sess.cis) ? sess.cis[0] : sess.cis;
+    const key = "journal_" + cis;
+    const arr = JSON.parse(localStorage.getItem(key) || "[]");
+    arr.push({ type, text, ts: Date.now(), by: ((sess.prenom||"")+" "+(sess.nom||"")).trim() || sess.matricule || "Agent" });
+    localStorage.setItem(key, JSON.stringify(arr.slice(-500)));
+    window.dispatchEvent(new Event("storage"));
+  } catch(e) { console.error(e); }
+}
+
+/* ====== Storage helpers ====== */
+function readJson(k, def){ try{ return JSON.parse(localStorage.getItem(k) || JSON.stringify(def)); }catch(_){ return def; } }
+function writeJson(k, val){ localStorage.setItem(k, JSON.stringify(val)); }
+function uid(){ return "fma_"+Math.random().toString(36).slice(2,9)+"_"+Date.now(); }
+
+/* ====== Users ====== */
+function getUsers(){
+  const users=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k.startsWith("csver_user_")){
+      try{
+        const u=JSON.parse(localStorage.getItem(k));
+        if(u && (u.nom || u.prenom)) users.push(u);
+      }catch(_){}
+    }
+  }
+  return users;
+}
+function normCis(x){
+  if(!x) return "";
+  return String(x).replace(/^CIS\s*/i,"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+}
+function activeCisName(){
+  // renvoie le CIS courant, normalisé, ex : "vergeze"
+  return normCis(currentCisLabel());
+}
+
+function userHasCis(u, target){
+  const tgt = normCis(target);
+  if(!tgt) return false;
+  const v = u?.cis;
+  if(v && typeof v === "object" && !Array.isArray(v)){
+    if(normCis(v.primary) === tgt) return true;
+    if(Array.isArray(v.secondaries)) return v.secondaries.some(s => normCis(s?.cis) === tgt);
+    return false;
+  }
+  if(Array.isArray(v)) return v.some(c => normCis(c) === tgt);
+  return normCis(v) === tgt;
+}
+function usersVerg(){
+  const target = activeCisName();
+  return getUsers().filter(u => userHasCis(u, target));
+}
+function fullName(u){ return `${u.nom||""} ${u.prenom||""}`.trim(); }
+
+/* ====== Thèmes ====== */
+/* Thèmes stockés uniquement par CIS, sans plus utiliser la clé globale "csver_themes" */
+function getThemes(){
+  const key = currentThemesKey();
+  let t = readJson(key, null);
+
+  if(!t || !Array.isArray(t) || !t.length){
+    // Liste par défaut pour un nouveau CIS
+    t = [
+      "ARI / Reconnaissance",
+      "Échelle à coulisse",
+      "Sauvetage / LSPCC",
+      "Établissements / Alimentation",
+      "Feu de véhicule",
+      "Secours routier",
+      "Manoeuvre hydraulique"
+    ];
+    writeJson(key, t);
+  }
+  return t;
+}
+
+function renderThemesSelect(){
+  const s=$("#theme"); s.innerHTML="";
+  getThemes().forEach(t=>{ const o=document.createElement("option"); o.value=t; o.textContent=t; s.appendChild(o); });
+}
+
+/* ====== Users autocomplete (datalist) ====== */
+function renderAgentOptions(){
+  const input = $("#agentInput");
+  const dl = $("#agentOptions");
+  if (!input || !dl) return;
+
+  dl.innerHTML = "";
+
+  const meKey = (session && (session.nom || session.prenom))
+    ? nameKey(`${session.nom||""} ${session.prenom||""}`)
+    : null;
+
+  const list = usersVerg()
+    .filter(u => {
+      if(!meKey) return true;
+      const k = nameKey(`${u.nom||""} ${u.prenom||""}`);
+      return k !== meKey; // on ne se propose pas soi-même
+    })
+    .sort((a,b)=> fullName(a).localeCompare(fullName(b),'fr',{sensitivity:'base'}));
+
+  list.forEach(u=>{
+    const disp = `${(u.nom||"").toUpperCase()} ${u.prenom||""}`.trim();
+    const opt = document.createElement("option");
+    opt.value = disp;
+    dl.appendChild(opt);
+  });
+
+  input.disabled = list.length === 0;
+}
+
+
+/* Réactivité personnels */
+window.addEventListener("storage",(e)=>{
+  if(e && e.key && e.key.startsWith("csver_user_")){
+        renderAgentOptions();
+    notify("Personnel mis à jour.");
+  }
+});
+
+/* ====== Participants UI ====== */
+function renderParticipantsUI(){
+  const c=$("#participants");
+  const items=[...$$(".participant-item")];
+  if(items.length===0){ c.classList.add("help"); c.textContent="Aucun participant ajouté."; return; }
+  c.classList.remove("help");
+}
+function addParticipant(){
+  const input = $("#agentInput");
+  const name = input.value.trim();
+  if(!name){
+    alert("Choisis ou saisis un agent.");
+    return;
+  }
+
+  const container=$("#participants");
+  if([...container.querySelectorAll(".participant-item span")].some(s=>s.textContent===name)){
+    alert("Déjà ajouté");
+    return;
+  }
+
+  const idSafe=name.replace(/[^a-z0-9]/gi,"_");
+  const row=document.createElement("div");
+  row.className="participant-item";
+  row.style.cssText="display:flex;align-items:center;justify-content:space-between;background:#f5f6fa;border:1px solid #ebeff6;border-radius:10px;padding:6px 10px;margin:6px 0";
+  row.innerHTML=`<span>${name}</span>
+    <div class="flex">
+      <label class="flex"><input type="radio" name="role_${idSafe}" value="SPP"> SPP</label>
+      <label class="flex"><input type="radio" name="role_${idSafe}" value="SPV"> SPV</label>
+    </div>
+    <button class="btn-danger icon-btn" title="Retirer">❌</button>`;
+  row.querySelector("button").onclick=()=>row.remove();
+  container.appendChild(row);
+  renderParticipantsUI();
+
+  // vider le champ après ajout
+  input.value = "";
+}
+
+document.getElementById("btnAddPart").addEventListener("click", addParticipant);
+
+/* ====== FMA storage & edit mode ====== */
+function fmaAll(){ return readJson(K_FMA, []); }
+function fmaSave(arr){ writeJson(K_FMA, arr); }
+function fmaCreate(rec){ const arr=fmaAll(); arr.unshift(rec); fmaSave(arr); }
+let currentFmaId=null;
+let editingId=null;
+
+/* ====== Migration : corriger les FMA dont le cis est cassé (ex : [object Object]) ====== */
+function migrateFmaCis() {
+  const arr = fmaAll();
+  let changed = false;
+
+  // Libellé du CIS courant, ex : "CIS Lunel"
+  const currentLabel = cis;
+
+  arr.forEach(r => {
+    const c = r.cis;
+
+    // cas problématiques : pas de cis, cis vide après normalisation, ou chaîne "[object Object]"
+    if (
+      !c ||
+      normCis(c) === '' ||
+      String(c).includes('[object Object]')
+    ) {
+      r.cis = currentLabel;
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    fmaSave(arr);
+  }
+}
+
+
+  
+/* ====== Compteur FMA en attente (par CIS) ====== */
+function countPendingForActiveCis(){
+  const target = activeCisName();
+  return fmaAll().filter(r => !r.webact?.done && normCis(r.cis) === target).length;
+}
+
+/* ====== Pending table ====== */
+function renderPending(){
+  const cisTarget = activeCisName();
+  const pending = fmaAll().filter(r => !r.webact?.done && normCis(r.cis) === cisTarget);
+
+  const tbl=$("#pendingTable"), body=$("#pendingBody"), no=$("#noPending");
+  if(!pending.length){
+    tbl.style.display="none";
+    no.style.display="block";
+    return;
+  }
+  no.style.display="none";
+  tbl.style.display="table";
+  body.innerHTML = pending.map(r=>{
+    const ppl=r.participants.map(p=>`${p.name} (${p.role||"?"})`).join(", ");
+    const badge=r.webact?.done
+      ? '<span class="pill pill-ok">Saisie OK</span>'
+      : '<span class="pill pill-wait">À saisir</span>';
+    return `<tr>
+      <td>${dFR(r.date)}<br><span class="small">${r.h1}–${r.h2}</span></td>
+      <td>${r.formateur}</td>
+      <td>${r.theme}</td>
+      <td>${hhmm(r.dureeMin)}</td>
+      <td>${ppl}</td>
+      <td>${badge}</td>
+      <td><button class="btn-grey icon-btn" title="Détail" onclick="openDetail('${r.id}')">🔍</button></td>
+    </tr>`;
+  }).join("");
+}
+
+function openDetail(id){
+  if($("#historyModal").style.display==="flex"){ $("#historyModal").style.display="none"; }
+  currentFmaId=id;
+  const r=fmaAll().find(x=>x.id===id); if(!r) return;
+  const web=r.webact?.done ? `✅ oui — par <strong>${r.webact.by}</strong> le <strong>${r.webact.at}</strong>` : "⏳ non";
+  $("#detailBody").innerHTML=`
+    <p><strong>Date :</strong> ${dFR(r.date)} (${r.h1}–${r.h2}) — <strong>Durée :</strong> ${hhmm(r.dureeMin)}</p>
+    <p><strong>Formateur :</strong> ${r.formateur}</p>
+    <p><strong>Thème :</strong> ${r.theme}</p>
+    <p><strong>Web@ct :</strong> ${web}</p>
+    <p class="small">Créée par ${r.createdBy} le ${r.createdAt}</p>
+    <hr>
+    <p><strong>Participants :</strong></p>
+    <ul style="margin-left:18px">${r.participants.map(p=>`<li>${p.name} — <strong>${p.role||"?"}</strong></li>`).join("")}</ul>
+  `;
+  const chk=$("#chkWebact"), btn=$("#btnSaveWebact"), editBtn=$("#btnEditFma");
+
+  chk.checked=!!r.webact?.done;
+  if(r.webact?.done){ chk.disabled=true; btn.disabled=true; btn.textContent="Déjà saisi"; }
+  else{ chk.disabled=false; btn.disabled=false; btn.textContent="💾 Valider"; }
+
+  if (!canSeePending) {
+    if (chk) chk.disabled = true;
+    if (btn) { btn.disabled = true; btn.title = "Réservé aux SPP / commandement / admin / permission « Saisie FMA »"; }
+  }
+
+  const canEdit = canUserEditFma(r);
+  editBtn.disabled = !canEdit;
+  editBtn.title = canEdit ? "" :
+    (r?.webact?.done && !isAdminStrict ? "Modification impossible après saisie Web@ct (sauf admin)" :
+     "Seul le formateur ou un utilisateur avec « Saisie FMA » peut modifier");
+
+  $("#detailModal").style.display="flex";
+}
+document.getElementById("closeDetail").onclick=()=>{$("#detailModal").style.display="none"; currentFmaId=null;};
+document.getElementById("btnSaveWebact").onclick=()=>{
+  if(!currentFmaId) return;
+  const arr=fmaAll(); const i=arr.findIndex(r=>r.id===currentFmaId);
+  if(i<0) return;
+  const wasDone=!!arr[i].webact?.done;
+  const checked=$("#chkWebact").checked;
+  if(wasDone && !checked){
+    notify("Déjà saisi sur Web@ct — impossible de revenir en arrière.");
+    $("#detailModal").style.display="none"; currentFmaId=null; renderPending(); return;
+  }
+  if(checked){ arr[i].webact = {done:true, by:userName, at:nowFR() }; }
+  else{ arr[i].webact = {done:false, by:null, at:null }; }
+  fmaSave(arr);
+  notify(checked?"FMA marquée « saisie Web@ct ».":"FMA remise en attente.");
+  $("#detailModal").style.display="none"; currentFmaId=null;
+  renderPending(); if($("#historyModal").style.display==="flex") renderHistory();
+};
+
+/* ====== Édition ====== */
+document.getElementById("btnEditFma").onclick=()=>{
+  if(!currentFmaId) return;
+  const r=fmaAll().find(x=>x.id===currentFmaId); if(!r) return;
+
+  if(!canUserEditFma(r)){
+    notify(r?.webact?.done && !isAdminStrict
+      ? "Modification impossible : FMA déjà saisie Web@ct (seul l'admin peut éditer)."
+      : "Tu n'as pas l'autorisation pour modifier cette FMA.");
+    return;
+  }
+
+  editingId = r.id;
+  $("#formateur").value = r.formateur;
+  $("#date").value = r.date;
+  $("#h1").value = clampQuarter(r.h1);
+  $("#h2").value = clampQuarter(r.h2);
+  $("#theme").value = r.theme;
+
+  const box = $("#participants");
+  box.innerHTML = "";
+  r.participants.forEach(p=>{
+    const idSafe=p.name.replace(/[^a-z0-9]/gi,"_");
+    const row=document.createElement("div");
+    row.className="participant-item";
+    row.style.cssText="display:flex;align-items:center;justify-content:space-between;background:#f5f6fa;border:1px solid #ebeff6;border-radius:10px;padding:6px 10px;margin:6px 0";
+    row.innerHTML=`<span>${p.name}</span>
+      <div class="flex">
+        <label class="flex"><input type="radio" name="role_${idSafe}" value="SPP"> SPP</label>
+        <label class="flex"><input type="radio" name="role_${idSafe}" value="SPV"> SPV</label>
+      </div>
+      <button class="btn-danger icon-btn" title="Retirer">❌</button>`;
+    row.querySelector("button").onclick=()=>row.remove();
+    box.appendChild(row);
+    const radios = row.querySelectorAll(`input[name="role_${idSafe}]`);
+    radios.forEach(radio=>{ if(radio.value===p.role) radio.checked=true; });
+  });
+  renderParticipantsUI();
+  $("#btnSubmit").textContent = "💾 Mettre à jour";
+  notify("Mode édition activé. Modifie les champs puis enregistre.");
+  $("#detailModal").style.display="none";
+};
+
+/* ====== Historique ====== */
+document.getElementById("btnHistory").onclick=()=>{$("#historyModal").style.display="flex"; renderHistory();};
+document.getElementById("closeHistory").onclick=()=>{$("#historyModal").style.display="none";};
+document.getElementById("histSearch").addEventListener("input", renderHistory);
+function renderHistory(){
+  const q = $("#histSearch").value.toLowerCase();
+
+  // 🔹 CIS actif de la session
+  const cisTarget = activeCisName();
+
+  // 🔹 Ne garder que les FMA de ce CIS
+  const data = fmaAll().filter(r => normCis(r.cis) === cisTarget);
+
+  const filtered = data.filter(r=>{
+    const blob = [
+      r.formateur,
+      r.theme,
+      r.date,
+      r.h1,
+      r.h2,
+      r.webact?.by,
+      r.webact?.at,
+      ...r.participants.map(p=>p.name+" "+(p.role||""))
+    ].join(" ").toLowerCase();
+    return blob.includes(q);
+  });
+
+  $("#histCount").textContent = `${filtered.length} / ${data.length}`;
+  $("#histList").innerHTML = filtered.map(r=>{
+    const badge = r.webact?.done
+      ? '<span class="pill pill-ok">Saisie OK</span>'
+      : '<span class="pill pill-wait">À saisir</span>';
+    return `
+      <div style="border:1px solid #e6e9f2;background:#fbfcff;border-radius:12px;padding:10px 12px;margin:8px 0">
+        <div class="flex" style="justify-content:space-between">
+          <div><strong>${dFR(r.date)}</strong> — ${r.theme} — <em>${r.formateur}</em></div>
+          <div>${badge} ${r.webact?.done?`<span class="small">par ${r.webact.by} le ${r.webact.at}</span>`:""}</div>
+        </div>
+        <div class="small" style="margin-top:6px">
+          Participants : ${r.participants.map(p=>`${p.name} (${p.role||"?"})`).join(", ")}
+        </div>
+        <div style="text-align:right;margin-top:6px">
+          <button class="btn-grey icon-btn" onclick="openDetail('${r.id}')">🔍 Détail</button>
+        </div>
+      </div>`;
+  }).join("") || "<p class='help'>Aucun enregistrement.</p>";
+}
+
+
+/* ====== [AJOUT] Vue par agent ====== */
+const agentModal = document.getElementById('agentModal');
+const agentFilter = document.getElementById('agentFilter');
+const agentSearch = document.getElementById('agentSearch');
+
+document.getElementById('btnAgentView').onclick = () => { openAgentModal(); };
+document.getElementById('closeAgent').onclick = () => { agentModal.style.display = 'none'; };
+
+agentFilter?.addEventListener('change', renderAgentView);
+agentSearch?.addEventListener('input', renderAgentView);
+document.getElementById('btnPrintAgent').onclick = printAgentReport;
+
+function allDisplayNamesMap(){
+  const keyToDisplay = new Map();
+  const cisTarget = activeCisName(); // 🔒 CIS courant uniquement
+
+  // 1) Agents de mon CIS (depuis csver_user_*)
+  usersVerg().forEach(u=>{
+    const disp = `${(u.nom||'').toUpperCase()} ${
+      String(u.prenom||'').charAt(0).toUpperCase() +
+      String(u.prenom||'').slice(1).toLowerCase()
+    }`.trim();
+    const k = nameKey(`${u.nom||''} ${u.prenom||''}`);
+    if (!keyToDisplay.has(k)) keyToDisplay.set(k, disp);
+  });
+
+  // 2) Uniquement les FMA de mon CIS
+  fmaAll()
+    .filter(rec => normCis(rec.cis) === cisTarget) // 🔴 le filtre manquant
+    .forEach(rec=>{
+      // Participants
+      (rec.participants || []).forEach(p=>{
+        const k = nameKey(p.name);
+        const disp = displayFromParts(p.name);
+        if (!keyToDisplay.has(k)) keyToDisplay.set(k, disp);
+      });
+      // Formateur
+      const kF = nameKey(rec.formateur);
+      const dispF = displayFromParts(rec.formateur);
+      if (!keyToDisplay.has(kF)) keyToDisplay.set(kF, dispF);
+    });
+
+  return keyToDisplay;
+}
+
+
+function populateAgentSelect(){
+  const map = allDisplayNamesMap();
+  const arr = Array.from(map.entries())
+    .sort((a,b)=> a[1].localeCompare(b[1],'fr',{sensitivity:'base'}));
+  agentFilter.innerHTML = arr.map(([k,disp]) => `<option value="${k}">${disp}</option>`).join('');
+}
+
+function fmasForAgentKey(agentKey){
+  const cisTarget = activeCisName();
+  return fmaAll().filter(rec=>{
+    if(normCis(rec.cis) !== cisTarget) return false;
+    const isFormateur = nameKey(rec.formateur) === agentKey;
+    const isParticipant = Array.isArray(rec.participants) && rec.participants.some(p => nameKey(p.name) === agentKey);
+    return isFormateur || isParticipant;
+  });
+}
+
+function openAgentModal(){
+  populateAgentSelect();
+  document.getElementById('agentCisLabel').textContent = (window.cis || 'CIS');
+  agentSearch.value = '';
+  agentModal.style.display = 'flex';
+  renderAgentView();
+}
+
+function renderAgentView(){
+  const key = agentFilter.value;
+  const query = (agentSearch.value||'').toLowerCase().trim();
+  let list = fmasForAgentKey(key);
+
+  if(query){
+    list = list.filter(r=>{
+      const blob = [
+        r.formateur, r.theme, r.date, r.h1, r.h2, r.webact?.by, r.webact?.at,
+        ...(r.participants||[]).map(p=>p.name+' '+(p.role||''))
+      ].join(' ').toLowerCase();
+      return blob.includes(query);
+    });
+  }
+
+  list.sort((a,b)=> (b.date+a.h1).localeCompare(a.date+b.h1));
+
+  const totalMin = list.reduce((s,r)=> s + (r.dureeMin || diffMin(r.h1,r.h2)), 0);
+  const pending = list.filter(r=> !r.webact?.done).length;
+
+  document.getElementById('agentTotal').textContent = totalMin ? hhmm(totalMin) : '0:00';
+  document.getElementById('agentSessions').textContent = String(list.length);
+  document.getElementById('agentPending').textContent = String(pending);
+
+  const html = list.map(r=>{
+    const badge = r.webact?.done
+      ? '<span class="pill pill-ok">Saisie OK</span>'
+      : '<span class="pill pill-wait">À saisir</span>';
+    const ppl = (r.participants||[]).map(p=>`${p.name} (${p.role||"?"})`).join(', ');
+    return `<div style="border:1px solid #e6e9f2;background:#fbfcff;border-radius:12px;padding:10px 12px;margin:8px 0">
+      <div class="flex" style="justify-content:space-between">
+        <div><strong>${dFR(r.date)}</strong> — ${r.theme} — <em>${r.formateur}</em></div>
+        <div>${badge} ${r.webact?.done?`<span class="small">par ${r.webact.by} le ${r.webact.at}</span>`:""}</div>
+      </div>
+      <div class="small" style="margin-top:6px">
+        ⏱ ${hhmm(r.dureeMin||diffMin(r.h1,r.h2))} — ${r.h1}–${r.h2}<br>
+        👥 ${ppl}
+      </div>
+      <div style="text-align:right;margin-top:6px">
+        <button class="btn-grey icon-btn" onclick="openDetail('${r.id}')">🔍 Détail</button>
+      </div>
+    </div>`;
+  }).join('') || "<p class='help'>Aucun enregistrement pour cet agent.</p>";
+
+  document.getElementById('agentList').innerHTML = html;
+  document.getElementById('agentCount').textContent = `${list.length}`;
+}
+
+function printAgentReport(){
+  const key = agentFilter.value;
+  const display = allDisplayNamesMap().get(key) || 'Agent';
+  const list = fmasForAgentKey(key).sort((a,b)=> (a.date+a.h1).localeCompare(b.date+b.h1));
+
+  const rows = list.map(r=>{
+    const dur = hhmm(r.dureeMin||diffMin(r.h1,r.h2));
+    const st  = r.webact?.done ? 'OK' : 'À saisir';
+    const ppl = (r.participants||[]).map(p=>`${displayFromParts(p.name)} (${p.role||"?"})`).join(', ');
+    return `<tr>
+      <td>${dFR(r.date)}<br><span class="small">${r.h1}–${r.h2}</span></td>
+      <td>${r.theme}</td>
+      <td>${displayFromParts(r.formateur)}</td>
+      <td>${ppl}</td>
+      <td style="text-align:center">${dur}</td>
+      <td style="text-align:center">${st}</td>
+    </tr>`;
+  }).join('');
+
+  const totalMin = list.reduce((s,r)=> s + (r.dureeMin||diffMin(r.h1,r.h2)), 0);
+
+  const html = `<html><head><meta charset="utf-8"><title>Bilan FMA — ${display}</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm; }
+    body{font-family:Inter,Arial,sans-serif;margin:0;padding:6mm}
+    h2{margin:0 0 8px 0}
+    .meta{font-size:12px;color:#555;margin-bottom:8px}
+    table{width:100%;border-collapse:collapse}
+    th,td{border:1px solid #bbb;padding:6px 8px;font-size:12px;vertical-align:top}
+    th{background:#f2f2f2}
+    tfoot th{background:#fafafa}
+  </style></head><body>
+    <h2>Bilan FMA — ${display} — ${(window.cis||'CIS')}</h2>
+    <div class="meta">Imprimé le ${nowFR()}</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th><th>Thème</th><th>Formateur</th><th>Participants</th><th>Durée</th><th>État</th>
+        </tr>
+      </thead>
+      <tbody>${rows || `<tr><td colspan="6" style="text-align:center">Aucune FMA</td></tr>`}</tbody>
+      <tfoot>
+        <tr><th colspan="4" style="text-align:right">Total</th><th style="text-align:center">${hhmm(totalMin)}</th><th></th></tr>
+      </tfoot>
+    </table>
+    <script>window.print()<\/script>
+  </body></html>`;
+
+  const w = window.open("", "_blank");
+  w.document.write(html); w.document.close();
+}
+
+/* ====== Thèmes UI ====== */
+document.getElementById("btnThemes").onclick=()=>{$("#themesModal").style.display="flex"; renderThemesAdmin();};
+document.getElementById("closeThemes").onclick=()=>{$("#themesModal").style.display="none";};
+document.getElementById("addTheme").onclick=()=>{
+  const v=$("#newTheme").value.trim(); if(!v) return;
+  const list=getThemes(); if(list.includes(v)) return alert("Ce thème existe déjà.");
+  list.push(v);
+  writeJson(currentThemesKey(), list);
+  $("#newTheme").value="";
+  renderThemesSelect();
+  renderThemesAdmin();
+  notify("Thème ajouté.");
+};
+function renderThemesAdmin(){
+  const list = getThemes();
+  const container = $("#themesList");
+
+  container.innerHTML = list.map((t,i)=>`
+    <div class="theme-row flex"
+         style="justify-content:space-between;border:1px solid #ebeff6;background:#f9fafe;border-radius:10px;padding:8px;margin:6px 0"
+         draggable="true"
+         data-index="${i}">
+      
+      <!-- Poignée tirer / glisser -->
+      <div class="flex" style="gap:8px;align-items:center;">
+        <span style="font-size:18px;" title="Tirer / glisser pour réordonner">⠿</span>
+        <div class="theme-label">${t}</div>
+      </div>
+
+      <!-- Boutons actions -->
+      <div class="flex">
+        <button class="btn-grey icon-btn" onclick="renameTheme(${i})">✎</button>
+        <button class="btn-danger icon-btn" onclick="deleteTheme(${i})">🗑️</button>
+      </div>
+    </div>`).join("");
+
+  // Active le drag & drop après avoir recréé les lignes
+  enableThemeDragDrop();
+}
+
+
+function enableThemeDragDrop(){
+  const listEl = document.getElementById("themesList");
+  if (!listEl) return;
+
+  let draggedEl = null;
+
+  listEl.querySelectorAll(".theme-row").forEach(row => {
+
+    row.addEventListener("dragstart", (e) => {
+      draggedEl = row;
+      row.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+    });
+
+    row.addEventListener("dragend", () => {
+      if (draggedEl) draggedEl.classList.remove("dragging");
+      listEl.querySelectorAll(".drop-target").forEach(el => el.classList.remove("drop-target"));
+      draggedEl = null;
+      // À la fin du drag, on sauvegarde l'ordre actuel
+      saveThemeOrderFromDom();
+    });
+
+    row.addEventListener("dragover", (e) => {
+      e.preventDefault();  // nécessaire pour autoriser le drop
+      if (!draggedEl || draggedEl === row) return;
+
+      const rows = Array.from(listEl.querySelectorAll(".theme-row"));
+      const draggingIndex = rows.indexOf(draggedEl);
+      const targetIndex   = rows.indexOf(row);
+
+      // On insère avant ou après selon la position
+      if (targetIndex < draggingIndex) {
+        listEl.insertBefore(draggedEl, row);
+      } else {
+        listEl.insertBefore(draggedEl, row.nextSibling);
+      }
+    });
+
+    row.addEventListener("dragenter", (e) => {
+      e.preventDefault();
+      if (row !== draggedEl) row.classList.add("drop-target");
+    });
+
+    row.addEventListener("dragleave", () => {
+      row.classList.remove("drop-target");
+    });
+
+    row.addEventListener("drop", (e) => {
+      e.preventDefault();
+      row.classList.remove("drop-target");
+      // l'ordre est déjà modifié par dragover, on sauvegarde
+      saveThemeOrderFromDom();
+    });
+
+  });
+}
+
+function saveThemeOrderFromDom(){
+  const listEl = document.getElementById("themesList");
+  if (!listEl) return;
+
+  const newOrder = Array.from(listEl.querySelectorAll(".theme-row .theme-label"))
+    .map(el => el.textContent.trim())
+    .filter(Boolean);
+
+  // Sauvegarde dans le localStorage pour le CIS courant
+  writeJson(currentThemesKey(), newOrder);
+
+  // Met à jour la <select> des thèmes du formulaire FMA
+  renderThemesSelect();
+
+  // On rerend la liste pour remettre les bons index dans les onclick(renameTheme(i), deleteTheme(i))
+  renderThemesAdmin();
+}
+
+  
+window.renameTheme=(i)=>{
+  const list=getThemes(); const cur=list[i]; if(cur==null) return;
+  const v=prompt("Renommer le thème :", cur); if(v==null || !v.trim()) return;
+  if(list.includes(v.trim())) return alert("Existe déjà.");
+  list[i]=v.trim();
+  writeJson(currentThemesKey(), list);
+  renderThemesSelect();
+  renderThemesAdmin();
+  notify("Thème modifié.");
+};
+window.deleteTheme=(i)=>{
+  const list=getThemes(); if(!confirm("Supprimer ce thème ?")) return;
+  list.splice(i,1);
+  writeJson(currentThemesKey(), list);
+  renderThemesSelect();
+  renderThemesAdmin();
+  notify("Thème supprimé.");
+};
+
+/* ====== Impression ====== */
+document.getElementById("btnPrint").onclick=printPivot;
+document.getElementById("btnPrint2").onclick=printPivot;
+
+/* ====== Suppression totale (admin du CIS) ====== */
+document.getElementById("btnWipeAll").onclick = () => {
+  if(!(isAdminRole() || isSuperAdmin())){
+    alert("Action réservée à l’Administrateur du CIS.");
+    return;
+  }
+  const all = fmaAll();
+  const target = activeCisName();
+  const countTarget = all.filter(r => normCis(r.cis) === target).length;
+  if (!countTarget) { notify("Aucune FMA à supprimer pour votre CIS."); return; }
+
+  if (!confirm(`Supprimer TOUTES les FMA de votre CIS ? (${countTarget} enregistrements)\nCette action est irréversible.`)) return;
+
+  const remaining = all.filter(r => normCis(r.cis) !== target);
+  fmaSave(remaining);
+
+  ["detailModal","historyModal"].forEach(id => {
+    const m = document.getElementById(id);
+    if (m && m.style.display === "flex") m.style.display = "none";
+  });
+
+  renderPending();
+  if (document.getElementById("historyModal").style.display === "flex") renderHistory();
+
+  notify("Toutes les FMA de votre CIS ont été supprimées.");
+};
+
+/* ====== Heures (datalist + clamp) ====== */
+function fillQuarterDatalist(){
+  const dl = document.getElementById('quarters');
+  if(!dl) return;
+  let opts = '';
+  for(let m=7*60; m<=22*60; m+=15){
+    const h = String(Math.floor(m/60)).padStart(2,'0');
+    const mi = String(m%60).padStart(2,'0');
+    opts += `<option value="${h}:${mi}"></option>`;
+  }
+  dl.innerHTML = opts;
+}
+function snapAndClamp(el){
+  if(!el || !el.value) return;
+  const v = el.value;
+  if(!/^\d{2}:\d{2}$/.test(v)) return;
+  el.value = clampQuarter(v);
+}
+['h1','h2'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(!el) return;
+  ['change','blur'].forEach(evt=> el.addEventListener(evt, ()=>snapAndClamp(el)));
+});
+
+/* ====== Noms ====== */
+function displayFromParts(raw){
+  const s = tidySpaces(String(raw||'')); if(!s) return '';
+  const parts = s.split(' ').filter(Boolean);
+  const cap = (w)=> w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
+  if(parts.length===2){ return parts[0].toUpperCase()+' '+cap(parts[1]); }
+  return parts.map(cap).join(' ');
+}
+
+function printPivot(){
+  const themes = getThemes();
+  const keyToDisplay = new Map();
+
+  usersVerg().forEach(u=>{
+    const disp = `${(u.nom||'').toUpperCase()} ${String(u.prenom||'').charAt(0).toUpperCase()+String(u.prenom||'').slice(1).toLowerCase()}`.trim();
+    const k = nameKey(`${u.nom||''} ${u.prenom||''}`);
+    if(!keyToDisplay.has(k)) keyToDisplay.set(k, disp);
+  });
+
+  fmaAll().forEach(rec=>{
+    rec.participants.forEach(p=>{ const k=nameKey(p.name), disp=displayFromParts(p.name); if(!keyToDisplay.has(k)) keyToDisplay.set(k, disp); });
+    const kF=nameKey(rec.formateur), dispF=displayFromParts(rec.formateur); if(!keyToDisplay.has(kF)) keyToDisplay.set(kF, dispF);
+  });
+
+  const usersArr = Array.from(keyToDisplay.entries()).sort((a,b)=> stripAccents(a[1]).localeCompare(stripAccents(b[1]), 'fr', {sensitivity:'base'}));
+  const idxUser = Object.fromEntries(usersArr.map(([k,_],i)=>[k,i]));
+  const idxTheme = Object.fromEntries(themes.map((t,i)=>[t,i]));
+  const mat = Array.from({length:usersArr.length},()=>Array(themes.length).fill(0));
+
+  fmaAll().forEach(rec=>{
+    const minutes = rec.dureeMin||diffMin(rec.h1,rec.h2);
+    const c = idxTheme[rec.theme];
+    const uniqueKeys = new Set(rec.participants.map(p=>nameKey(p.name)));
+    uniqueKeys.add(nameKey(rec.formateur));
+    uniqueKeys.forEach(k=>{ const r=idxUser[k]; if(r!==undefined && c!==undefined) mat[r][c] += minutes; });
+  });
+
+  const rowTot = mat.map(row=> row.reduce((s,v)=>s+v,0));
+
+  const header = `<tr><th style="text-align:left">Agent \\ Thème</th>${themes.map(t=>`<th>${t}</th>`).join("")}<th>Total</th></tr>`;
+  const rows = usersArr.map(([_,disp],ri)=>{
+    const tds = mat[ri].map(m=>`<td>${m?hhmm(m):""}</td>`).join("");
+    return `<tr><th style="text-align:left">${disp}</th>${tds}<th>${rowTot[ri]?hhmm(rowTot[ri]):""}</th></tr>`;
+  }).join("");
+
+  const html = `<html><head><meta charset="utf-8"><title>Bilan FMA — Pivot</title>
+  <style>
+    @page { size: A3 portrait; margin: 12mm; }
+    body{font-family:Inter,Arial,sans-serif;margin:0;padding:6mm}
+    h2{margin:0 0 8px 0}
+    .meta{font-size:12px;color:#555;margin-bottom:8px}
+    table{width:100%;border-collapse:collapse;table-layout:fixed}
+    th,td{border:1px solid #bbb;padding:4px 6px;font-size:10px;word-wrap:break-word;text-align:center}
+    th:first-child, td:first-child{ text-align:left }
+    th{background:#f2f2f2}
+  </style>
+  </head><body>
+  <h2>Bilan FMA — ${cis}</h2>
+  <div class="meta">Imprimé le ${nowFR()}</div>
+  <table>
+    <thead>${header}</thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <script>window.print()<\/script></body></html>`;
+
+  const w = window.open("","_blank"); w.document.write(html); w.document.close();
+}
+
+/* ====== Divers ====== */
+document.getElementById("btnBack").onclick=()=>{ window.location.href='index.html'; };
+
+/* ====== Submit ====== */
+document.getElementById("fmaForm").addEventListener("submit", (e)=>{
+  e.preventDefault();
+  snapAndClamp(document.getElementById('h1'));
+  snapAndClamp(document.getElementById('h2'));
+
+  const formateur=$("#formateur").value.trim() || userName;
+  const date=$("#date").value;
+  const todayIso = new Date().toISOString().split("T")[0];
+  if (date > todayIso) {
+    alert("La date ne peut pas être dans le futur.");
+    return;
+  }
+
+  const h1=$("#h1").value, h2=$("#h2").value;
+  const theme=$("#theme").value;
+  const parts=[...$("#participants").querySelectorAll(".participant-item")].map(div=>{
+    const name=div.querySelector("span").textContent.trim();
+    const role=div.querySelector("input[type=radio]:checked")?.value || "";
+    return {name,role};
+  });
+  if(!date || !h1 || !h2 || !theme){ alert("Merci de compléter tous les champs."); return; }
+  const okQuarter = (t)=>/^\d{2}:(00|15|30|45)$/.test(t);
+  const within = (t)=> toMin(t)>=420 && toMin(t)<=1320;
+  if(!okQuarter(h1) || !okQuarter(h2) || !within(h1) || !within(h2)){
+    alert("Heures entre 07:00 et 22:00, par quarts d'heure.");
+    return;
+  }
+  if(parts.length===0){ alert("Ajoute au moins un participant."); return; }
+  if(parts.some(p=>!p.role)){ alert("Sélectionne SPP/SPV pour chaque participant."); return; }
+
+  if(editingId){
+    const arr=fmaAll();
+    const i=arr.findIndex(r=>r.id===editingId);
+    if(i>=0){
+      arr[i]={
+        ...arr[i],
+        formateur,
+        date,
+        h1,h2,
+        theme,
+        participants:parts,
+        dureeMin:diffMin(h1,h2)
+      };
+      fmaSave(arr);
+      notify("FMA mise à jour.");
+    }
+    editingId=null;
+    $("#btnSubmit").textContent="💾 Enregistrer";
+  }else{
+    const rec={
+      id:uid(),
+      cis,
+      formateur,
+      date,
+      h1,h2,
+      theme,
+      participants:parts,
+      dureeMin:diffMin(h1,h2),
+      createdAt:nowFR(),
+      createdBy:userName,
+      webact:{done:false,by:null,at:null}
+    };
+    fmaCreate(rec);
+    notify("FMA enregistrée et ajoutée aux « FMA à saisir ».");
+    logActivityToJournal("FMA", "Nouvelle FMA saisie par " + userName + " — " + theme);
+  }
+
+  document.getElementById("fmaForm").reset();
+  $("#formateur").value=formateur;
+  $("#participants").innerHTML="";
+  renderParticipantsUI();
+  renderPending();
+});
+document.getElementById("btnReset").onclick=()=>{ $("#participants").innerHTML=''; renderParticipantsUI(); };
+
+/* ====== Init ====== */
+window.addEventListener("DOMContentLoaded", async ()=>{
+
+  // 🔁 Synchronisation globale Accueil ↔ Firestore (fma_data_v2, csver_themes, journal_, messages_, etc.)
+  if (typeof syncAccueilFromCloud === "function") {
+    try {
+      await syncAccueilFromCloud();
+    } catch(e) {
+      console.error("Erreur syncAccueilFromCloud :", e);
+    }
+  }
+
+  // 🔧 Corrige les FMA dont le cis a été mal enregistré (ex : "CIS [object Object]")
+  migrateFmaCis();
+  
+  $("#formateur").value = userName;
+  // Empêcher de choisir une date future
+  const dateInput = document.getElementById("date");
+  const todayIso = new Date().toISOString().split("T")[0];
+  dateInput.max = todayIso;
+
+  // (optionnel) pré-remplir avec aujourd'hui si vide
+  if (!dateInput.value) {
+    dateInput.value = todayIso;
+  }
+
+  renderThemesSelect();
+    renderAgentOptions();
+  fillQuarterDatalist();
+  renderParticipantsUI();
+  renderPending();
+
+  // 🔔 Alerte "FMA à saisir" au démarrage (saisie_fma ou admin) avec anti-spam (6h)
+  try{
+    const mayNotify = hasPrimarySaisieFma() || isAdminStrict;
+    if(mayNotify){
+      const n = countPendingForActiveCis();
+      if(n > 0){
+        const who = (session?.matricule || 'anon');
+        const key = `fma_pending_ping_${who}_${activeCisName()}`;
+        const last = Number(localStorage.getItem(key) || 0);
+        const now  = Date.now();
+        const SIX_HOURS = 6*60*60*1000;
+        if(now - last > SIX_HOURS){
+          notify(`Vous avez ${n} FMA${n>1?'s':''} à saisir.`);
+          localStorage.setItem(key, String(now));
+        }
+      }
+    }
+  }catch(_){}
+});
+</script>
+
+</body>
+</html>

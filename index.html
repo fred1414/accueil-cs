@@ -1,0 +1,3891 @@
+<!DOCTYPE html> 
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+<title>CISMIC</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;}
+
+body{
+  background:linear-gradient(135deg,#1d3f73 0%,#d43d3d 100%);
+  min-height:100vh;display:flex;flex-direction:column;color:#222;
+}
+
+/* HEADER */
+header{
+  background:#fff;display:flex;align-items:center;justify-content:space-between;
+  padding:18px 40px;box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+header img{height:70px;}
+header .title-block{text-align:center;flex:1;}
+header h1{font-size:30px;color:#0d2b52;font-weight:700;}
+header p{font-size:15px;color:#444;margin-top:6px;font-weight:600;}
+.logout-btn{
+  background:#b71c1c;color:#fff;font-weight:600;border:none;
+  padding:10px 26px;border-radius:30px;font-size:15px;cursor:pointer;transition:.25s;
+}
+.logout-btn:hover{background:#8b0000;}
+
+/* === MENU === */
+nav.menu-bar {
+  background:#0d2b52;
+  display:flex;
+  justify-content:center;
+  position:relative;
+  box-shadow:0 4px 10px rgba(0,0,0,0.15);
+}
+nav.menu-bar ul { list-style:none; display:flex; gap:30px; flex-wrap:wrap; padding:0; }
+nav.menu-bar ul li { position:relative; }
+nav.menu-bar a {
+  display:block;color:#fff;font-weight:600;padding:14px 18px;
+  text-decoration:none;transition:0.25s;border-radius:8px;
+}
+nav.menu-bar > ul > li > a:hover { background:#b71c1c; }
+
+/* Sous-menu */
+nav.menu-bar ul li ul {
+  display:none;position:absolute;top:100%;left:0;background:#fff;
+  border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.15);
+  min-width:220px;z-index:1000;flex-direction:column;overflow:hidden;
+}
+nav.menu-bar ul li:hover ul { display:flex; }
+nav.menu-bar ul li ul li a {
+  color:#0d2b52;padding:12px 16px;border-bottom:1px solid #eee;border-radius:0;
+}
+nav.menu-bar ul li ul li:last-child a { border-bottom:none; }
+nav.menu-bar ul li ul li a:hover { background:#f4f4f4;color:#b71c1c; }
+
+/* ── Bandeau météo fin sous le menu (centré) ── */
+.meteo-banner{
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  padding:10px 16px;
+  background:rgba(255,255,255,0.9);
+  color:#0d2b52;
+  border-bottom:1px solid rgba(0,0,0,.08);
+  box-shadow:0 2px 6px rgba(0,0,0,.06) inset;
+  text-align:center;
+}
+.meteo-row{
+  display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;
+}
+.meteo-row.small{ font-size:13px; color:#0d2b52; }
+.meteo-banner .emoji{ font-size:18px; line-height:1; }
+.meteo-banner .temp{ font-size:18px; font-weight:800; }
+.meteo-banner .desc{ font-size:14px; color:#333; }
+
+/* LAYOUT — 3 colonnes : formation (gauche) + véhicules (centre) + main courante (droite) */
+main{
+  flex:1;max-width:1800px;margin:40px auto;padding:0 40px;
+  display:grid;gap:28px;
+  grid-template-columns: 380px minmax(0,1fr) 380px;
+  align-items:stretch;
+}
+@media (max-width: 1280px){
+  main{ grid-template-columns: 320px 1fr; }
+  #journal-panel{ grid-column: 1 / -1; }
+}
+@media (max-width: 980px){
+  main{ grid-template-columns: 1fr; }
+}
+
+/* SECTIONS / PANELS */
+.section,
+.panel{
+  border-radius:16px;padding:24px;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);
+  display:flex;flex-direction:column;gap:18px;
+  backdrop-filter:blur(10px);
+  color:#1e1e1e;
+  background:rgba(255,255,255,0.9);
+  min-height:0; /* important */
+}
+.section.vehicules{background:rgba(240,250,245,0.92);}
+
+.section-header{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.section h2{
+  font-size:22px;font-weight:700;margin-bottom:5px;
+  color:#0d2b52;border-left:6px solid #b71c1c;padding-left:12px;
+}
+
+/* BOUTONS */
+.grid{
+  display:grid;gap:18px;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+}
+.btn{
+  border:none;border-radius:12px;padding:18px 20px;cursor:pointer;
+  color:#fff;font-size:16px;font-weight:600;text-align:center;
+  transition:all .25s ease;background:#1a73e8;
+  box-shadow:0 3px 8px rgba(0,0,0,.12);
+}
+.btn:hover{transform:translateY(-3px);box-shadow:0 6px 14px rgba(0,0,0,.2);background:#155bb5;}
+.print-btn{
+  background:#6a1b9a;color:#fff;font-weight:600;border:none;border-radius:10px;
+  padding:8px 16px;cursor:pointer;transition:0.25s;font-size:15px;
+}
+.print-btn:hover{background:#4a0e6a;}
+
+/* VEHICULES — 4 par ligne */
+#vehicule-grid{
+  display:grid;
+  gap:14px;
+  grid-template-columns:repeat(4, minmax(0,1fr));
+  grid-auto-rows:78px;
+  align-items:stretch;
+  min-height:0;
+}
+@media (max-width:1280px){ #vehicule-grid{ grid-template-columns:repeat(3,1fr); } }
+@media (max-width:980px) { #vehicule-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:560px) { #vehicule-grid{ grid-template-columns:1fr; } }
+
+.vehicule-card{
+  border-radius:10px;
+  padding:10px 12px;
+  text-align:center;
+  color:#fff;
+  font-weight:700;
+  font-size:16px;
+  box-shadow:0 3px 8px rgba(0,0,0,.25);
+  cursor:pointer;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  line-height:1.1;
+}
+.vehicule-card small{
+  font-size:13px;
+  opacity:0.95;
+  margin-top:2px;
+  line-height:1.1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+  #materiel-grid{
+  display:grid;
+  gap:12px;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+}
+#materiel-grid .vehicule-card{
+  cursor:pointer;
+}
+
+
+/* 📘 Main courante Formation (gauche) – même look que la droite */
+#formation-panel.panel{ overflow:hidden; padding:0; }
+#formation-header{
+  padding:14px 16px;
+  background:#0d2b52;
+  color:#fff;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+/* Bouton + dans le header des consignes */
+.header-plus-btn{
+  border:none;
+  border-radius:999px;
+  width:28px;
+  height:28px;
+  font-size:18px;
+  font-weight:700;
+  line-height:1;
+  cursor:pointer;
+  background:#b71c1c;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+}
+.header-plus-btn:hover{
+  background:#8b0000;
+}
+
+#formation-list{
+  padding:12px 14px;
+  overflow:auto;max-height:100%;
+  display:flex;flex-direction:column;gap:10px;
+}
+
+/* Colonne gauche : FMA (haut) + Agenda (bas) */
+.left-column{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  min-height:0;
+}
+
+/* Agenda mensuel (bas gauche) */
+#agenda-panel.panel{
+  padding:0;
+  overflow:hidden;
+}
+
+#agenda-header{
+  padding:14px 16px;
+  background:#0d2b52;
+  color:#fff;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+#agenda-header span{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.agenda-nav{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:14px;
+}
+
+.agenda-nav button{
+  border:none;
+  border-radius:999px;
+  padding:4px 8px;
+  background:#b71c1c;
+  color:#fff;
+  cursor:pointer;
+  font-size:14px;
+}
+.agenda-nav button:hover{
+  background:#8b0000;
+}
+
+#agenda-body{
+  padding:10px 12px 14px;
+  background:rgba(255,255,255,0.95);
+}
+
+/* Jours de la semaine */
+.agenda-weekdays{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  font-size:12px;
+  font-weight:600;
+  color:#555;
+  text-align:center;
+  margin-bottom:6px;
+}
+
+.agenda-weekdays div{
+  padding:4px 0;
+}
+
+/* Grille des jours */
+.agenda-grid{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:4px;
+  font-size:13px;
+}
+
+.agenda-cell{
+  height:28px;
+  border-radius:8px;
+  background:#f5f7fb;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;       /* ← au lieu de cursor:default */
+  user-select:none;
+}
+
+
+.agenda-cell-empty{
+  background:transparent;
+  cursor:default;
+}
+
+/* Aujourd'hui */
+.agenda-today{
+  background:#0d2b52;
+  color:#fff;
+  font-weight:700;
+}
+
+/* Plus tard : jour avec consigne / évènement */
+.agenda-event{
+  background:#ffe0b2;
+  color:#5d3d00;
+  font-weight:600;
+  box-shadow:0 0 0 1px rgba(0,0,0,.05);
+}
+
+/* Aujourd'hui + consigne / évènement */
+.agenda-today.agenda-event{
+  background:#0d2b52;
+  color:#fff;
+  font-weight:900;
+  outline:2px solid #ff9800;
+}
+  
+  /* Détails sous le calendrier */
+.agenda-details{
+  margin-top:8px;
+  padding-top:6px;
+  border-top:1px solid #e0e4f0;
+  font-size:12px;
+}
+.agenda-details h4{
+  font-size:13px;
+  margin-bottom:4px;
+  color:#0d2b52;
+}
+.agenda-details table{
+  width:100%;
+  border-collapse:collapse;
+}
+.agenda-details th,
+.agenda-details td{
+  padding:3px 4px;
+  border:1px solid #e3e6f3;
+  text-align:left;
+}
+.agenda-details th{
+  background:#f5f7fb;
+}
+.agenda-details-empty{
+  color:#666;
+}
+
+  /* ===========================
+   🗓️ Modale agenda (consignes + réservations)
+   =========================== */
+.agenda-modal-section{
+  margin-bottom:12px;
+}
+
+.agenda-modal-title-sub{
+  font-size:14px;
+  font-weight:700;
+  color:#0d2b52;
+  margin-bottom:4px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.agenda-consigne-card{
+  border-radius:10px;
+  border:1px solid #e0e4f0;
+  padding:10px 14px;
+  margin-top:8px;
+  background:#f9fafb;
+}
+
+/* ligne : point coloré + titre */
+.agenda-consigne-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:700;
+  font-size:16px;
+  color:#0d2b52;
+}
+
+/* point bien visible */
+.agenda-consigne-dot{
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+
+/* contenu juste en dessous, aligné à gauche */
+.agenda-consigne-body{
+  margin-top:4px;       /* colle le texte sous le titre */
+  margin-left:20px;     /* aligne sous le texte du titre, pas sous le point */
+  font-size:15px;
+  color:#333;
+  white-space:pre-wrap;
+  text-align:left;
+}
+
+/* ligne "Validité / Origine / Importance" */
+.agenda-consigne-meta{
+  margin-top:6px;
+  margin-left:20px;
+  font-size:13px;
+  color:#555;
+}
+
+  /* 🌟 Style propre des consignes dans la modale agenda */
+.agenda-consigne-card{
+  background:#f8fafc;
+  border-radius:10px;
+  border:1px solid #e2e8f0;
+  padding:10px 12px;
+  margin-top:8px;
+  text-align:left;          /* tout le texte à gauche */
+}
+
+.agenda-consigne-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:600;
+  font-size:15px;
+  margin-bottom:4px;        /* petit espace avant le contenu */
+}
+
+.agenda-consigne-dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+
+.agenda-consigne-body{
+  font-size:14px;
+  margin:0;                 /* supprime le “saut” trop grand */
+}
+
+.agenda-consigne-meta{
+  margin-top:6px;
+  font-size:12px;
+  color:#64748b;
+}
+
+
+/* Tableau des réservations dans la modale */
+.agenda-modal-table-wrapper{
+  margin-top:6px;
+  overflow:auto;
+}
+
+.agenda-modal-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+
+.agenda-modal-table th,
+.agenda-modal-table td{
+  padding:4px 6px;
+  border:1px solid #e3e6f3;
+  text-align:left;
+}
+
+.agenda-modal-table th{
+  background:#f5f7fb;
+  font-weight:600;
+}
+
+
+/* Les deux panneaux de la colonne gauche prennent chacun ~50% */
+.left-column > #formation-panel,
+.left-column > #agenda-panel{
+  flex:1;
+  min-height:0;
+}
+
+
+/* ✅ Main courante (droite) – existant */
+#journal-panel.panel{ overflow:hidden;padding:0; }
+#journal-header{
+  padding:14px 16px;background:#0d2b52;color:#fff;font-weight:700;
+}
+#journal-list{
+  padding:12px 14px;
+  overflow:auto;max-height:100%;
+  display:flex;flex-direction:column;gap:10px;
+}
+.journal-item{
+  display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid #eee;border-radius:10px;padding:8px 10px;box-shadow:0 2px 6px rgba(0,0,0,.05);
+}
+.journal-item .icon{font-size:18px;line-height:1.2}
+.journal-item .body .title{font-weight:700;color:#0d2b52;margin-bottom:2px}
+.journal-item .body .text{color:#333;margin-bottom:4px}
+.journal-item .body .date{font-size:12px;color:#666}
+
+footer{text-align:center;color:#fff;font-size:13px;padding:25px;margin-top:auto;}
+
+/* =========================================================
+   === Structure/hauteur (inchangé)
+   ========================================================= */
+html,body{ height:100dvh; }
+body{ min-height:100dvh; display:flex; flex-direction:column; }
+
+main{
+  flex:1;
+  min-height:0;
+  margin:16px auto;
+  padding:0 16px;
+  gap:16px;
+}
+.section,.panel{ min-height:0; display:flex; flex-direction:column; }
+
+.section.vehicules{ display:flex; flex-direction:column; }
+#vehicule-grid{ flex:1; min-height:0; overflow:auto; }
+
+#journal-panel{ display:flex; flex-direction:column; }
+#journal-list{ flex:1; min-height:0; overflow:auto; }
+
+header{ padding:12px 24px; }
+nav.menu-bar a{ padding:10px 12px; }
+
+@media (max-height: 820px){
+  main{ margin:12px auto; gap:12px; }
+  #vehicule-grid{ grid-auto-rows:72px; }
+}
+
+/* ================================
+   🧾 Overlay "FMA à saisir"
+   ================================ */
+.fma-overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,.45);
+  z-index:3000; display:none; align-items:center; justify-content:center; padding:20px;
+}
+.fma-pending-card{
+  background:#fff; border-radius:14px; padding:16px 18px;
+  width:95%; max-width:720px; margin:0 auto;
+  box-shadow:0 10px 30px rgba(0,0,0,.25);
+}
+/* Modale Agenda un peu plus large */
+#agenda-modal .fma-pending-card{
+  max-width:960px;      /* largeur agrandie */
+  padding:20px 24px;    /* un peu plus d'air à l'intérieur */
+}
+
+/* Taille de police générale de la modale agenda */
+#agenda-modal .fma-pending-card{
+  font-size:16px; /* ↑ augmente tout le texte de base */
+}
+
+/* Sous-titres ("Consignes du jour", "Réservations véhicules") */
+#agenda-modal .agenda-modal-title-sub{
+  font-size:17px;
+}
+
+/* Titre des consignes + point coloré */
+#agenda-modal .agenda-consigne-title{
+  font-size:16px;
+}
+
+/* Texte des consignes */
+#agenda-modal .agenda-consigne-body{
+  font-size:15px;
+}
+
+/* Meta des consignes (validité, importance…) */
+#agenda-modal .agenda-consigne-meta{
+  font-size:13px;
+}
+
+/* Tableau des réservations */
+#agenda-modal .agenda-modal-table th,
+#agenda-modal .agenda-modal-table td{
+  font-size:15px;
+}
+
+  
+.fma-pending-card .head{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+}
+.fma-pending-card .title{ font-weight:800; color:#0d2b52; display:flex; align-items:center; gap:8px; }
+.fma-pending-card .badge{
+  display:inline-block; padding:2px 8px; border-radius:999px;
+  border:1px solid #a7e2be; background:#e6f7ec; color:#0a8a3a; font-weight:800; font-size:12px;
+}
+.fma-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.fma-btn{ border:none; border-radius:10px; padding:8px 12px; cursor:pointer; font-weight:700; }
+.fma-btn.primary{ background:#0b5bd3; color:#fff; }
+.fma-btn.ghost{ background:#eef2ff; color:#223; }
+.fma-pending-card .body{ margin-top:10px; max-height:50vh; overflow:auto; }
+.fma-pending-card table{ width:100%; border-collapse:collapse; }
+.fma-pending-card th, .fma-pending-card td{ border:1px solid #eef2fb; padding:8px 10px; text-align:left; }
+.fma-pending-card th{ background:#f7f9ff; color:#123; }
+
+/* ===========================
+   📱 ADAPTATION MOBILE (≤ 768px)
+   =========================== */
+@media (max-width: 768px) {
+
+  /* Evite les bugs de 100dvh sur mobile */
+  html, body {
+    height: auto;
+  }
+  body {
+    min-height: 100vh;
+  }
+
+  /* HEADER en colonne + centré */
+  header {
+    flex-direction: column;
+    align-items: center;        /* centre le logo horizontalement */
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    text-align: center;         /* centre le texte à l’intérieur du header */
+  }
+
+  header img {
+    height: 50px;
+  }
+
+  header .title-block {
+    text-align: center;         /* "Accueil CS..." + "Bienvenue..." centrés */
+    width: 100%;
+  }
+
+  header h1 {
+    font-size: 20px;
+    margin-top: 2px;
+  }
+
+  header p {
+    font-size: 13px;
+  }
+  .logout-btn {
+    align-self: stretch;
+    width: 100%;
+    text-align: center;
+    padding: 8px 0;
+    font-size: 14px;
+    border-radius: 999px;
+  }
+
+  /* MENU : barre scrollable, items plus compacts */
+  nav.menu-bar {
+    overflow-x: auto;
+    overflow-y: visible; /* important pour que les sous-menus puissent sortir */
+  }
+  nav.menu-bar ul {
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 6px 8px;
+  }
+  nav.menu-bar a {
+    padding: 8px 10px;
+    font-size: 13px;
+    white-space: nowrap; /* évite les retours bizarres dans les libellés */
+  }
+
+  /* 🔽 GESTION DES SOUS-MENUS SUR MOBILE 🔽 */
+
+  /* On neutralise le :hover prévu pour le PC */
+  nav.menu-bar ul li:hover ul {
+    display: none;
+  }
+
+  /* Les sous-menus ne sont plus en position absolue,
+     ils poussent le contenu vers le bas (mode accordéon) */
+  nav.menu-bar ul li ul {
+    position: static;
+    margin-top: 4px;
+    box-shadow: none;
+    border-radius: 8px;
+    min-width: 100%;
+    font-size: 13px;
+    display: none;              /* fermés par défaut */
+  }
+
+  /* Quand le <li> a la classe .open → on ouvre le sous-menu */
+  nav.menu-bar ul li.open > ul {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* On marque visuellement l'item parent ouvert */
+  nav.menu-bar ul li.open > a {
+    background: #b71c1c;
+  }
+
+  nav.menu-bar ul li ul li a {
+    font-size: 13px;
+    padding: 8px 10px;
+    white-space: normal; /* sous-menu peut retourner à la ligne */
+  }
+
+  /* Bandeau météo : un peu plus compact */
+  .meteo-banner {
+    padding: 8px 10px;
+  }
+  .meteo-row.small {
+    font-size: 12px;
+  }
+
+  /* MAIN déjà en 1 colonne à 980px, on allège juste les marges */
+  main {
+    margin: 12px auto;
+    padding: 0 10px;
+    gap: 14px;
+  }
+
+  .section,
+  .panel {
+    padding: 16px;
+  }
+
+  .section h2 {
+    font-size: 18px;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* Groupe de boutons dans "État des véhicules" : full width */
+  .section.vehicules .section-header > div {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .section.vehicules .section-header .btn,
+  .section.vehicules .section-header .print-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Grille véhicules : tu as déjà les colonnes qui se réduisent,
+     on garde juste un peu de hauteur */
+  #vehicule-grid {
+    grid-auto-rows: 70px;
+  }
+  .vehicule-card {
+    font-size: 14px;
+    padding: 8px 10px;
+  }
+
+  /* Listes de journal / formation : texte un peu plus petit */
+  .journal-item .body .text {
+    font-size: 14px;
+  }
+  .journal-item .body .date {
+    font-size: 11px;
+  }
+
+  /* Modales : garantis un peu de marge latérale si très petit écran */
+  #anom-modal > div,
+  #myfma-modal > div,
+  .fma-pending-card {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* 📘 & 📝 Limiter la hauteur et activer le scroll interne sur mobile */
+  #formation-panel,
+  #journal-panel {
+    max-height: none;
+  }
+
+  #formation-list,
+  #journal-list {
+    max-height: 40vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+</style>
+</head>
+<body>
+
+<header>
+  <img src="https://i.postimg.cc/LsB40JQq/logo-cismic.png" alt="Logo SDIS 30">
+  <div class="title-block">
+    <h1 id="cis-title">Centre de Secours</h1>
+    <p id="welcome-text">Bienvenue</p>
+  </div>
+  <button class="logout-btn" onclick="logout()">Se déconnecter</button>
+</header>
+
+<!-- ✅ MENU PRINCIPAL -->
+<nav class="menu-bar">
+  <ul>
+    <li id="menu-agent"><a href="#">Agent du centre</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('Mes infos.html', event)">Mes infos</a></li>
+        <li><a href="#" onclick="return openMyFma(event)">Consulter ma FMA</a></li>
+       <li><a href="#" onclick="return openLink('messagerie.html', event)">Messagerie interne</a></li>
+        <li>
+  <a href="#"
+     onclick="return composeOutlook(
+       'LOG-SAPSP-CHU@sdis30.fr',
+       'Matériel laissé au CH',
+       'Bonjour,\n\nVeuillez trouver les informations du matériel laissé au CH\n\n* Date : \n* Heure : \n* N° Intervention : \n* Nom du matériel : \n\nBonne journée.',
+       event
+     )">
+    Matériel laissé CHU
+  </a>
+</li>
+
+        <li><a href="#" onclick="return openLink('reservations_vehicules.html', event)">Réservation véhicule</a></li>
+        <li><a href="#" onclick="return openLink('https://gipsis.sdis30.fr/index.php?page=menu_personnels', event)">GIPSIS</a></li>
+        <li><a href="#" onclick="return openLink('http://autocsweb/autocs7/', event)">AUTO-CS Web</a></li>
+        <li><a href="#" onclick="return openLink('https://www.plateforme-apis.fr/login/index.php', event)">APIS</a></li>
+        <li><a href="#" onclick="return openLink('http://intranet/Pages/System/default.aspx', event)">Intranet</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-sog"><a href="#">SOG</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/drive/folders/1BapXSZxU9dP-UL4piwDnsLoCL0JoTamw?usp=sharing', event)">Procédures SOG</a></li>
+        <li><a href="#" onclick="return openLink('consignes.html', event)">Consignes</a></li>
+        <li><a href="#" onclick="return openLink('fma.html', event)">FMA</a></li>
+        <li><a href="#" onclick="return openLink('Manoeuvre de repli.html', event)">Manoeuvre de repli</a></li>
+        <li><a href="#" onclick="return openLink('https://fastsms.novadial.fr/', event)">SMS NOVADIAL</a></li>
+        <li><a href="#" onclick="return openLink('http://outlook.com/owa/sdis30.fr/ver-ops@sdisgard.mail.onmicrosoft.com', event)">Messagerie Outlook</a></li>
+        <li><a href="#" onclick="return openLink('http://10.0.32.31/php-bin/WebClient.php?lang=fr', event)">Annuaire SDIS30</a></li>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/file/d/1kORIFDJmEuRhvn3WSSiTCqLg_qF4wk5g/view?usp=sharing', event)">ICP</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-formation"><a href="#">Formation</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/file/d/1baVsjzbGfXOByg2vtoAsQaOlPGuCYXZk/view?usp=sharing', event)">Calendrier stages 2026</a></li>
+       <li><a href="#" onclick="return openLink('demande_stage.html', event)">Demande de stages</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-fdf"><a href="#">FDF</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/file/d/1QDOb394zuuG1zNUJLsax1XHoaIZ_ZbFh/view?usp=sharing', event)">Ordre opération FDF 2025</a></li>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/file/d/13H5arwISXkMypijs8DNTvqyZd0JBTS2F/view?usp=sharing', event)">Prise en compte CCF FDF2</a></li>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/file/d/1rIaBifgvCf6F1HZzqLabL21FLQa3Mr4s/view?usp=sharing', event)">Prise en compte GIFF FDF3</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-pharma"><a href="#">Pharmacie</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('commande pharmacie.html', event)">Commande pharmacie</a></li>
+        <li><a href="#" onclick="return composeOutlook('SSSM-PHARMACIE@sdis30.fr', event)">Contact</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-habillement"><a href="#">Habillement</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('gestion_habillement.html', event)">Envoyer un article</a></li>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/file/d/1lKSSE6LJf12PG8Nt7uX_6zR03qXDHvHz/view?usp=sharing', event)">Compte-rendu de perte</a></li>
+        <li><a href="#" onclick="return openLink('https://drive.google.com/file/d/1OIAaYX3NBvQeNTNkBlVoXSGCxCyC2NBU/view?usp=sharing', event)">Compte-rendu de vol</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-mnr"><a href="#">MNR</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('mnr-envoyer.html', event)">Envoyer un article</a></li>
+        <li><a href="#" onclick="return composeOutlook('GFST-MNR@sdis30.fr', event)">Contact</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-véhicules"><a href="#">Véhicules</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('suivi_vehicules.html', event)">Suivi parc véhicules</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-patrimoine"><a href="#">Patrimoine</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('http://symphonieboxprod', event)">As-Tech</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-magasin"><a href="#">Magasin</a>
+      <ul>
+        <li><a href="#" onclick="return composeOutlook('GFST-MAGASIN@sdis30.fr', event)">Contact</a></li>
+      </ul>
+    </li>
+
+    <li id="menu-admin"><a href="#">Administrateur</a>
+      <ul>
+        <li><a href="#" onclick="return openLink('admin.html', event)">Gestion des accès</a></li>
+<li><a id="btnPurgeNotes" href="#" onclick="return purgeJournal('notes', event)">🧹 Vider les mains courantes</a></li>
+<li><a id="btnPurgeAll" href="#" onclick="return purgeJournal('all', event)">🗑️ Purge complète du site</a></li>
+
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+<!-- 🌤️ Bandeau météo fin (centré) -->
+<div class="meteo-banner" aria-label="Bandeau météo Vergèze">
+  <div class="meteo-row">
+    <span class="emoji" id="meteo-emoji">—</span>
+    <span class="temp"  id="meteo-temp">--°C</span>
+    <span class="desc"  id="meteo-desc">—</span>
+  </div>
+  <div class="meteo-row small">
+    <span>Lever&nbsp;: <strong id="meteo-sunrise">--:--</strong></span>
+    <span>Coucher&nbsp;: <strong id="meteo-sunset">--:--</strong></span>
+    <span>Rafales&nbsp;: <strong id="meteo-gust">-- km/h</strong></span>
+    <span>Humidité&nbsp;: <strong id="meteo-humidity">--%</strong></span>
+  </div>
+</div>
+
+<main>
+
+   <!-- Colonne gauche : 📌 Main courante FMA (haut) + 📅 Agenda mensuel (bas) -->
+  <div class="left-column">
+
+   <!-- 📌 Consignes du jour (haut) -->
+<div id="formation-panel" class="panel">
+  <div id="formation-header">
+    <span>📌 Consignes</span>
+    <button
+      type="button"
+      id="consignes-plus-btn"
+      class="header-plus-btn"
+      style="display:none;"
+      onclick="return openLink('consignes.html', event)"
+    >
+      +
+    </button>
+  </div>
+  <div id="formation-list"></div>
+</div>
+
+
+
+    <!-- 📅 Agenda mensuel (bas) -->
+    <div id="agenda-panel" class="panel">
+      <div id="agenda-header">
+        <span>📅 Agenda du centre</span>
+        <div class="agenda-nav">
+          <button id="agenda-prev" type="button">◀</button>
+          <span id="agenda-month-label"></span>
+          <button id="agenda-next" type="button">▶</button>
+        </div>
+      </div>
+      <div id="agenda-body">
+        <div class="agenda-weekdays">
+          <div>Lun</div>
+          <div>Mar</div>
+          <div>Mer</div>
+          <div>Jeu</div>
+          <div>Ven</div>
+          <div>Sam</div>
+          <div>Dim</div>
+        </div>
+        <div id="agenda-grid" class="agenda-grid"></div>
+        <div id="agenda-details" class="agenda-details"></div>
+
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- 🚒 ÉTAT DES VÉHICULES (colonne centre) -->
+  <div class="section vehicules">
+    <div class="section-header">
+      <h2>🚒 État des véhicules</h2>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button id="btn-print-anom" class="print-btn" onclick="printAnomalies()">🖨️ Imprimer anomalies</button>
+        <button id="btn-signal-anom" class="btn" onclick="openLink('vehicules.html')">Signaler une anomalie</button>
+      </div>
+    </div>
+    <div id="vehicule-grid"></div>
+  </div>
+
+    <!-- 🏭 MATERIEL EN ANOMALIE -->
+  <div class="section vehicules" id="materiel-section" style="display:none;margin-top:-10px;">
+    <div class="section-header">
+      <h2>🏭 Matériel en anomalie</h2>
+    </div>
+    <div id="materiel-grid"></div>
+  </div>
+
+
+  <!-- 📝 Main courante opérationnelle (colonne droite) -->
+  <div id="journal-panel" class="panel">
+    <div id="journal-header">📝 Main courante opérationnelle</div>
+    <div id="journal-list"></div>
+  </div>
+
+</main>
+
+<!-- 🧾 OVERLAY : FMA à saisir -->
+<div id="fmaOverlay" class="fma-overlay" style="display:none">
+  <div id="fmaPendingCard" class="fma-pending-card">
+    <div class="head">
+      <div class="title">📘 FMA à saisir <span class="badge" id="fmaPendingCount"></span></div>
+      <div class="fma-actions">
+        <button id="fmaGoBtn" class="fma-btn primary">Aller à la page FMA</button>
+        <button id="fmaDismissBtn" class="fma-btn ghost">OK</button>
+      </div>
+    </div>
+    <div class="body">
+      <table>
+        <thead><tr><th>Date</th><th>Thème</th><th>Formateur</th></tr></thead>
+        <tbody id="fmaPendingBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 🛎️ OVERLAY : Nouvelles demandes de réservation véhicule -->
+<div id="resOverlay" class="fma-overlay" style="display:none">
+  <div id="resPendingCard" class="fma-pending-card">
+    <div class="head">
+      <div class="title">🚘 Nouvelles demandes de réservation <span class="badge" id="resPendingCount"></span></div>
+      <div class="fma-actions">
+        <button id="resGoBtn" class="fma-btn primary">Aller à la page Réservations</button>
+        <button id="resDismissBtn" class="fma-btn ghost">OK</button>
+      </div>
+    </div>
+    <div class="body">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Heures</th><th>Agent</th><th>Motif</th><th>Destination</th>
+          </tr>
+        </thead>
+        <tbody id="resPendingBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 🧺 OVERLAY : Nouveaux dépôts habillement (AJOUT MINIMAL) -->
+<div id="habOverlay" class="fma-overlay" style="display:none">
+  <div id="habPendingCard" class="fma-pending-card">
+    <div class="head">
+      <div class="title">🧺 Nouveaux dépôts habillement <span class="badge" id="habPendingCount"></span></div>
+      <div class="fma-actions">
+        <button id="habGoBtn" class="fma-btn primary">Aller à Habillement</button>
+        <button id="habSeenBtn" class="fma-btn ghost">Marquer comme lu</button>
+      </div>
+    </div>
+    <div class="body">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Agent</th><th>Matricule</th><th>Effets</th></tr>
+        </thead>
+        <tbody id="habPendingBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 📨 OVERLAY : Nouveaux messages -->
+<div id="mailOverlay" class="fma-overlay" style="display:none">
+  <div id="mailPendingCard" class="fma-pending-card">
+    <div class="head">
+      <div class="title">📬 Nouveaux messages <span class="badge" id="mailPendingCount"></span></div>
+      <div class="fma-actions">
+        <button id="mailGoBtn" class="fma-btn primary">Ouvrir la messagerie</button>
+        <button id="mailMarkReadBtn" class="fma-btn ghost">Marquer comme lus</button>
+      </div>
+    </div>
+    <div class="body">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>De</th><th>Objet</th></tr>
+        </thead>
+        <tbody id="mailPendingBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 🗓️ MODALE : Détails agenda (consignes + réservations) -->
+<div id="agenda-modal" class="fma-overlay" style="display:none">
+  <div class="fma-pending-card">
+    <div class="head">
+      <div class="title" id="agenda-modal-title">📅 Détails du jour</div>
+      <div class="fma-actions">
+        <button id="agenda-modal-close" class="fma-btn ghost">Fermer</button>
+      </div>
+    </div>
+    <div class="body">
+      <!-- Tout le contenu (consignes + réservations) sera injecté ici -->
+      <div id="agenda-modal-body"></div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- FIN AJOUT -->
+
+<footer>© CISMIC — 2025</footer>
+
+<!-- 🔌 Firebase + Firestore + stockage partagé -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="cloud-storage.js"></script>
+
+
+
+
+
+<script>
+function openLink(url, evt){
+  if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
+  try{
+    const u = new URL(url, window.location.href);
+    const isHtml = /\.html?(\?|#|$)/i.test(u.pathname);
+    if (isHtml){ window.location.href = u.href; }
+    else { window.open(u.href, '_blank', 'noopener,noreferrer'); }
+  }catch(e){
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+  return false;
+}
+function composeOutlook(to,subject,body, evt){
+  if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
+  const link=`https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(subject||"")}&body=${encodeURIComponent(body||"")}`;
+  window.open(link,'_blank','noopener,noreferrer');
+  return false;
+}
+function logout(){localStorage.removeItem("csver_session");alert("Déconnexion réussie.");window.location.href="login.html";}
+
+function getEtatColor(e){
+  return({"Disponible":"#4caf50","Mineur":"#ff9800","Atelier":"#2196f3","Pret":"#9c27b0","Indispo":"#f44336"}[e]||"#5f6368");
+}
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g, m => (
+    {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]
+  ));
+}
+function normCis(x){
+  try{
+    return String(x||"").replace(/^CIS\s*/i,"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+  }catch(_){ return String(x||"").toLowerCase(); }
+}
+
+/* ✅ Ajout : récupérer les permissions applicables au CIS courant */
+function getCurrentCisPerms(){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return {};
+    const fiche   = JSON.parse(localStorage.getItem("csver_user_"+session.matricule) || "null");
+    if(!fiche || !fiche.permissions) return {};
+    const cisCur  = Array.isArray(session.cis) ? session.cis[0] : session.cis;
+
+    const same = (a,b)=> normCis(a) === normCis(b);
+
+    const cisPrimary = fiche.cis && fiche.cis.primary ? fiche.cis.primary : null;
+    const isPrimary  = cisPrimary && same(cisPrimary, cisCur);
+
+    if(isPrimary){
+      return fiche.permissions.primary || {};
+    }else{
+      const sec = fiche.permissions.secondaries || {};
+      const k = sec[cisCur] ? cisCur : (Object.keys(sec).find(x=>same(x,cisCur)) || null);
+      return (k ? sec[k] : {}) || {};
+    }
+  }catch(_){ return {}; }
+}
+
+/* ✅ Affichage sélectif des menus + boutons selon les permissions du CIS courant */
+function applyRoleMenus(roleRaw){
+  const ids = [
+    "menu-agent","menu-sog","menu-formation","menu-fdf","menu-pharma",
+    "menu-habillement","menu-mnr","menu-atelier","menu-magasin",
+    "menu-véhicules",           // 👈 ajout pour pouvoir le masquer/afficher
+    "menu-admin"
+  ];
+  const hideAll = () => ids.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display="none";
+  });
+
+  const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+  const fiche   = session ? JSON.parse(localStorage.getItem("csver_user_"+session.matricule) || "null") : null;
+  const cisCur  = Array.isArray(session?.cis) ? session.cis[0] : session?.cis;
+
+  // Récupère le bloc de permissions pertinent (principal vs secondaire)
+  let perms = null;
+  if(fiche && fiche.permissions){
+    const cisPrimary = fiche.cis && fiche.cis.primary ? fiche.cis.primary : null;
+    const isPrimary  = cisPrimary && normCis(cisPrimary) === normCis(cisCur);
+    if(isPrimary){
+      perms = fiche.permissions.primary || null;
+    }else{
+      const sec = fiche.permissions.secondaries || {};
+      perms = sec[cisCur] || sec[Object.keys(sec).find(k => normCis(k)===normCis(cisCur))] || null;
+    }
+  }
+
+  const btnPrint  = document.getElementById("btn-print-anom");
+  const btnSignal = document.getElementById("btn-signal-anom");
+  // 👇 On laisse EXACTEMENT la logique actuelle des boutons : SOG OU Admin
+  const showVehBtns = (v)=>{
+    if(btnPrint)  btnPrint.style.display  = v ? "" : "none";
+    if(btnSignal) btnSignal.style.display = v ? "" : "none";
+  };
+
+  if(perms && Object.keys(perms).length>0){
+    hideAll();
+
+    // Cas "agent seul" inchangé
+    const onlyAgent = !!perms.agent &&
+      !perms.sog && !perms.admin &&
+      !perms.formation && !perms.fdf && !perms.pharma &&
+      !perms.habillement && !perms.mnr && !perms.atelier && !perms.magasin && !perms["véhicules"];
+    if(onlyAgent){
+      ["menu-agent","menu-formation","menu-fdf","menu-habillement"].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.style.display="";
+      });
+      showVehBtns(false);
+      return;
+    }
+
+    // Raccourci SOG (comme avant) MAIS “Véhicules” dépend d’une case dédiée
+    if(perms.sog){
+      ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=""; });
+      const adminEl = document.getElementById("menu-admin"); if(adminEl) adminEl.style.display = perms.admin ? "" : "none";
+      // 👇 Masquer “Véhicules” si la case n’est pas cochée et pas admin
+      if(!perms["véhicules"] && !perms.admin){
+        const m = document.getElementById("menu-véhicules");
+        if(m) m.style.display = "none";
+      }
+      // ✅ Boutons : SOG ou Admin (inchangé)
+      showVehBtns(!!perms.sog || !!perms.admin);
+      return;
+    }
+
+    // Affichage fin par fin (on traite "véhicules" à part)
+    const map = {
+      agent:"menu-agent", sog:"menu-sog", formation:"menu-formation", fdf:"menu-fdf",
+      pharma:"menu-pharma", habillement:"menu-habillement", mnr:"menu-mnr",
+      atelier:"menu-atelier", magasin:"menu-magasin", admin:"menu-admin",
+      "véhicules":"menu-véhicules"   // 👈 mapping pour “Véhicules”
+    };
+    Object.keys(map).forEach(k=>{
+      const el = document.getElementById(map[k]);
+      if(!el) return;
+      if(k === "véhicules"){
+        // 👇 Le menu n’apparaît que si case “véhicules” ou admin
+        el.style.display = (perms["véhicules"] || perms.admin) ? "" : "none";
+      }else{
+        el.style.display = perms[k] ? "" : "none";
+      }
+    });
+
+    // ✅ Boutons : SOG ou Admin (inchangé)
+    showVehBtns(!!perms.sog || !!perms.admin);
+    return;
+  }
+
+  /* Fallback rôles anciens — inchangé */
+  const role = String(roleRaw||"").toLowerCase();
+  hideAll();
+  if(role === "agent"){
+    ["menu-agent","menu-formation","menu-habillement"].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=""; });
+  }else if(role === "sog spv"){
+    ["menu-agent","menu-sog","menu-formation","menu-habillement","menu-mnr"].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=""; });
+  }else if(role === "spp"){
+    ["menu-agent","menu-sog","menu-formation","menu-fdf","menu-pharma","menu-habillement","menu-mnr"].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=""; });
+  }else if(role === "admin" || role === "commandement"){
+    ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=""; });
+  }else{
+    ["menu-agent","menu-formation","menu-habillement"].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=""; });
+  }
+
+  // ✅ Boutons fallback : SOG/SPP/Admin/Commandement (inchangé)
+  const showVehBtnsFallback = (role === "sog spv" || role === "spp" || role === "admin" || role === "commandement");
+  showVehBtns(showVehBtnsFallback);
+}
+
+function updateConsignesPlusVisibility(){
+  try{
+    const btn = document.getElementById("consignes-plus-btn");
+    if(!btn) return;
+
+    // 1️⃣ On essaie d'abord avec le système de permissions par CIS
+    const perms = getCurrentCisPerms ? getCurrentCisPerms() : {};
+    if(perms && Object.keys(perms).length > 0){
+      // visible pour SOG ou ADMIN dans les permissions du centre
+      const show = !!perms.sog || !!perms.admin;
+      btn.style.display = show ? "flex" : "none";
+      return;
+    }
+
+    // 2️⃣ Fallback : ancien système basé sur session.role
+    const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+    if(!session){
+      btn.style.display = "none";
+      return;
+    }
+
+    const role = String(session.role || "").toLowerCase();
+
+    // ici tu peux ajuster qui voit le bouton
+    const showFallback = (role === "sog" || role === "sog spv" || role === "admin");
+    btn.style.display = showFallback ? "flex" : "none";
+
+  }catch(e){
+    console.error("Erreur visibilité bouton consignes :", e);
+  }
+}
+
+
+  
+/* Chargement initial */
+let cis="",key="";
+window.addEventListener("DOMContentLoaded", async ()=>{
+  // 🔁 On commence par synchroniser avec Firestore
+  try{
+    await syncAccueilFromCloud();
+  }catch(e){
+    console.error("Erreur de synchro cloud au chargement :", e);
+  }
+
+  const user=JSON.parse(localStorage.getItem("csver_session")||"null");
+  if(!user){alert("Session expirée.");window.location.href="login.html";return;}
+  cis=Array.isArray(user.cis)?user.cis[0]:user.cis;
+  key="vehicules_"+cis;
+
+  const nomComplet=((user.prenom||"")+" "+(user.nom||"")).trim()||user.matricule;
+  document.getElementById("cis-title").textContent=`CISMIC ${cis}`;
+  document.getElementById("welcome-text").textContent=`Bienvenue ${nomComplet}`;
+
+  applyRoleMenus(user.role);
+  updateConsignesPlusVisibility();   // 👉 affiche le + pour SOG / ADMIN
+// 🔐 Masquer les actions de purge pour tous sauf super-admin 1414 OU admin du centre
+if (!isSuperAdmin() && !isAdmin()) {
+    const btn1 = document.getElementById("btnPurgeNotes");
+    const btn2 = document.getElementById("btnPurgeAll");
+
+    if (btn1) btn1.style.display = "none";
+    if (btn2) btn2.style.display = "none";
+}
+
+
+  renderVehicules(JSON.parse(localStorage.getItem(key)||"[]"));
+  renderJournal();
+  renderFormations();       // 📘 panneau gauche
+  fetchMeteoVergeze();      // 🌤️ bandeau
+  setInterval(fetchMeteoVergeze, 30*60*1000); // toutes les 30 min
+
+  // 👉 Overlay FMA au chargement
+  renderFmaPendingCard();
+});
+
+window.addEventListener("focus",()=>{
+  const vehicules=JSON.parse(localStorage.getItem(key)||"[]");
+  renderVehicules(vehicules);
+  renderJournal();
+  renderFormations();
+  fetchMeteoVergeze();
+  // 👉 Réévalue à l’arrivée sur l’onglet
+  renderFmaPendingCard();
+});
+window.addEventListener("pageshow",()=>{
+  const vehicules=JSON.parse(localStorage.getItem(key)||"[]");
+  renderVehicules(vehicules);
+  renderJournal();
+  renderFormations();
+  // 👉 Réévalue sur pageshow (Firefox/Back-Forward cache)
+  renderFmaPendingCard();
+});
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden){
+    const vehicules=JSON.parse(localStorage.getItem(key)||"[]");
+    renderVehicules(vehicules);
+    renderJournal();
+    renderFormations();
+    renderFmaPendingCard();
+  }
+});
+window.addEventListener("storage",(e)=>{
+  try{
+    if(!e.key) return;
+    const user=JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!user) return;
+    const cisSel = Array.isArray(user.cis)?user.cis[0]:user.cis;
+    if(e.key===key || e.key==="journal_"+cisSel || e.key==="fma_data_v2"){
+      renderVehicules(JSON.parse(localStorage.getItem(key)||"[]"));
+      renderJournal();
+      renderFormations();
+      renderFmaPendingCard();
+    }
+  }catch(_){}
+});
+
+/* 🌤️ Open-Meteo pour Vergèze (~43.74, 4.20) — Bandeau centré */
+async function fetchMeteoVergeze(){
+  const lat = 43.74, lon = 4.20, tz = "Europe/Paris";
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+    + `&current_weather=true`
+    + `&hourly=relative_humidity_2m,wind_gusts_10m,uv_index,precipitation_probability`
+    + `&daily=sunrise,sunset`
+    + `&timezone=${encodeURIComponent(tz)}`;
+
+  const els = {
+    emoji: document.getElementById("meteo-emoji"),
+    temp: document.getElementById("meteo-temp"),
+    desc: document.getElementById("meteo-desc"),
+    sunrise: document.getElementById("meteo-sunrise"),
+    sunset: document.getElementById("meteo-sunset"),
+    gust: document.getElementById("meteo-gust"),
+    humidity: document.getElementById("meteo-humidity"),
+  };
+
+  function codeToEmoji(code){
+    if([0].includes(code)) return "☀️";
+    if([1,2].includes(code)) return "🌤️";
+    if([3].includes(code)) return "☁️";
+    if([45,48].includes(code)) return "🌫️";
+    if([51,53,55].includes(code)) return "🌦️";
+    if([56,57,61,63,65,66,67,80,81,82].includes(code)) return "🌧️";
+    if([71,73,75,77,85,86].includes(code)) return "🌨️";
+    if([95,96,99].includes(code)) return "⛈️";
+    return "🌡️";
+  }
+  function codeToText(code){
+    const m = {
+      0:"Ciel clair",1:"Plutôt clair",2:"Partiellement nuageux",3:"Couvert",
+      45:"Brouillard",48:"Brouillard givrant",
+      51:"Bruine faible",53:"Bruine",55:"Bruine forte",
+      56:"Bruine verglaçante",57:"Bruine verglaçante forte",
+      61:"Pluie faible",63:"Pluie",65:"Pluie forte",
+      66:"Pluie verglaçante",67:"Pluie verglaçante forte",
+      71:"Neige faible",73:"Neige",75:"Neige forte",77:"Grains de neige",
+      80:"Averses faibles",81:"Averses",82:"Averses fortes",
+      85:"Averses de neige",86:"Averses de neige fortes",
+      95:"Orage",96:"Orage avec grêle",99:"Orage fort avec grêle"
+    };
+    return m[code] || "Conditions";
+  }
+  const fmtTime = s => { try{ return s.split("T")[1].slice(0,5); }catch{ return "--:--"; } };
+
+  try{
+    const res = await fetch(url, {cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const data = await res.json();
+
+    const cw = data.current_weather || {};
+    const hourly = data.hourly || {};
+    const daily = data.daily || {};
+
+    // Index de l’heure courante pour récupérer humidité/rafales
+    let idxNow = -1;
+    if (hourly.time && cw.time){
+      idxNow = hourly.time.indexOf(cw.time);
+    }
+
+    // Emoji / temp / texte
+    if(els.emoji) els.emoji.textContent = codeToEmoji(cw.weathercode);
+    if(els.temp)  els.temp.textContent  = (cw.temperature!=null? Math.round(cw.temperature)+"°C" : "--°C");
+    if(els.desc)  els.desc.textContent  = codeToText(cw.weathercode);
+
+    // Éphéméride
+    if(daily.sunrise && daily.sunset){
+      if(els.sunrise) els.sunrise.textContent = fmtTime(daily.sunrise[0]);
+      if(els.sunset)  els.sunset.textContent  = fmtTime(daily.sunset[0]);
+    }else{
+      if(els.sunrise) els.sunrise.textContent = "--:--";
+      if(els.sunset)  els.sunset.textContent  = "--:--";
+    }
+
+    // Rafales / Humidité (valeurs de l’heure actuelle si dispo)
+    let gust = null, hum = null;
+    if(idxNow >= 0){
+      if(hourly.wind_gusts_10m)      gust = hourly.wind_gusts_10m[idxNow];
+      if(hourly.relative_humidity_2m) hum  = hourly.relative_humidity_2m[idxNow];
+    }
+    if(els.gust)     els.gust.textContent     = (gust!=null ? Math.round(gust)+" km/h" : "-- km/h");
+    if(els.humidity) els.humidity.textContent = (hum!=null ? Math.round(hum)+"%" : "--%");
+
+  }catch(e){
+    if(els.desc) els.desc.textContent = "Météo indisponible.";
+    if(els.sunrise) els.sunrise.textContent = "--:--";
+    if(els.sunset)  els.sunset.textContent  = "--:--";
+    if(els.gust) els.gust.textContent = "-- km/h";
+    if(els.humidity) els.humidity.textContent = "--%";
+  }
+}
+
+/* Rendu véhicules */
+function renderVehicules(vehicules){
+  const grid=document.getElementById("vehicule-grid");
+  grid.innerHTML="";
+  if(vehicules.length===0){
+    grid.innerHTML="<p style='color:#666;text-align:center;'>Aucun véhicule enregistré.</p>";
+    return;
+  }
+  vehicules.forEach(v=>{
+    const div=document.createElement("div");
+    div.className="vehicule-card";
+    div.style.background=getEtatColor(v.etat||"Disponible");
+    let etatAffiche = escapeHtml(v.etat||"Disponible");
+    if(v.etat === "Pret" && v.pretNom){ etatAffiche += ` — <i>${escapeHtml(v.pretNom)}</i>`; }
+    div.innerHTML = `${escapeHtml(v.nom)}<small>${etatAffiche}</small>`;
+    div.addEventListener('click', ()=>openVehiculeAnomalies(v.nom));
+    grid.appendChild(div);
+  });
+}
+
+function renderMateriel(list){
+  const section = document.getElementById("materiel-section");
+  const grid    = document.getElementById("materiel-grid");
+  if(!section || !grid) return;
+
+  grid.innerHTML = "";
+  const items = Array.isArray(list) ? list : [];
+
+  if(items.length === 0){
+    section.style.display = "none";
+    return;
+  }
+
+  section.style.display = "block";
+
+  items.forEach(m=>{
+    const div = document.createElement("div");
+    div.className = "vehicule-card";
+    div.style.background = getEtatColor(m.etat || "Mineur");
+    const etatAff = escapeHtml(m.etat || "Mineur");
+    div.innerHTML = `🏭 ${escapeHtml(m.nom)}<small>${etatAff}</small>`;
+    div.addEventListener("click", ()=>openVehiculeAnomalies(m.nom, "materiel"));
+    grid.appendChild(div);
+  });
+}
+
+  
+/* Impression des anomalies */
+function printAnomalies(){
+  const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+  if(!session){alert("Session expirée.");return;}
+
+  let nomComplet = ((session.prenom || "") + " " + (session.nom || "")).trim();
+  if(!nomComplet || nomComplet === "") {
+    const agents = JSON.parse(localStorage.getItem("agents_data") || "[]");
+    const agentTrouve = agents.find(a => a.matricule === session.matricule);
+    if(agentTrouve){
+      nomComplet = ((agentTrouve.prenom || "") + " " + (agentTrouve.nom || "")).trim();
+    }
+  }
+
+  const cis = Array.isArray(session.cis)?session.cis[0]:session.cis;
+  const vehs = JSON.parse(localStorage.getItem("vehicules_"+cis)||"[]");
+  const mats = JSON.parse(localStorage.getItem("materiel_"+cis)||"[]");
+
+  let anomalies = [];
+
+  // 🚒 Véhicules
+  vehs.forEach(v=>{
+    (v.history||[]).filter(h=>!h.closed).forEach(h=>{
+      let agentAffiche=h.agent;
+      if(/^[0-9]+$/.test(agentAffiche)||agentAffiche.trim()==="")agentAffiche=nomComplet;
+
+      let etatAffiche = h.level;
+      if(v.pretNom && v.etat === "Pret"){ etatAffiche += " — " + v.pretNom; }
+
+      anomalies.push({
+        support: "Véhicule — " + (v.nom||""),
+        etat: etatAffiche,
+        desc: h.text||"",
+        agent: agentAffiche
+      });
+    });
+  });
+
+  // 🏭 Matériel
+  (mats||[]).forEach(m=>{
+    (m.history||[]).filter(h=>!h.closed).forEach(h=>{
+      let agentAffiche=h.agent;
+      if(/^[0-9]+$/.test(agentAffiche)||agentAffiche.trim()==="")agentAffiche=nomComplet;
+
+      anomalies.push({
+        support: "Matériel — " + (m.nom||""),
+        etat: h.level || "",
+        desc: h.text || "",
+        agent: agentAffiche
+      });
+    });
+  });
+
+  if(anomalies.length===0){
+    alert("Aucune anomalie en cours.");
+    return;
+  }
+
+  anomalies.sort((a,b)=>a.support.localeCompare(b.support,"fr",{sensitivity:"base"}));
+  const w=window.open("","_blank");
+  const date=new Date().toLocaleString("fr-FR");
+
+  w.document.write(`
+  <html><head><title>Anomalies - ${escapeHtml(cis)}</title>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+  body{font-family:'Inter',sans-serif;padding:40px 60px;color:#222;}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px;border-bottom:2px solid #b71c1c;padding-bottom:10px;}
+  header img{height:65px;}
+  header h1{flex:1;text-align:center;color:#b71c1c;font-size:26px;margin:0;}
+  h2{text-align:center;color:#333;font-size:18px;font-weight:500;margin-bottom:25px;}
+  table{width:100%;border-collapse:collapse;font-size:15px;}
+  th,td{border:1px solid #ccc;padding:8px 10px;text-align:left;}
+  th{background:#f4f4f4;color:#333;}
+  tr:nth-child(even){background:#fafafa;}
+  footer{text-align:right;margin-top:40px;font-size:12px;color:#666;}
+  </style></head>
+  <body>
+  <header>
+    <img src="https://i.postimg.cc/nnNsr7v1/logo-cismic.png" alt="Logo SDIS 30">
+    <h1>Anomalies en cours</h1>
+  </header>
+  <h2>Centre : ${escapeHtml(cis)}</h2>
+  <table>
+    <thead><tr><th>Support</th><th>État</th><th>Anomalie</th><th>Agent</th></tr></thead>
+    <tbody>${anomalies.map(a=>`<tr>
+      <td>${escapeHtml(a.support)}</td>
+      <td>${escapeHtml(a.etat)}</td>
+      <td>${escapeHtml(a.desc)}</td>
+      <td>${escapeHtml(a.agent)}</td>
+    </tr>`).join("")}</tbody>
+  </table>
+  <footer>Rapport généré le ${escapeHtml(date)}</footer>
+  <script>window.onload=()=>window.print();<\/script></body></html>`);
+  w.document.close();
+}
+
+
+/* 👁️ Consultation des anomalies d'un véhicule (lecture seule) */
+function openVehiculeAnomalies(vehName, typeHint){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+    if(!session){ alert("Session expirée."); return; }
+    const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
+
+    const vehs = JSON.parse(localStorage.getItem("vehicules_"+cisSel) || "[]");
+    const mats = JSON.parse(localStorage.getItem("materiel_"+cisSel) || "[]");
+
+    let source = null;
+    let isMateriel = false;
+
+    // si on sait que c'est du matériel, on commence par là
+    if(typeHint === "materiel"){
+      source = mats.find(m => String(m.nom||"").toLowerCase() === String(vehName||"").toLowerCase());
+      isMateriel = !!source;
+    }
+    if(!source){
+      // sinon on cherche dans les véhicules
+      source = vehs.find(v => String(v.nom||"").toLowerCase() === String(vehName||"").toLowerCase());
+      isMateriel = false;
+      if(!source){
+        // dernier recours : matériel
+        source = mats.find(m => String(m.nom||"").toLowerCase() === String(vehName||"").toLowerCase());
+        if(source) isMateriel = true;
+      }
+    }
+
+    const title = document.getElementById("anom-title");
+    const tbody = document.getElementById("anom-tbody");
+    title.textContent = (isMateriel ? "Anomalies matériel — " : "Anomalies (en cours) — ") + (source ? (source.nom || vehName) : vehName);
+    tbody.innerHTML = "";
+
+    if(!source || !Array.isArray(source.history)){
+      tbody.innerHTML = "<tr><td colspan='5' style='padding:10px;color:#666;'>Aucune anomalie en cours.</td></tr>";
+    }else{
+      const rows = [...source.history]
+        .filter(h => !h.closed)
+        .sort((a,b)=>{
+          const ta = a.timestamp||a.date||0, tb = b.timestamp||b.date||0;
+          return (tb - ta) || String(a.text||"").localeCompare(String(b.text||""));
+        });
+
+      if(rows.length === 0){
+        tbody.innerHTML = "<tr><td colspan='5' style='padding:10px;color:#666;'>Aucune anomalie en cours.</td></tr>";
+      }else{
+        rows.forEach(h=>{
+          const tr = document.createElement("tr");
+          const statut = "Ouverte";
+          const niveau = h.level || "-";
+          const desc   = h.text || "-";
+          const agent  = h.agent || "-";
+          let dateTxt = "-";
+          if(h.date){ dateTxt = h.date; }
+
+          tr.innerHTML = `
+            <td>${escapeHtml(dateTxt)}</td>
+            <td>${escapeHtml(agent)}</td>
+            <td>${escapeHtml(desc)}</td>
+            <td>${escapeHtml(niveau)}</td>
+            <td>${escapeHtml(statut)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    const modal = document.getElementById("anom-modal");
+    if(modal){ modal.style.display = "flex"; }
+  }catch(e){
+    alert("Impossible d'afficher les anomalies.");
+  }
+}
+
+
+/* 📝 Main courante : collecte anomalies + entrées personnalisées */
+function renderJournal(){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+    if(!session){ return; }
+    const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
+
+    const vehs   = JSON.parse(localStorage.getItem("vehicules_"+cisSel) || "[]");
+    const mats   = JSON.parse(localStorage.getItem("materiel_"+cisSel)  || "[]");
+    const custom = JSON.parse(localStorage.getItem("journal_"+cisSel)   || "[]");
+
+    let entries = [];
+
+    // 🚒 Anomalies véhicules
+    vehs.forEach(v=>{
+      (v.history||[]).forEach(h=>{
+        const createdTs = h.timestamp ? Number(h.timestamp) : (Date.parse(h.date||"") || 0);
+        const closedTs  = h.closedTs ? Number(h.closedTs) : 0;
+
+        if(h.closed){
+          entries.push({
+            type: "ANOMALIE",
+            ts: closedTs || createdTs,
+            title: "Anomalie clôturée — " + (v.nom||"-"),
+            text: (h.level?("[" + h.level + "] "):"") + (h.text||"-") + (h.closedBy ? (" — clôturée par " + h.closedBy) : "")
+          });
+        }else{
+          const who = h.agent ? (" — par " + h.agent) : "";
+          entries.push({
+            type: "ANOMALIE",
+            ts: createdTs,
+            title: "Anomalie signalée — " + (v.nom||"-"),
+            text: (h.level?("[" + h.level + "] "):"") + (h.text||"-") + who
+          });
+        }
+      });
+    });
+
+    // 🏭 Anomalies matériel
+    (mats||[]).forEach(m=>{
+      (m.history||[]).forEach(h=>{
+        const createdTs = h.timestamp ? Number(h.timestamp) : (Date.parse(h.date||"") || 0);
+        const closedTs  = h.closedTs ? Number(h.closedTs) : 0;
+
+        if(h.closed){
+          entries.push({
+            type: "ANOMALIE",
+            ts: closedTs || createdTs,
+            title: "Anomalie matériel clôturée — " + (m.nom||"-"),
+            text: (h.level?("[" + h.level + "] "):"") + (h.text||"-") + (h.closedBy ? (" — clôturée par " + h.closedBy) : "")
+          });
+        }else{
+          const who = h.agent ? (" — par " + h.agent) : "";
+          entries.push({
+            type: "ANOMALIE",
+            ts: createdTs,
+            title: "Anomalie matériel signalée — " + (m.nom||"-"),
+            text: (h.level?("[" + h.level + "] "):"") + (h.text||"-") + who
+          });
+        }
+      });
+    });
+
+    // 📝 Entrées personnalisées déjà existantes
+    if(Array.isArray(custom)){
+      custom.forEach(e=>{
+        entries.push({
+          type: String(e.type||"NOTE").toUpperCase(),
+          ts: Number(e.ts||0),
+          title: e.title || typeToTitle(String(e.type||"NOTE")),
+          text: e.text || ""
+        });
+      });
+    }
+
+    // ❗ Exclure les FMA
+    entries = entries.filter(e => String(e.type||"").toUpperCase() !== "FMA");
+
+    entries.sort((a,b)=> (Number(b.ts||0) - Number(a.ts||0)) );
+
+    const list = document.getElementById("journal-list");
+    if(!list) return;
+    list.innerHTML = "";
+
+    if(entries.length === 0){
+      list.innerHTML = "<p style='color:#666'>Aucune activité récente.</p>";
+      return;
+    }
+
+    entries.slice(0, 40).forEach(e=>{
+      const wrap = document.createElement("div");
+      wrap.className = "journal-item";
+
+      const icon = document.createElement("div");
+      icon.className = "icon";
+      icon.textContent = typeToIcon(e.type);
+
+      const body = document.createElement("div");
+      body.className = "body";
+      const dateTxt = e.ts ? new Date(e.ts).toLocaleString("fr-FR") : "";
+      body.innerHTML = `<div class="title">${escapeHtml(e.title||"")}</div>
+                        <div class="text">${escapeHtml(e.text||"")}</div>
+                        <div class="date">${escapeHtml(dateTxt)}</div>`;
+
+      wrap.appendChild(icon);
+      wrap.appendChild(body);
+      list.appendChild(wrap);
+    });
+
+  }catch(e){
+    console.error("renderJournal error", e);
+  }
+}
+
+
+/* 📌 Panneau gauche : Consignes du jour (à la place des FMA) */
+function renderFormations(){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return;
+    const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
+
+    const list = document.getElementById("formation-list");
+    if(!list) return;
+
+    // 🔑 Clé des consignes (même logique que consignes.html)
+    const keyCons = "consignes_"+cisSel;
+    let consignes = [];
+    try{
+      consignes = JSON.parse(localStorage.getItem(keyCons) || "[]");
+      if(!Array.isArray(consignes)) consignes = [];
+    }catch(_){
+      consignes = [];
+    }
+
+    // Aujourd’hui au format ISO "YYYY-MM-DD"
+    const todayIso = (() => {
+      const d = new Date();
+      const p = n => String(n).padStart(2,"0");
+      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+    })();
+
+    // Helpers
+    const fmtDateFR = (dateStr) => {
+      if(!dateStr) return "—";
+      try{
+        const d = new Date(dateStr + "T00:00:00");
+        if(isNaN(d.getTime())) return dateStr;
+        return d.toLocaleDateString("fr-FR");
+      }catch(_){ return dateStr; }
+    };
+
+    const importanceToLabel = (imp) => {
+      switch(imp){
+        case "haute":   return "Importante";
+        case "moyenne": return "Moyenne";
+        case "faible":  return "Faible";
+        default:        return "—";
+      }
+    };
+    const importanceToColor = (imp) => {
+      switch(imp){
+        case "haute":   return "#d32f2f";
+        case "moyenne": return "#fb8c00";
+        case "faible":  return "#1976d2";
+        default:        return "#1976d2";
+      }
+    };
+    const serviceLabel = (s) => {
+      switch(s){
+        case "commandement":  return "Commandement";
+        case "officier":      return "Officier de garde";
+        case "sous-officier": return "Sous-officier de garde";
+        default:              return s || "Service";
+      }
+    };
+    const validiteLabel = (v) => {
+      switch(v){
+        case "jour": return "Jour";
+        case "nuit": return "Nuit";
+        case "24h":  return "24h";
+        default:     return "—";
+      }
+    };
+
+    // ✅ Est-ce que la consigne est active MAINTENANT (logique garde 06h→06h + récurrence)
+    function isActiveNow(c){
+      const d1 = (c.dateDebut || "").trim();
+      if(!d1) return false;
+
+      const d2 = (c.dateFin || d1).trim();
+
+      const now = new Date();
+      const hour = now.getHours();
+
+      // "Jour de garde" = de 06h à 06h (J+1)
+      const serviceBase = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if(hour < 6){
+        serviceBase.setDate(serviceBase.getDate() - 1);
+      }
+      const p = n => String(n).padStart(2,"0");
+      const serviceIso = `${serviceBase.getFullYear()}-${p(serviceBase.getMonth()+1)}-${p(serviceBase.getDate())}`;
+
+      // Dans la plage globale ?
+      if(serviceIso < d1) return false;
+      if(d2 && serviceIso > d2) return false;
+
+      const rec  = (c.recurrence || "none").toLowerCase();
+      const per  = Number(c.recurrencePer || 1) || 1;
+      const base = d1;
+
+      const baseDate = new Date(base + "T00:00:00");
+      if(isNaN(baseDate.getTime())) return false;
+
+      const diffMs   = serviceBase - baseDate;
+      const diffDays = Math.floor(diffMs / (1000*60*60*24));
+
+      if(diffDays < 0) return false;
+
+      // 📅 Gestion de la récurrence
+      switch(rec){
+        case "once":
+          // Ponctuelle : uniquement sur le jour de début (logique garde)
+          if(serviceIso !== d1) return false;
+          break;
+
+        case "daily":
+          if(diffDays % per !== 0) return false;
+          break;
+
+        case "weekly":{
+          const semaines = Math.floor(diffDays / 7);
+          if(semaines < 0 || (semaines % per) !== 0) return false;
+          break;
+        }
+
+        case "monthly":{
+          const monthsDiff = (serviceBase.getFullYear() - baseDate.getFullYear())*12
+                           + (serviceBase.getMonth() - baseDate.getMonth());
+          if(monthsDiff < 0 || monthsDiff % per !== 0) return false;
+          break;
+        }
+
+        case "yearly":{
+          const yearsDiff = serviceBase.getFullYear() - baseDate.getFullYear();
+          if(yearsDiff < 0 || yearsDiff % per !== 0) return false;
+          break;
+        }
+
+        case "none":
+        default:
+          // rien de plus, on reste dans la plage globale
+          break;
+      }
+
+      const validite = c.validite || "24h";
+
+      // Jour : 06h–18h
+      if(validite === "jour"){
+        return (hour >= 6 && hour < 18);
+      }
+
+      // Nuit : 18h–06h
+      if(validite === "nuit"){
+        return (hour >= 18 || hour < 6);
+      }
+
+      // 24h : toute la garde
+      return true;
+    }
+
+    // 🔎 Consignes actives pour ce CIS
+    const todayConsignes = consignes
+      .filter(c => c && c.cis === cisSel)
+      .filter(isActiveNow)
+      .sort((a,b)=>{
+        const ordImp = {haute:0, moyenne:1, faible:2};
+        const ia = ordImp[a.importance] ?? 99;
+        const ib = ordImp[b.importance] ?? 99;
+        if(ia !== ib) return ia - ib;
+        const da = a.dateDebut || "";
+        const db = b.dateDebut || "";
+        return db.localeCompare(da);
+      });
+
+    /* 🔁 RÉSERVATIONS VÉHICULES DE LA GARDE COURANTE (06h → 06h) */
+    let todayRes = [];
+    try{
+      const keyRes = "reservations_" + cisSel;
+      let rawRes = JSON.parse(localStorage.getItem(keyRes) || "[]");
+
+      // Cas éventuel objet indexé {"0":{...},"1":{...}}
+      if(!Array.isArray(rawRes) && rawRes && typeof rawRes === "object"){
+        const keys = Object.keys(rawRes);
+        if(keys.length && keys.every(k => /^\d+$/.test(k))){
+          rawRes = keys.sort((a,b)=>Number(a)-Number(b)).map(k => rawRes[k]);
+        }else{
+          rawRes = [];
+        }
+      }
+
+      // même logique de "jour de garde" que ci-dessus
+      const now = new Date();
+      const hour = now.getHours();
+      const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if(hour < 6){
+        base.setDate(base.getDate() - 1);
+      }
+      const pp = n => String(n).padStart(2,"0");
+      const serviceIso = `${base.getFullYear()}-${pp(base.getMonth()+1)}-${pp(base.getDate())}`;
+
+      todayRes = (rawRes || []).filter(r=>{
+        if(!r || r.status !== "approved") return false;
+        if(r.cis && r.cis !== cisSel) return false;
+        const rd1 = (r.dateDebut || r.date || "").trim();
+        if(!rd1) return false;
+        const rd2 = (r.dateFin || rd1).trim();
+        return rd1 <= serviceIso && serviceIso <= rd2;
+      });
+
+    }catch(_){
+      todayRes = [];
+    }
+
+    // 🧱 Rendu dans le panneau
+    list.innerHTML = "";
+
+    const hasCons = todayConsignes.length > 0;
+    const hasRes  = todayRes.length > 0;
+
+    if(!hasCons && !hasRes){
+      list.innerHTML =
+        `<p style="color:#666;font-size:13px;">
+          Aucune consigne particulière pour aujourd’hui (${fmtDateFR(todayIso)}).<br>
+          Aucun véhicule réservé pour cette garde.
+        </p>`;
+      return;
+    }
+
+    // 👉 1) Affichage des CONSIGNES
+    if(hasCons){
+      todayConsignes.forEach(c=>{
+        const wrap = document.createElement("div");
+        wrap.className = "journal-item";
+
+        const body = document.createElement("div");
+        body.className = "body";
+
+        const periode =
+          c.dateDebut && c.dateFin
+            ? `Du ${fmtDateFR(c.dateDebut)} au ${fmtDateFR(c.dateFin)}`
+            : c.dateDebut
+              ? `À partir du ${fmtDateFR(c.dateDebut)}`
+              : "Période non renseignée";
+
+        const impColor = importanceToColor(c.importance);
+        const impLabel = importanceToLabel(c.importance);
+        const validTxt = validiteLabel(c.validite);
+        const servTxt  = serviceLabel(c.serviceOrigine);
+
+        body.innerHTML = `
+  <div class="title" style="display:flex;align-items:center;gap:6px;">
+    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${impColor};"></span>
+    ${escapeHtml(c.titre || "Consigne")}
+  </div>
+  <div class="text">${escapeHtml(c.contenu || "")}</div>
+`;
+
+        wrap.appendChild(body);
+        list.appendChild(wrap);
+      });
+    }
+
+    // 👉 2) Affichage des RÉSERVATIONS VÉHICULES
+    if(hasRes){
+      // petite séparation si on a déjà des consignes
+      if(hasCons){
+        const sep = document.createElement("div");
+        sep.style.borderTop = "1px solid #e0e4f0";
+        sep.style.margin = "6px 0 4px";
+        sep.style.opacity = "0.7";
+        list.appendChild(sep);
+      }
+
+      const title = document.createElement("div");
+      title.style.fontSize = "13px";
+      title.style.fontWeight = "700";
+      title.style.color = "#0d2b52";
+      title.textContent = "🚘 Réservations véhicules :";
+      list.appendChild(title);
+
+      todayRes.forEach(r=>{
+        const wrap = document.createElement("div");
+        wrap.className = "journal-item";
+
+        const body = document.createElement("div");
+        body.className = "body";
+
+       const veh   = r.vehicule || "Véhicule à définir";
+const agent = r.agent || "";
+const motif = r.motif || "";
+const dest  = r.destination || "";
+const h1    = r.h1 || "";
+const h2    = r.h2 || "";
+
+let line = veh;
+
+// Ajout des heures si disponibles
+if(h1 && h2){
+  line += ` (${h1}–${h2})`;
+}
+
+line += " réservé";
+
+if(agent) line += ` par ${agent}`;
+if(motif) line += ` pour ${motif}`;
+if(dest)  line += ` à ${dest}`;
+
+
+        body.innerHTML = `
+  <div class="title">${escapeHtml(line)}</div>
+`;
+
+        wrap.appendChild(body);
+        list.appendChild(wrap);
+      });
+    }
+
+  }catch(e){
+    console.error("Erreur renderFormations/Consignes+Réservations :", e);
+  }
+}
+
+
+function typeToIcon(t){
+  switch(String(t).toUpperCase()){
+    case "FMA": return "📘";
+    case "PHARMA": return "💊";
+    case "ANOMALIE": return "🚒";
+    case "MNR": return "🧯";
+    case "SOG": return "📣";
+    default: return "📝";
+  }
+}
+function typeToTitle(t){
+  switch(String(t).toUpperCase()){
+    case "FMA": return "FMA enregistrée";
+    case "PHARMA": return "Commande pharmacie";
+    case "ANOMALIE": return "Anomalie véhicule";
+    case "MNR": return "MNR";
+    case "SOG": return "Info SOG";
+    default: return "Note";
+  }
+}
+function logActivity(type, text, meta){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+    if(!session) return;
+    const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
+    const keyJ = "journal_"+cisSel;
+    const arr = JSON.parse(localStorage.getItem(keyJ) || "[]");
+    const entry = {
+      type: String(type||"NOTE").toUpperCase(),
+      text: String(text||""),
+      ts: Date.now(),
+      meta: meta || {},
+      title: typeToTitle(type||"NOTE")
+    };
+    arr.push(entry);
+    localStorage.setItem(keyJ, JSON.stringify(arr.slice(-500)));
+    renderJournal();
+    renderFormations(); // mise à jour immédiate du panneau FMA
+  }catch(_){}
+}
+
+window.addEventListener("storage",(e)=>{
+  try{
+    if(!e.key) return;
+    const user=JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!user) return;
+    const cisSel = Array.isArray(user.cis)?user.cis[0]:user.cis;
+    if(e.key===key || e.key==="journal_"+cisSel || e.key==="fma_data_v2"){
+      renderVehicules(JSON.parse(localStorage.getItem(key)||"[]"));
+      renderJournal();
+      renderFormations();
+      renderFmaPendingCard();
+    }
+    if(e.key === "consignes_"+cisSel){
+      renderFormations();
+    }
+  }catch(_){}
+});
+
+  
+/* ✅ Purge MC */
+function isAdmin(){
+  try{
+    const u = JSON.parse(localStorage.getItem("csver_session")||"null");
+    const role = u && String(u.role||"").toLowerCase();
+    if(role === "admin" || role === "commandement") return true; // rôle fort
+    const perms = getCurrentCisPerms();                           // ✅ droit admin via permissions
+    return !!perms.admin;
+  }catch(_){ return false; }
+}
+
+ // 🔐 Seul le matricule 1414 est super-admin
+function isSuperAdmin() {
+    const u = JSON.parse(localStorage.getItem("csver_session") || "null");
+    return u && String(u.matricule) === "1414";
+}
+ 
+function purgeJournal(scope, evt){  // 🔐 super admin 1414 OU admin du centre
+  if (!isSuperAdmin() && !isAdmin()) {
+    alert("Accès refusé : réservé à l'administrateur du centre.");
+    return false;
+  }
+  if(evt && typeof evt.preventDefault === "function") evt.preventDefault();
+
+  const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+  if(!session){
+    alert("Session expirée.");
+    return false;
+  }
+
+  const cisSel  = Array.isArray(session.cis)?session.cis[0]:session.cis;
+  const cisNorm = normCis(cisSel);
+
+  const keyJournal = "journal_"+cisSel;
+  const keyVehs    = "vehicules_"+cisSel;
+  const keyRes     = "reservations_"+cisSel;
+  const keyHab     = "habillement_"+cisSel;      // 🆕 demandes habillement
+
+  const K_FMA      = "fma_data_v2";
+  const K_REPLI    = "manoeuvre_repli_v1";
+
+  // ===== Lecture brute =====
+  const journal = JSON.parse(localStorage.getItem(keyJournal)||"[]");
+  const vehs    = JSON.parse(localStorage.getItem(keyVehs)||"[]");
+  const keyMat = "materiel_"+cisSel;
+renderMateriel(JSON.parse(localStorage.getItem(keyMat)||"[]"));
+
+
+  // 🔁 Réservations
+  const reservationsRaw = (() => {
+    try { return JSON.parse(localStorage.getItem(keyRes) || "[]"); }
+    catch(_) { return []; }
+  })();
+
+  // 🔁 Habillement
+  const habRaw = (() => {
+    try { return JSON.parse(localStorage.getItem(keyHab) || "[]"); }
+    catch(_) { return []; }
+  })();
+
+  // 🔁 FMA (tous centres)
+  let fmaAll = [];
+  try{
+    fmaAll = JSON.parse(localStorage.getItem(K_FMA) || "[]");
+  }catch(_){
+    fmaAll = [];
+  }
+
+  // 🔁 Manœuvres de repli (tous centres)
+  let repliAll = [];
+  try{
+    repliAll = JSON.parse(localStorage.getItem(K_REPLI) || "[]");
+  }catch(_){
+    repliAll = [];
+  }
+
+  // ===== Comptages =====
+  const countNotes = Array.isArray(journal) ? journal.length : 0;
+
+  const countAnom  = Array.isArray(vehs)
+    ? vehs.reduce((n,v)=> n + ((v.history||[]).length||0), 0)
+    : 0;
+
+  let countRes = 0;
+  if (Array.isArray(reservationsRaw)) {
+    countRes = reservationsRaw.length;
+  } else if (reservationsRaw && typeof reservationsRaw === "object") {
+    countRes = Object.keys(reservationsRaw).length;
+  }
+
+  let countHab = 0; // 🔢 demandes habillement
+  if (Array.isArray(habRaw)) {
+    countHab = habRaw.length;
+  } else if (habRaw && typeof habRaw === "object") {
+    countHab = Object.keys(habRaw).length;
+  }
+
+  const fmaForCis = Array.isArray(fmaAll)
+    ? fmaAll.filter(r => normCis(r.cis) === cisNorm)
+    : [];
+  const countFma = fmaForCis.length;
+
+  const repliForCis = Array.isArray(repliAll)
+    ? repliAll.filter(r => normCis(r.cis) === cisNorm)
+    : [];
+  const countRepli = repliForCis.length;
+
+  // ===== Message de confirmation =====
+  let msg = "";
+  if(scope === "notes"){
+    msg = `⚠️ Cette action va supprimer ${countNotes} note(s) personnalisée(s) de la main courante pour le CIS “${cisSel}”.\n\nContinuer ?`;
+  }else{
+    msg = `⚠️ PURGE COMPLÈTE\n\n` +
+          `- Notes personnalisées : ${countNotes}\n` +
+          `- Entrées d'anomalies (tous véhicules) : ${countAnom}\n` +
+          `- Réservations véhicules : ${countRes}\n` +
+          `- Demandes habillement : ${countHab}\n` +           // 🆕
+          `- FMA enregistrées : ${countFma}\n` +
+          `- Manœuvres de repli : ${countRepli}\n\n` +
+          `Cette action est irréversible. Confirmez pour TOUT effacer pour le CIS “${cisSel}”.`;
+  }
+
+  if(!confirm(msg)) return false;
+
+  // ===== Sauvegarde JSON (optionnelle) =====
+  if(
+    (countNotes>0 || countAnom>0 || countRes>0 || countHab>0 || countFma>0 || countRepli>0) &&
+    confirm("Souhaitez-vous télécharger une sauvegarde (.json) avant suppression ?")
+  ){
+    try{
+      const backup = {
+        cis: cisSel,
+        ts: Date.now(),
+        scope,
+        notes:       journal,
+        vehicules:   vehs,
+        reservations: reservationsRaw,
+        habillement:  habRaw,        // 🆕 demandes habillement du CIS
+        fma:         fmaForCis,
+        repli:       repliForCis
+      };
+      const blob = new Blob([JSON.stringify(backup,null,2)], {type:"application/json"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      const stamp = new Date().toISOString().replace(/[:.]/g,"-");
+      a.download = `backup_purge_${cisSel}_${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 0);
+    }catch(_){}
+  }
+
+  // ===== Purge effective =====
+  try{
+    // 🧹 1) main courante (toujours)
+    localStorage.removeItem(keyJournal);
+
+    if(scope === "all"){
+      // 🧹 2) anomalies véhicules
+      if(Array.isArray(vehs)){
+        const cleaned = vehs.map(v=>{
+          const nv = Object.assign({}, v);
+          nv.history = [];
+          return nv;
+        });
+        localStorage.setItem(keyVehs, JSON.stringify(cleaned));
+      }
+
+      // 🧹 3) toutes les réservations du CIS
+      localStorage.removeItem(keyRes);
+
+      // 🧹 4) toutes les demandes habillement du CIS
+      localStorage.removeItem(keyHab);
+
+      // 🧹 5) FMA du CIS seulement
+      if(Array.isArray(fmaAll) && countFma > 0){
+        const remainingFma = fmaAll.filter(r => normCis(r.cis) !== cisNorm);
+        localStorage.setItem(K_FMA, JSON.stringify(remainingFma));
+      }
+
+      // 🧹 6) manœuvres de repli du CIS seulement
+      if(Array.isArray(repliAll) && countRepli > 0){
+        const remainingRepli = repliAll.filter(r => normCis(r.cis) !== cisNorm);
+        localStorage.setItem(K_REPLI, JSON.stringify(remainingRepli));
+      }
+    }
+
+    // ===== Rafraîchissement accueil & overlays si dispo =====
+    renderJournal?.();
+    renderFormations?.();
+
+    if (typeof renderVehicules === "function") {
+      const newVehs = JSON.parse(localStorage.getItem(keyVehs)||"[]");
+      renderVehicules(newVehs);
+    }
+
+    if (typeof renderReservationsPendingOverlay === "function") {
+      renderReservationsPendingOverlay();
+    }
+
+    alert(scope==="notes"
+      ? "Main courante (notes) vidée."
+      : "Purge complète effectuée (notes, anomalies, réservations, habillement, FMA, manœuvres de repli)."
+    );
+  }catch(e){
+    alert("Erreur pendant la purge.");
+  }
+  return false;
+}
+
+
+
+</script>
+
+<!-- AJOUT : Script Mes FMA autonome (aucune collision) -->
+<script>
+(function(){
+  function mf_tidy(s){ return String(s||"").replace(/\s+/g," ").trim(); }
+  function mf_strip(s){ try{ return s.normalize('NFD').replace(/[\u0300-\u036f]/g,''); }catch(_){ return s; } }
+  function mf_key(raw){
+    const s = mf_strip(mf_tidy(raw).toLowerCase());
+    const p = s.split(" ").filter(Boolean);
+    if(p.length===2){ const a=p[0], b=p[1]; return [a,b].sort().join("_"); }
+    return p.join("_");
+  }
+  function mf_hhmm(min){ if(!min||isNaN(min))return ""; const h=Math.floor(min/60),m=min%60; return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0"); }
+  function mf_dFR(iso){ try{ return new Date(iso).toLocaleDateString("fr-FR"); }catch(_){ return iso||""; } }
+// --- Manœuvre de repli : helpers ---
+  const MF_REPLI_KEY = "manoeuvre_repli_v1";
+
+  function mf_daysSince(dateIso){
+    if(!dateIso) return null;
+    const d = new Date(dateIso + "T00:00:00");
+    if(isNaN(d.getTime())) return null;
+    const today = new Date();
+    const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const t1 = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const diffMs = t0 - t1;
+    return Math.floor(diffMs / (1000*60*60*24));
+  }
+
+  function mf_session(){
+    try{
+      return JSON.parse(localStorage.getItem("csver_session") || "null");
+    }catch(_){ return null; }
+  }
+
+  // Retourne {date, days} pour la dernière manœuvre de repli de l'agent courant, ou null
+  function mf_lastRepliForMe(){
+    const s = mf_session();
+    if(!s) return null;
+
+    const cisSess = Array.isArray(s.cis) ? (s.cis[0] || "") : (s.cis || "");
+    // clé normalisée de l'agent (même principe que pour les FMA)
+    const meKey = mf_key(((s.nom||"") + " " + (s.prenom||"")).trim() || s.matricule || "");
+
+    let all = [];
+    try{
+      all = JSON.parse(localStorage.getItem(MF_REPLI_KEY) || "[]");
+      if(!Array.isArray(all)) all = [];
+    }catch(_){ all = []; }
+
+    // filtre sur le CIS courant
+    const filtered = all.filter(r => {
+      try{
+        return normCis(r.cis) === normCis(cisSess);
+      }catch(_){
+        return false;
+      }
+    });
+
+    // On cherche la plus récente pour cet agent
+    let lastDate = null;
+    filtered.forEach(rec => {
+      (rec.agents || []).forEach(a => {
+        if(mf_key(a.name || "") === meKey){
+          if(!lastDate || String(rec.date||"") > String(lastDate)){
+            lastDate = rec.date || null;
+          }
+        }
+      });
+    });
+
+    if(!lastDate) return null;
+    const days = mf_daysSince(lastDate);
+    return { date: lastDate, days };
+  }
+
+  // Met à jour la ligne "Dernière manœuvre de repli" dans la modale Mes FMA
+  function mf_renderRepliLine(){
+    const el = document.getElementById("myfma-repli");
+    if(!el) return;
+
+    const info = mf_lastRepliForMe();
+    if(!info){
+      el.innerHTML = `<span style="color:#c62828">
+        Dernière manœuvre de repli : jamais enregistrée
+      </span>`;
+      return;
+    }
+
+    const dTxt = mf_dFR(info.date);
+    const d    = info.days==null ? "?" : info.days;
+    let color  = "#c62828";
+    let label  = "≥ 15 jours";
+
+    if(info.days != null){
+      if(info.days < 10){
+        color = "#0a8a3a";
+        label = "&lt; 10 jours";
+      }else if(info.days <= 14){
+        color = "#ff9800";
+        label = "10 à 14 jours";
+      }else{
+        color = "#c62828";
+        label = "≥ 15 jours";
+      }
+    }
+
+    el.innerHTML = `
+      <span style="color:${color}">
+        Dernière manœuvre de repli : ${dTxt} (${d} jour(s), ${label})
+      </span>
+    `;
+  }
+  function mf_ctx(){
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return null;
+    const userDisplay = mf_tidy(((session.prenom||"")+" "+(session.nom||"")).trim() || session.matricule || "Agent");
+    const userKey = mf_key(userDisplay);
+    const fmas = JSON.parse(localStorage.getItem("fma_data_v2")||"[]");
+    let themes = JSON.parse(localStorage.getItem("csver_themes")||"null");
+    if(!themes || !Array.isArray(themes) || !themes.length){
+      themes = ["ARI / Reconnaissance","Échelle à coulisse","Sauvetage / LSPCC","Établissements / Alimentation","Feu de véhicule","Secours routier","Manoeuvre hydraulique"];
+    }
+    return { userDisplay, userKey, fmas, themes };
+  }
+
+  function mf_filterMine(ctx){
+    const me = ctx.userKey;
+    const rows=[];
+    for(const r of ctx.fmas){
+      const isFormateur = mf_key(r.formateur||"")===me;
+      const inParticipants = Array.isArray(r.participants) && r.participants.some(p=> mf_key(p.name||"")===me);
+      if(isFormateur || inParticipants){
+        rows.push({
+          date:r.date, h1:r.h1, h2:r.h2, theme:r.theme, formateur:r.formateur||"",
+          participants:(r.participants||[]).map(p=>`${p.name}${p.role? " ("+p.role+")":""}`).join(", "),
+          role:isFormateur?"Formateur":"Participant",
+          minutes:Number(r.dureeMin||0),
+          webact:r.webact&&r.webact.done?"✅ Saisie OK":"⏳ À saisir"
+        });
+      }
+    }
+    return rows.sort((a,b)=> String(b.date||"").localeCompare(String(a.date||"")));
+  }
+
+  function mf_summary(ctx, myRows){
+    const map=new Map(); ctx.themes.forEach(t=>map.set(t,0));
+    for(const r of myRows){ if(!map.has(r.theme)) map.set(r.theme,0); map.set(r.theme,map.get(r.theme)+(r.minutes||0)); }
+    return ctx.themes.map(t=>({ theme:t, minutes:map.get(t)||0, status:(map.get(t)||0)>0?"OK":"À faire" }));
+  }
+
+  window.openMyFma = function(evt){
+    if(evt && typeof evt.preventDefault==="function") evt.preventDefault();
+
+    const ctx = mf_ctx(); if(!ctx){ alert("Session expirée."); return false; }
+    const mine = mf_filterMine(ctx);
+    const sum  = mf_summary(ctx, mine);
+
+    const u = document.getElementById("myfma-username");
+    const c = document.getElementById("myfma-count");
+    if(u) u.textContent = ctx.userDisplay;
+    if(c) c.textContent = `— ${mine.length} FMA trouvée(s)`;
+
+    const body = document.getElementById("myfma-body");
+    if(body){
+      body.innerHTML = mine.map(r=>`
+        <tr>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${mf_dFR(r.date)}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${r.h1||"--"}–${r.h2||"--"}<br><span style="color:#666;font-size:12px">${mf_hhmm(r.minutes)}</span></td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${r.theme||"-"}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${r.role}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${r.formateur||"-"}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${r.participants||"-"}<br><span style="color:#666;font-size:12px">${r.webact}</span></td>
+        </tr>`).join("") || `<tr><td colspan="6" style="padding:10px;color:#666">Aucune FMA enregistrée te concernant.</td></tr>`;
+    }
+
+    const tBody = document.getElementById("myfma-theme");
+    if(tBody){
+      tBody.innerHTML = sum.map(s=>`
+        <tr>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${s.theme}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">${mf_hhmm(s.minutes)}</td>
+          <td style="padding:8px;border-bottom:1px solid #eee;">
+            <span style="display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid ${s.status==="OK"?"#a7e2be":"#ffd39b"};background:${s.status==="OK"?"#e6f7ec":"#fff4e5"};color:${s.status==="OK"?"#0a8a3a":"#a36100"};font-weight:700;font-size:12px">${s.status}</span>
+          </td>
+        </tr>`).join("");
+    }
+
+    const modal = document.getElementById("myfma-modal");
+    if(modal) modal.style.display = "flex";
+    const closeBtn = document.getElementById("myfma-close");
+    if(closeBtn) closeBtn.onclick = ()=>{ modal.style.display="none"; };
+    if(modal){
+      modal.addEventListener("click",(e)=>{ if(e.target===modal){ modal.style.display="none"; } });
+      document.addEventListener("keydown", function esc(e){ if(e.key==="Escape"&&modal.style.display!=="none"){ modal.style.display="none"; document.removeEventListener("keydown", esc); } });
+    }
+
+    // Met à jour la ligne "Dernière manœuvre de repli"
+    mf_renderRepliLine();
+    
+    return false;
+  };
+})();
+</script>
+<!-- FIN AJOUT -->
+
+<!-- AJOUT : Modale Mes FMA (ordre inversé : Synthèse en haut, Réalisées en bas) -->
+<div id="myfma-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2100;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:14px;max-width:1100px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.25);overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#0d2b52;color:#fff;">
+      <h3 style="font-size:18px;font-weight:700;">👤 Mes FMA</h3>
+      <button id="myfma-close" style="background:#b71c1c;color:#fff;border:none;border-radius:8px;padding:6px 10px;font-weight:600;cursor:pointer;">Fermer</button>
+    </div>
+
+    <div style="padding:16px 20px;max-height:70vh;overflow:auto;">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+        <strong id="myfma-username"></strong>
+        <span id="myfma-count" style="color:#555"></span>
+      </div>
+
+      <!-- 🧭 Synthèse par thème (EN HAUT) -->
+      <h4 style="margin:10px 0 6px;color:#0d2b52">🧭 Synthèse par thème</h4>
+      <div class="myfma-scroll" style="overflow:auto">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Thème</th>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Temps réalisé</th>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Statut</th>
+            </tr>
+          </thead>
+          <tbody id="myfma-theme"></tbody>
+        </table>
+      </div>
+      <p style="margin-top:8px;color:#666;font-size:13px">Statut “À faire” = aucun enregistrement trouvé pour ce thème.</p>
+
+<!-- 🔁 Dernière manœuvre de repli (ligne au-dessus des FMA réalisées) -->
+      <div id="myfma-repli" style="margin:12px 0 4px;font-size:15px;font-weight:700;"></div>
+
+      <!-- 📜 Mes FMA réalisées (EN BAS) -->
+      <h4 style="margin:18px 0 6px;color:#0d2b52">📜 Mes FMA réalisées</h4>
+      <div class="myfma-scroll" style="overflow:auto">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Date</th>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Heures</th>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Thème</th>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Rôle</th>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Formateur</th>
+              <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Participants</th>
+            </tr>
+          </thead>
+          <tbody id="myfma-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- FIN AJOUT -->
+
+<!-- Modal anomalies (inchangé) -->
+<div id="anom-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:14px;max-width:900px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.25);overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#0d2b52;color:#fff;">
+      <h3 id="anom-title" style="font-size:18px;font-weight:700;">Anomalies</h3>
+      <button id="anom-close" style="background:#b71c1c;color:#fff;border:none;border-radius:8px;padding:6px 10px;font-weight:600;cursor:pointer;">Fermer</button>
+    </div>
+    <div id="anom-content" style="padding:16px 20px;max-height:65vh;overflow:auto;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Statut</th>
+            <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Niveau</th>
+            <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Description</th>
+            <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Agent</th>
+            <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Date</th>
+          </tr>
+        </thead>
+        <tbody id="anom-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const modal = document.getElementById("anom-modal");
+  const closeBtn = document.getElementById("anom-close");
+  if(closeBtn){ closeBtn.addEventListener("click", ()=>{ if(modal){ modal.style.display="none"; } }); }
+  if(modal){
+    modal.addEventListener("click",(e)=>{ if(e.target===modal){ modal.style.display="none"; } });
+    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"&&modal.style.display!=="none"){ modal.style.display="none"; } });
+  }
+})();
+</script>
+
+<!-- 🧾 LOGIQUE OVERLAY FMA A SAISIR -->
+<script>
+/* Helpers droits "Saisie FMA" + admin-like */
+function isAdminLike(){
+  try{
+    const s = JSON.parse(localStorage.getItem("csver_session")||"null");
+    const r = s && String(s.role||"").toLowerCase();
+    return r === "admin" || r === "commandement";
+  }catch(_){ return false; }
+}
+function hasSaisieFma(){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return false;
+    const fiche = JSON.parse(localStorage.getItem("csver_user_"+session.matricule) || "null");
+    if(!fiche || !fiche.permissions) return false;
+    const cisCur = Array.isArray(session.cis)?session.cis[0]:session.cis;
+
+    // Récupère le bloc de permissions pertinent (principal vs secondaire)
+    let perms = null;
+    const cisPrim = fiche.cis && fiche.cis.primary ? fiche.cis.primary : null;
+    const isPrim = cisPrim && normCis(cisPrim) === normCis(cisCur);
+    if(isPrim) perms = fiche.permissions.primary || null;
+    else{
+      const sec = fiche.permissions.secondaries || {};
+      perms = sec[cisCur] || sec[Object.keys(sec).find(k => normCis(k)===normCis(cisCur))] || null;
+    }
+    if(!perms) return false;
+
+    // Tolérant sur le nom de la clé (suivant comment tu l’as ajoutée dans l’admin)
+    return !!(perms.saisieFma || perms.saisie_fma || perms.saisiefma);
+  }catch(_){ return false; }
+}
+
+/* Récupère les FMA à saisir pour mon CIS courant */
+function getPendingForMyCis(limit=6){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return [];
+    const cisCur = Array.isArray(session.cis)?session.cis[0]:session.cis;
+    const data = JSON.parse(localStorage.getItem("fma_data_v2")||"[]");
+    const rows = (Array.isArray(data)?data:[])
+      .filter(r => !r?.webact?.done)
+      .filter(r => normCis(r?.cis||"") === normCis(cisCur||""))
+      .sort((a,b)=> String(b.date||"").localeCompare(String(a.date||"")));
+    return typeof limit==="number" ? rows.slice(0, limit) : rows;
+  }catch(_){ return []; }
+}
+
+/* Affiche/masque l’overlay et remplit le tableau */
+function renderFmaPendingCard(){
+  const maySee = hasSaisieFma() || isAdminLike();
+  const overlay = document.getElementById('fmaOverlay');
+  const card = document.getElementById('fmaPendingCard');
+  const tBody = document.getElementById('fmaPendingBody');
+  const badge = document.getElementById('fmaPendingCount');
+  if(!overlay || !card || !tBody || !badge) return;
+
+  if(!maySee){
+    overlay.style.display = 'none';
+    return;
+  }
+
+  const all = getPendingForMyCis(null);
+  if(!all.length){
+    overlay.style.display = 'none';
+    return;
+  }
+
+  // contenu
+  badge.textContent = `${all.length}`;
+  tBody.innerHTML = all.slice(0,10).map(r=>{
+    const d = (()=>{ try{ return new Date(r.date).toLocaleDateString("fr-FR"); }catch(_){ return r.date||"-"; }})();
+    return `<tr><td>${d}</td><td>${escapeHtml(r.theme||"-")}</td><td>${escapeHtml(r.formateur||"-")}</td></tr>`;
+  }).join("");
+
+  // handlers
+  const go = document.getElementById('fmaGoBtn');
+  const ok = document.getElementById('fmaDismissBtn');
+  if(go) go.onclick = (e)=>{ openLink('fma.html', e); };
+  if(ok) ok.onclick = ()=>{ overlay.style.display='none'; };
+
+  // clic arrière-plan
+  overlay.onclick = (e)=>{ if(e.target === overlay) overlay.style.display='none'; };
+
+  // échap
+  document.addEventListener('keydown', function esc(ev){
+    if(ev.key === 'Escape' && overlay.style.display !== 'none'){
+      overlay.style.display='none';
+      document.removeEventListener('keydown', esc);
+    }
+  });
+
+  // montre l’overlay
+  overlay.style.display = 'flex';
+}
+</script>
+<script>
+/* ===========================
+   🔔 Overlay "Réservations en attente" — Accueil
+   =========================== */
+
+/* 👉 Chemin de ta page réservations (même que dans ton menu) */
+const RES_PAGE_HREF = "reservations_vehicules.html";
+
+/* Rôles autorisés : SPP / SOG / Admin / Commandement, ou permission fine “véhicules” */
+function canSeeReservationsOverlay(){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return false;
+    const role = String(session.role||"").toLowerCase();
+    if(["spp","sog spv","sog","admin","commandement"].includes(role)) return true;
+
+    // Permissions fines (comme applyRoleMenus)
+    const fiche = JSON.parse(localStorage.getItem("csver_user_"+session.matricule)||"null");
+    const cisCur = Array.isArray(session.cis)?session.cis[0]:session.cis;
+    if(fiche && fiche.permissions){
+      const norm = s => String(s||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+      const cisPrim = fiche.cis && fiche.cis.primary ? fiche.cis.primary : null;
+      const isPrim  = cisPrim && (norm(cisPrim) === norm(cisCur));
+      let perms = null;
+      if(isPrim) perms = fiche.permissions.primary || null;
+      else{
+        const sec = fiche.permissions.secondaries || {};
+        const key = Object.keys(sec).find(k => norm(k) === norm(cisCur));
+        perms = sec[cisCur] || (key ? sec[key] : null);
+      }
+      if(perms && (perms["véhicules"] || perms.admin)) return true;
+    }
+  }catch(_){}
+  return false;
+}
+
+/* Lecture des demandes en attente pour le CIS courant */
+function getPendingReservations(limit = 6){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return [];
+    const cisCur = Array.isArray(session.cis)?session.cis[0]:session.cis;
+    const keyRes = "reservations_"+cisCur;
+    const rows = (JSON.parse(localStorage.getItem(keyRes)||"[]")||[])
+      .filter(r => r.status === "pending")
+      .sort((a,b)=> a.date===b.date ? a.m1-b.m1 : a.date.localeCompare(b.date));
+    return typeof limit==="number" ? rows.slice(0, limit) : rows;
+  }catch(_){ return []; }
+}
+
+/* Rendu de l’overlay — TOUJOURS afficher s’il reste des "pending" */
+function renderReservationsPendingOverlay(){
+  const maySee = canSeeReservationsOverlay();
+  const overlay = document.getElementById('resOverlay');
+  const body    = document.getElementById('resPendingBody');
+  const badge   = document.getElementById('resPendingCount');
+  const btnGo   = document.getElementById('resGoBtn');
+  const btnOk   = document.getElementById('resDismissBtn');
+  if(!overlay || !body || !badge || !btnGo || !btnOk) return;
+
+  if(!maySee){
+    overlay.style.display = 'none';
+    return;
+  }
+
+  const pending = getPendingReservations(null);
+  const count = pending.length;
+
+  if(count <= 0){
+    overlay.style.display = 'none';
+    return;
+  }
+
+  // Contenu du tableau
+  body.innerHTML = pending.slice(0,10).map(r=>{
+    const dateFR = (()=>{
+      try{ const [Y,M,D] = String(r.date||"").split("-"); return [D,M,Y].join("-"); }
+      catch(_){ return r.date||"-"; }
+    })();
+    const heures = `${r.h1||"--:--"}–${r.h2||"--:--"}`;
+    return `<tr>
+      <td>${dateFR}</td>
+      <td>${heures}</td>
+      <td>${escapeHtml(r.agent||"-")}</td>
+      <td>${escapeHtml(r.motif||"-")}</td>
+      <td>${escapeHtml(r.destination||"-")}</td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="5" style="padding:10px;color:#666">Aucune demande en attente.</td></tr>`;
+
+  badge.textContent = String(count);
+
+  // Actions
+  btnGo.onclick = (e)=>{ 
+    // va sur la page de réservations
+    if(e && typeof e.preventDefault==="function") e.preventDefault();
+    try{ openLink(RES_PAGE_HREF, e); } catch(_){ window.location.href = RES_PAGE_HREF; }
+  };
+  btnOk.onclick = ()=>{ 
+    // on ferme juste pour le moment ; il se re-montrera dès qu’on revient / refocus tant qu’il reste du pending
+    overlay.style.display='none';
+  };
+
+  // Fermer sur clic extérieur / Esc (ré-apparaîtra au prochain focus/chargement si des pending restent)
+  overlay.onclick = (e)=>{ if(e.target===overlay){ overlay.style.display='none'; } };
+  document.addEventListener('keydown', function esc(ev){
+    if(ev.key==="Escape" && overlay.style.display!=="none"){
+      overlay.style.display='none';
+      document.removeEventListener('keydown', esc);
+    }
+  });
+
+  overlay.style.display = 'flex';
+}
+
+/* Hooks */
+window.addEventListener("DOMContentLoaded", ()=>{ setTimeout(()=>renderReservationsPendingOverlay(), 250); });
+window.addEventListener("focus", ()=>renderReservationsPendingOverlay());
+window.addEventListener("pageshow", ()=>renderReservationsPendingOverlay());
+window.addEventListener("storage",(e)=>{
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!session) return;
+    const cisCur = Array.isArray(session.cis)?session.cis[0]:session.cis;
+    if(e.key === "reservations_"+cisCur){
+      renderReservationsPendingOverlay();
+    }
+  }catch(_){}
+});
+</script>
+
+<!-- 🔔 Overlay "Dépôts habillement" — Script (AJOUT MINIMAL) -->
+<script>
+const HABILLEMENT_PAGE_HREF = "gestion_habillement.html";
+
+/* ✅ Droit explicite “gestion habillement” (tolérant sur le nom de clé) */
+function hasGestionHabillement(){
+  try{
+    const perms = getCurrentCisPerms() || {};
+    const keys = [
+      "gestion_habillement","gestionHabillement","gestion-habillement",
+      "habillement_gestion","habillementGestion"
+    ];
+    return keys.some(k => !!perms[k]);
+  }catch(_){ return false; }
+}
+
+/* ❌ Plus de dérogation admin/commandement — seul le droit ci-dessus compte */
+function canSeeHabillementOverlay(){
+  return hasGestionHabillement();
+}
+
+function habCtx(){
+  const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+  if(!session) return null;
+  const cisCur = Array.isArray(session.cis)?session.cis[0]:session.cis;
+  return {
+    session,
+    cis: cisCur,
+    dataKey: "habillement_"+cisCur,
+    seenKey: "habillement_seen_"+session.matricule+"_"+cisCur
+  };
+}
+function habReadAll(ctx){
+  try{ const a = JSON.parse(localStorage.getItem(ctx.dataKey)||"[]"); return Array.isArray(a)?a:[]; }
+  catch(_){ return []; }
+}
+function habGetSeen(ctx){
+  const v = localStorage.getItem(ctx.seenKey);
+  return v ? parseInt(v,10) : 0;
+}
+function habMaxCreatedTs(ctx){
+  let max = 0;
+  for(const r of habReadAll(ctx)){ if(r && r.createdTs && r.createdTs>max) max = r.createdTs; }
+  return max;
+}
+function habMarkSeen(ctx){
+  localStorage.setItem(ctx.seenKey, String(habMaxCreatedTs(ctx) || Date.now()));
+}
+
+function renderHabillementOverlay(){
+  const overlay = document.getElementById("habOverlay");
+  const body    = document.getElementById("habPendingBody");
+  const badge   = document.getElementById("habPendingCount");
+  const btnGo   = document.getElementById("habGoBtn");
+  const btnSeen = document.getElementById("habSeenBtn");
+  if(!overlay || !body || !badge || !btnGo || !btnSeen) return;
+
+  if(!canSeeHabillementOverlay()){
+    overlay.style.display = "none";
+    return;
+  }
+
+  const ctx = habCtx();
+  if(!ctx){ overlay.style.display="none"; return; }
+
+  const seenTs = habGetSeen(ctx);
+  const all    = habReadAll(ctx);
+
+const news = all.filter(x => {
+    const created = x?.createdTs || 0;
+    const treated = x?.status?.traite?.done === true;
+    return created > seenTs && !treated;
+});
+
+
+
+  if(news.length === 0){
+    overlay.style.display = "none";
+    return;
+  }
+
+  news.sort((a,b)=> (String(b.date||"").localeCompare(String(a.date||""))) || ((b.createdTs||0)-(a.createdTs||0)));
+  body.innerHTML = news.slice(0,10).map(e=>{
+    const dateFR = (()=>{
+      try{ const [Y,M,D] = String(e.date||"").split("-"); return [D,M,Y].join("-"); }
+      catch(_){ return e.date||"-"; }
+    })();
+    const effets = Array.isArray(e.effets) && e.effets.length
+      ? e.effets.map(x=>`${escapeHtml(x.article||"-")} × ${x.qte||1}${x.obs? " — "+escapeHtml(x.obs):""}`).join("<br>")
+      : "-";
+    return `<tr>
+      <td>${dateFR}</td>
+      <td>${escapeHtml(e.agent||"-")}</td>
+      <td>${escapeHtml(e.matricule||"-")}</td>
+      <td>${effets}</td>
+    </tr>`;
+  }).join("");
+
+  badge.textContent = String(news.length);
+
+  btnGo.onclick   = (e)=>{ openLink(HABILLEMENT_PAGE_HREF, e); };
+  btnSeen.onclick = ()=>{ habMarkSeen(ctx); overlay.style.display="none"; };
+
+  overlay.onclick = (e)=>{ if(e.target===overlay){ overlay.style.display="none"; } };
+  document.addEventListener("keydown", function esc(ev){
+    if(ev.key==="Escape" && overlay.style.display!=="none"){
+      overlay.style.display = "none";
+      document.removeEventListener("keydown", esc);
+    }
+  });
+
+  overlay.style.display = "flex";
+}
+
+window.addEventListener("DOMContentLoaded", ()=>{ setTimeout(()=>renderHabillementOverlay(), 300); });
+window.addEventListener("focus", ()=>renderHabillementOverlay());
+window.addEventListener("pageshow", ()=>renderHabillementOverlay());
+window.addEventListener("storage",(e)=>{
+  try{
+    const ctx = habCtx(); if(!ctx) return;
+    if(e.key === ctx.dataKey){ renderHabillementOverlay(); }
+  }catch(_){}
+});
+</script>
+
+
+<script>
+/* ===========================
+   📬 Overlay "Nouveaux messages" — Accueil
+   =========================== */
+
+const MESSAGE_PAGE_HREF = "messagerie.html"; // ⬅ adapte si besoin
+
+// 🔹 Contexte : messages du CIS + messages globaux inter-CIS
+function mailCtx(){
+  const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+  if(!session) return null;
+  const cisCur = Array.isArray(session.cis)?session.cis[0]:session.cis;
+  return {
+    session,
+    cis: cisCur,
+    keyLocal:  "messages_"+cisCur, // messages internes au centre
+    keyGlobal: "messages__ALL_"    // messages inter-CIS / broadcast
+  };
+}
+
+function fmtDateMail(ts){
+  try{
+    const d=new Date(Number(ts)||0);
+    const p=n=>String(n).padStart(2,'0');
+    return `${p(d.getDate())}-${p(d.getMonth()+1)}-${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }catch(_){ return "—"; }
+}
+
+/* 🔍 Récupère le tableau des destinataires, quel que soit le nom du champ */
+function getRecipients(msg){
+  if (Array.isArray(msg.to)) return msg.to;
+  if (Array.isArray(msg.destinataires)) return msg.destinataires;
+  if (Array.isArray(msg.recipients)) return msg.recipients;
+  return [];
+}
+
+/* 🔍 Récupère la map "lus" */
+function getReadMap(msg){
+  if (msg.readBy && typeof msg.readBy === "object") return msg.readBy;
+  if (msg.luPar  && typeof msg.luPar  === "object") return msg.luPar;
+  return {};
+}
+
+/* Renvoie la liste des messages non lus pour l’agent courant
+   → fusion messages_<CIS> + messages__ALL_
+*/
+function getUnreadForMe(limit=10){
+  const ctx = mailCtx(); 
+  if(!ctx) return [];
+
+  const me = String(ctx.session.matricule||"");
+
+  let arrLocal  = [];
+  let arrGlobal = [];
+
+  try{
+    arrLocal = JSON.parse(localStorage.getItem(ctx.keyLocal) || "[]");
+    if(!Array.isArray(arrLocal)) arrLocal = [];
+  }catch(_){ arrLocal = []; }
+
+  try{
+    arrGlobal = JSON.parse(localStorage.getItem(ctx.keyGlobal) || "[]");
+    if(!Array.isArray(arrGlobal)) arrGlobal = [];
+  }catch(_){ arrGlobal = []; }
+
+  const combined = arrLocal.concat(arrGlobal);
+
+  const rows   = [];
+  const seenId = new Set();
+
+  combined.forEach(m=>{
+    if(!m) return;
+
+    const id = m.id || m.uid || null;
+    if(id && seenId.has(id)) return;
+    if(id) seenId.add(id);
+
+    const recips = getRecipients(m);
+    const toMe = recips.some(r=>{
+      const rMat = String(r.matricule || r.id || "").trim();
+      return rMat === me;
+    });
+    if(!toMe) return;
+
+    const readMap = getReadMap(m);
+    if(readMap[me]) return; // déjà lu
+
+    rows.push(m);
+  });
+
+  rows.sort((a,b)=>{
+    const ta = Number(a.ts || a.timestamp || 0);
+    const tb = Number(b.ts || b.timestamp || 0);
+    return tb - ta;
+  });
+
+  return (typeof limit==="number") ? rows.slice(0,limit) : rows;
+}
+
+/* Marque comme lus (pour MOI) dans messages_<CIS> ET messages__ALL_ */
+function markMyMailsAsRead(){
+  const ctx = mailCtx(); 
+  if(!ctx) return;
+
+  const me = String(ctx.session.matricule||"");
+
+  let arrLocal  = [];
+  let arrGlobal = [];
+
+  try{
+    arrLocal = JSON.parse(localStorage.getItem(ctx.keyLocal) || "[]");
+    if(!Array.isArray(arrLocal)) arrLocal = [];
+  }catch(_){ arrLocal = []; }
+
+  try{
+    arrGlobal = JSON.parse(localStorage.getItem(ctx.keyGlobal) || "[]");
+    if(!Array.isArray(arrGlobal)) arrGlobal = [];
+  }catch(_){ arrGlobal = []; }
+
+  function markArray(arr){
+    let touched = false;
+    (Array.isArray(arr)?arr:[]).forEach(m=>{
+      if(!m) return;
+      const recips = getRecipients(m);
+      const toMe = recips.some(r=>{
+        const rMat = String(r.matricule || r.id || "").trim();
+        return rMat === me;
+      });
+      if(!toMe) return;
+
+      const readMap = getReadMap(m);
+      if(!readMap[me]){
+        // on force la map dans le message au format readBy
+        m.readBy = readMap;
+        m.readBy[me] = true;
+        touched = true;
+      }
+    });
+    return touched;
+  }
+
+  const touchedLocal  = markArray(arrLocal);
+  const touchedGlobal = markArray(arrGlobal);
+
+  if(touchedLocal){
+    localStorage.setItem(ctx.keyLocal, JSON.stringify(arrLocal));
+  }
+  if(touchedGlobal){
+    localStorage.setItem(ctx.keyGlobal, JSON.stringify(arrGlobal));
+  }
+}
+
+/* Rend et affiche/masque l’overlay */
+function renderMailOverlay(){
+  const overlay = document.getElementById("mailOverlay");
+  const body    = document.getElementById("mailPendingBody");
+  const badge   = document.getElementById("mailPendingCount");
+  const btnGo   = document.getElementById("mailGoBtn");
+  const btnRead = document.getElementById("mailMarkReadBtn");
+  if(!overlay || !body || !badge || !btnGo || !btnRead) return;
+
+  const ctx = mailCtx();
+  if(!ctx){ overlay.style.display="none"; return; }
+
+  const unread = getUnreadForMe(null);
+  if(unread.length === 0){
+    overlay.style.display = "none";
+    return;
+  }
+
+  badge.textContent = String(unread.length);
+  body.innerHTML = unread.slice(0,10).map(m=>{
+    const fromName = (m.from && m.from.display) ? m.from.display : (m.fromName || "-");
+    const subject  = m.subject || m.objet || "-";
+    const ts       = m.ts || m.timestamp;
+
+    const esc = s => String(s||"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+    return `
+      <tr>
+        <td>${fmtDateMail(ts)}</td>
+        <td>${esc(fromName)}</td>
+        <td>${esc(subject)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  btnGo.onclick   = (e)=>{ 
+    if(e && e.preventDefault) e.preventDefault();
+    try{ openLink(MESSAGE_PAGE_HREF, e); }
+    catch(_){ window.location.href = MESSAGE_PAGE_HREF; }
+  };
+  btnRead.onclick = ()=>{ 
+    markMyMailsAsRead();
+    overlay.style.display="none"; 
+  };
+
+  overlay.onclick = (e)=>{ if(e.target === overlay) overlay.style.display="none"; };
+  document.addEventListener("keydown", function esc(ev){
+    if(ev.key==="Escape" && overlay.style.display!=="none"){
+      overlay.style.display="none";
+      document.removeEventListener("keydown", esc);
+    }
+  });
+
+  overlay.style.display = "flex";
+}
+
+/* Hooks : on réagit aux 2 clés (local + global) */
+window.addEventListener("DOMContentLoaded", ()=>{ setTimeout(()=>renderMailOverlay(), 200); });
+window.addEventListener("focus", ()=>renderMailOverlay());
+window.addEventListener("pageshow", ()=>renderMailOverlay());
+window.addEventListener("storage",(e)=>{
+  try{
+    const ctx = mailCtx(); if(!ctx) return;
+    if(e.key === ctx.keyLocal || e.key === ctx.keyGlobal){
+      renderMailOverlay();
+    }
+  }catch(_){}
+});
+</script>
+
+
+
+<script>
+/* Menu mobile : ouvre/ferme les sous-menus au clic */
+(function(){
+  const nav = document.querySelector('nav.menu-bar');
+  if (!nav) return;
+
+  function isMobile() {
+    return window.matchMedia('(max-width: 768px)').matches;
+  }
+
+  nav.addEventListener('click', function(e){
+    const link = e.target.closest('li > a');
+    if (!link || !isMobile()) return;
+
+    const li = link.parentElement;
+    const submenu = li.querySelector('ul');
+    if (!submenu) {
+      // Pas de sous-menu → on laisse le lien se comporter normalement
+      return;
+    }
+
+    // Il y a un sous-menu → on ne suit pas le lien, on ouvre/ferme
+    e.preventDefault();
+
+    const alreadyOpen = li.classList.contains('open');
+
+    // Ferme les autres sous-menus
+    nav.querySelectorAll('li.open').forEach(el => {
+      if (el !== li) el.classList.remove('open');
+    });
+
+    // Bascule l'état du sous-menu cliqué
+    if (alreadyOpen) {
+      li.classList.remove('open');
+    } else {
+      li.classList.add('open');
+    }
+  });
+})();
+</script>
+
+<script>
+function loadChatbaseWidgetForAdmins() {
+  // 🔐 On limite le widget aux admins / commandement / admin du centre
+  if (!isAdmin() && !isSuperAdmin()) {
+    return; // Pas admin → on ne charge pas Chatbase
+  }
+
+  // Code d'intégration Chatbase tel que fourni
+  (function(){
+    if (!window.chatbase || window.chatbase("getState") !== "initialized") {
+      window.chatbase = (...arguments) => {
+        if (!window.chatbase.q) { window.chatbase.q = []; }
+        window.chatbase.q.push(arguments);
+      };
+      window.chatbase = new Proxy(window.chatbase, {
+        get(target, prop) {
+          if (prop === "q") { return target.q; }
+          return (...args) => target(prop, ...args);
+        }
+      });
+    }
+
+    const onLoad = function() {
+      const script = document.createElement("script");
+      script.src = "https://www.chatbase.co/embed.min.js";
+      script.id = "zVqCo-pyQDmi3XjItI7CQ";
+      script.domain = "www.chatbase.co";
+      document.body.appendChild(script);
+    };
+
+    if (document.readyState === "complete") {
+      onLoad();
+    } else {
+      window.addEventListener("load", onLoad);
+    }
+  })();
+}
+
+// 👉 On attend que la page soit prête, puis on vérifie le rôle
+window.addEventListener("DOMContentLoaded", loadChatbaseWidgetForAdmins);
+</script>
+
+<script>
+/* ===========================
+   📅 Agenda mensuel + réservations véhicules
+   =========================== */
+(function(){
+  const monthLabel = document.getElementById("agenda-month-label");
+  const grid       = document.getElementById("agenda-grid");
+  const btnPrev    = document.getElementById("agenda-prev");
+  const btnNext    = document.getElementById("agenda-next");
+  const details    = document.getElementById("agenda-details");
+
+  // 👉 éléments de la modale agenda
+  const agendaModal      = document.getElementById("agenda-modal");
+  const agendaModalTitle = document.getElementById("agenda-modal-title");
+  const agendaModalBody  = document.getElementById("agenda-modal-body");
+  const agendaModalClose = document.getElementById("agenda-modal-close");
+
+  if (!monthLabel || !grid) return; // sécurité
+
+  const monthNames = [
+    "Janvier","Février","Mars","Avril","Mai","Juin",
+    "Juillet","Août","Septembre","Octobre","Novembre","Décembre"
+  ];
+
+  // On se cale sur le 1er du mois courant
+  let currentMonth = new Date();
+  currentMonth.setDate(1);
+
+  /* ----- Helpers pour récupérer les réservations du CIS courant ----- */
+
+  function getCurrentCis(){
+    try{
+      const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+      if(!session) return null;
+      return Array.isArray(session.cis) ? session.cis[0] : session.cis;
+    }catch(_){ return null; }
+  }
+
+  // Accepte soit un tableau, soit un objet { "0": {...}, "1": {...} }
+  function rawToArray(raw){
+    if(Array.isArray(raw)) return raw;
+    if(raw && typeof raw === "object"){
+      const keys = Object.keys(raw);
+      if(keys.length && keys.every(k => /^\d+$/.test(k))){
+        return keys.sort((a,b)=>Number(a)-Number(b)).map(k => raw[k]);
+      }
+    }
+    return [];
+  }
+
+  // Renvoie un objet { "YYYY-MM-DD": [ réservations ce jour ] } pour le mois affiché
+  function buildReservationMap(year, monthIndex){
+    const cisSel = getCurrentCis();
+    if(!cisSel) return {};
+
+    const keyRes = "reservations_" + cisSel;
+    let raw;
+    try{
+      raw = JSON.parse(localStorage.getItem(keyRes) || "[]");
+    }catch(_){
+      raw = [];
+    }
+    const arr = rawToArray(raw);
+
+    const map = {};
+    const monthStart = new Date(year, monthIndex, 1);
+    const monthEnd   = new Date(year, monthIndex + 1, 0);
+
+    arr.forEach(r=>{
+      if(!r) return;
+
+      const status = r.status || "pending";
+      // 👉 on colore / affiche uniquement les réservations ACCEPTÉES
+      if(status !== "approved") return;
+
+      const dStartStr = r.dateDebut || r.date;
+      const dEndStr   = r.dateFin   || r.dateDebut || r.date;
+      if(!dStartStr) return;
+
+      const dStart = new Date(dStartStr + "T00:00:00");
+      const dEnd   = new Date((dEndStr || dStartStr) + "T00:00:00");
+      if(isNaN(dStart) || isNaN(dEnd)) return;
+
+      let d = new Date(Math.max(dStart.getTime(), monthStart.getTime()));
+      const limit = Math.min(dEnd.getTime(), monthEnd.getTime());
+
+      while(d.getTime() <= limit){
+        const y  = d.getFullYear();
+        const m  = d.getMonth();
+        const dd = d.getDate();
+        const key = `${y}-${String(m+1).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
+
+        if(!map[key]) map[key] = [];
+        map[key].push({
+          dateKey: key,
+          h1: r.h1 || "",
+          h2: r.h2 || "",
+          vehicule: r.vehicule || "",
+          agent: r.agent || "",
+          motif: r.motif || "",
+          destination: r.destination || "",
+          status: status
+        });
+
+        d.setDate(d.getDate() + 1);
+      }
+    });
+
+    return map;
+  }
+
+   // Renvoie un objet { "YYYY-MM-DD": [ consignes de ce jour ] }
+function buildConsigneMap(year, monthIndex){
+  const cisSel = getCurrentCis();
+  if (!cisSel) return {};
+
+  const keyCons = "consignes_" + cisSel;
+  let arr;
+  try{
+    arr = JSON.parse(localStorage.getItem(keyCons) || "[]");
+    if (!Array.isArray(arr)) arr = [];
+  }catch(_){
+    arr = [];
+  }
+
+  const map = {};
+  const monthStart = new Date(year, monthIndex, 1);
+  const monthEnd   = new Date(year, monthIndex + 1, 0);
+
+  function addOccurence(dateObj, consigne){
+    const y  = dateObj.getFullYear();
+    const m  = dateObj.getMonth();
+    const dd = dateObj.getDate();
+    const key = `${y}-${String(m+1).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
+
+    if (!map[key]) map[key] = [];
+    map[key].push(consigne);
+  }
+
+  arr.forEach(c => {
+    if (!c || c.cis !== cisSel) return;
+
+    const dStartStr = (c.dateDebut || "").trim();
+    if (!dStartStr) return;
+    const dEndStr   = (c.dateFin || dStartStr).trim();
+
+    const dStart = new Date(dStartStr + "T00:00:00");
+    const dEnd   = new Date(dEndStr   + "T00:00:00");
+    if (isNaN(dStart) || isNaN(dEnd)) return;
+
+    const rec = c.recurrence || "once";
+    const per = parseInt(c.periodicite, 10) || 1;
+
+    // 🔹 Cas "Ponctuelle" : comportement actuel = tous les jours entre début et fin
+    if (rec === "once"){
+      let d = new Date(Math.max(dStart.getTime(), monthStart.getTime()));
+      const limit = Math.min(dEnd.getTime(), monthEnd.getTime());
+
+      while (d.getTime() <= limit){
+        addOccurence(d, c);
+        d.setDate(d.getDate() + 1);
+      }
+      return;
+    }
+
+    // 📅 Pour les récurrences, dateFin = dernière occurrence possible
+    const globalEnd = Math.min(dEnd.getTime(), monthEnd.getTime());
+
+    // Helper pour avancer à la première occurrence >= monthStart
+    function alignToMonthStart(stepFn){
+      let occ = new Date(dStart.getTime());
+      while (occ.getTime() < monthStart.getTime()){
+        occ = stepFn(occ);
+      }
+      return occ;
+    }
+
+    if (rec === "daily"){
+      const stepDays = per;
+
+      let occ = alignToMonthStart(d => {
+        const n = new Date(d.getTime());
+        n.setDate(n.getDate() + stepDays);
+        return n;
+      });
+
+      while (occ.getTime() <= globalEnd){
+        addOccurence(occ, c);
+        occ.setDate(occ.getDate() + stepDays);
+      }
+      return;
+    }
+
+    if (rec === "weekly"){
+      const stepDays = 7 * per;
+
+      let occ = alignToMonthStart(d => {
+        const n = new Date(d.getTime());
+        n.setDate(n.getDate() + stepDays);
+        return n;
+      });
+
+      while (occ.getTime() <= globalEnd){
+        addOccurence(occ, c);
+        occ.setDate(occ.getDate() + stepDays);
+      }
+      return;
+    }
+
+    if (rec === "monthly" || rec === "yearly"){
+      const baseDay = dStart.getDate();
+      const stepMonths = (rec === "monthly") ? per : 12 * per;
+
+      let occ = new Date(dStart.getTime());
+      while (occ.getTime() < monthStart.getTime()){
+        occ = new Date(occ.getFullYear(), occ.getMonth() + stepMonths, baseDay);
+      }
+
+      while (occ.getTime() <= globalEnd){
+        // si le changement de mois déplace le jour (ex: 31 → 30), on accepte tel quel
+        addOccurence(occ, c);
+        occ = new Date(occ.getFullYear(), occ.getMonth() + stepMonths, baseDay);
+      }
+      return;
+    }
+
+    // Sécurité : si type inconnu -> comportement "plein" comme avant
+    let d = new Date(Math.max(dStart.getTime(), monthStart.getTime()));
+    const limit = Math.min(dEnd.getTime(), monthEnd.getTime());
+    while (d.getTime() <= limit){
+      addOccurence(d, c);
+      d.setDate(d.getDate() + 1);
+    }
+  });
+
+  return map;
+}
+
+
+  
+  function formatDateFR(dateKey){
+    const p = String(dateKey||"").split("-");
+    if(p.length !== 3) return dateKey || "";
+    return `${p[2]}/${p[1]}/${p[0]}`;
+  }
+
+    /* ----- Ouverture / fermeture de la modale agenda ----- */
+    function importanceToColor(imp){
+    switch(imp){
+      case "haute":   return "#d32f2f"; // rouge
+      case "moyenne": return "#fb8c00"; // orange
+      case "faible":  return "#1976d2"; // bleu
+      default:        return "#1976d2";
+    }
+  }
+  function importanceToLabel(imp){
+    switch(imp){
+      case "haute":   return "Importante";
+      case "moyenne": return "Moyenne";
+      case "faible":  return "Faible";
+      default:        return "—";
+    }
+  }
+  function validiteLabel(v){
+    switch(v){
+      case "jour": return "Jour";
+      case "nuit": return "Nuit";
+      case "24h":  return "24h";
+      default:     return "—";
+    }
+  }
+  function serviceLabel(s){
+    switch(s){
+      case "commandement":  return "Commandement";
+      case "officier":      return "Officier de garde";
+      case "sous-officier": return "Sous-officier de garde";
+      default:              return s || "Service";
+    }
+  }
+
+  /* ----- Ouverture / fermeture de la modale agenda ----- */
+  function openAgendaModal(dateKey, resList, consList){
+    if(!agendaModal || !agendaModalTitle || !agendaModalBody) return;
+
+    const label = dateKey ? formatDateFR(dateKey) : "";
+    agendaModalTitle.textContent = label
+      ? `📅 Détails du ${label}`
+      : "📅 Détails du jour";
+
+    let html = "";
+
+    /* 📌 CONSIGNES EN HAUT */
+   if (consList && consList.length){
+    // 👉 tri par importance : rouge (haute), orange (moyenne), bleu (faible)
+    const orderImp = { haute: 0, moyenne: 1, faible: 2 };
+
+    const sortedCons = [...consList].sort((a, b) => {
+      const ia = orderImp[a.importance] ?? 99;
+      const ib = orderImp[b.importance] ?? 99;
+      if (ia !== ib) return ia - ib;
+
+      // tri secondaire : par titre (optionnel)
+      return (a.titre || "").localeCompare(b.titre || "", "fr", {sensitivity:"base"});
+    });
+
+    html += `
+      <div class="agenda-modal-section">
+        <div class="agenda-modal-title-sub">📌 Consignes du jour</div>
+    `;
+
+    sortedCons.forEach(c => {
+  const color  = importanceToColor(c.importance);
+  const vLab   = validiteLabel(c.validite);
+  const impLab = importanceToLabel(c.importance);
+  const serv   = serviceLabel(c.serviceOrigine);
+
+  // 👉 nom de l’agent qui a créé la consigne
+  const auteur =
+    (c.createdBy && (c.createdBy.display || c.createdBy.nom || c.createdBy.matricule)) || "";
+
+  html += `
+    <div class="agenda-consigne-card">
+      <div class="agenda-consigne-title">
+        <span class="agenda-consigne-dot" style="background:${color};"></span>
+        ${escapeHtml(c.titre || "Consigne")}
+      </div>
+      <div class="agenda-consigne-body">
+        ${escapeHtml(c.contenu || "")}
+      </div>
+      <div class="agenda-consigne-meta">
+        Validité : ${escapeHtml(vLab)}
+        — Origine : ${escapeHtml(serv)}
+        — Importance : ${escapeHtml(impLab)}
+        ${auteur ? " — Créée par : " + escapeHtml(auteur) : ""}
+      </div>
+    </div>
+  `;
+});
+
+
+    html += `</div>`;
+  }
+
+    /* 🚘 RÉSERVATIONS EN BAS */
+    if(resList && resList.length){
+      html += `
+        <div class="agenda-modal-section">
+          <div class="agenda-modal-title-sub">🚘 Réservations véhicules</div>
+          <div class="agenda-modal-table-wrapper">
+            <table class="agenda-modal-table">
+              <thead>
+                <tr>
+                  <th>Date / jour</th>
+                  <th>Heures</th>
+                  <th>Véhicule</th>
+                  <th>Agent</th>
+                  <th>Motif</th>
+                  <th>Destination</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+
+      html += resList.map(r => `
+        <tr>
+          <td>${formatDateFR(r.dateKey || dateKey)}</td>
+          <td>${escapeHtml((r.h1 || "--") + (r.h2 ? "–" + r.h2 : ""))}</td>
+          <td>${escapeHtml(r.vehicule || "—")}</td>
+          <td>${escapeHtml(r.agent || "—")}</td>
+          <td>${escapeHtml(r.motif || "—")}</td>
+          <td>${escapeHtml(r.destination || "—")}</td>
+        </tr>
+      `).join("");
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    if(!html){
+      html = `
+        <div style="padding:10px;color:#666;font-size:13px;">
+          Aucune consigne ni réservation pour ce jour.
+        </div>
+      `;
+    }
+
+    agendaModalBody.innerHTML = html;
+    agendaModal.style.display = "flex";
+  }
+
+
+  function closeAgendaModal(){
+    if(agendaModal) agendaModal.style.display = "none";
+  }
+
+  if(agendaModalClose){
+    agendaModalClose.addEventListener("click", closeAgendaModal);
+  }
+  if(agendaModal){
+    agendaModal.addEventListener("click", function(e){
+      if(e.target === agendaModal) closeAgendaModal();
+    });
+    document.addEventListener("keydown", function esc(e){
+      if(e.key === "Escape" && agendaModal.style.display !== "none"){
+        closeAgendaModal();
+      }
+    });
+  }
+
+  /* ----- Rendu du calendrier ----- */
+  function renderAgenda(){
+    grid.innerHTML = "";
+
+    // Texte fixe sous le calendrier (on n'y met plus les détails)
+   if(details){
+  details.innerHTML = "";   // on laisse vide
+}
+
+    const year  = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay  = new Date(year, month + 1, 0);
+    const daysInMonth   = lastDay.getDate();
+    const startWeekday  = (firstDay.getDay() + 6) % 7; // Lun=0 ... Dim=6
+
+            monthLabel.textContent = monthNames[month] + " " + year;
+
+    const resMap  = buildReservationMap(year, month);
+    const consMap = buildConsigneMap(year, month);
+
+
+    // Cases vides avant le 1er
+    for(let i=0; i<startWeekday; i++){
+      const cell = document.createElement("div");
+      cell.className = "agenda-cell agenda-cell-empty";
+      grid.appendChild(cell);
+    }
+
+    const today = new Date();
+    const isSameMonth =
+      today.getFullYear() === year &&
+      today.getMonth()    === month;
+
+           // Jours du mois
+    for(let d=1; d<=daysInMonth; d++){
+      const cell = document.createElement("div");
+      cell.className = "agenda-cell";
+      cell.textContent = d;
+
+      const dateKey =
+        `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const dayRes      = resMap[dateKey]  || [];
+      const dayCons     = consMap[dateKey] || [];
+      const hasConsigne = dayCons.length > 0;
+
+      if (isSameMonth && d === today.getDate()){
+        cell.classList.add("agenda-today");
+      }
+      // 🔵 couleur si réservation APPROUVÉE OU consigne ce jour-là
+      if (dayRes.length || hasConsigne){
+        cell.classList.add("agenda-event");
+      }
+
+      // On ouvre la modale avec réservations + consignes
+      cell.addEventListener("click", function(){
+        openAgendaModal(dateKey, dayRes, dayCons);
+      });
+
+      grid.appendChild(cell);
+    }
+
+  }
+
+  btnPrev && btnPrev.addEventListener("click", function(){
+    currentMonth.setMonth(currentMonth.getMonth() - 1);
+    renderAgenda();
+  });
+
+  btnNext && btnNext.addEventListener("click", function(){
+    currentMonth.setMonth(currentMonth.getMonth() + 1);
+    renderAgenda();
+  });
+
+  // Expose une fonction globale si tu veux forcer un refresh plus tard
+  window.refreshAgendaCalendar = renderAgenda;
+
+  // Premier affichage
+  renderAgenda();
+})();
+</script>
+
+
+<!-- FIN AJOUT -->
+
+</body>
+</html>

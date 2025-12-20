@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+<title>Gestion habillement — SDIS 30</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif}
+body{
+  background:linear-gradient(135deg,#1d3f73 0%,#d43d3d 100%);
+  min-height:100vh;display:flex;flex-direction:column;color:#222;
+}
+header{
+  background:#fff;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+header img{height:60px}
+header .title{font-size:24px;color:#0d2b52;font-weight:800}
+header .subtitle{font-size:14px;color:#444;margin-top:4px}
+.acceuil-btn{
+  background:#b71c1c;color:#fff;font-weight:800;border:none;border-radius:12px;
+  padding:10px 14px;cursor:pointer;transition:.2s;font-size:14px;
+}
+.acceuil-btn:hover{background:#8b0000}
+main{
+  flex:1;max-width:1200px;margin:20px auto;padding:0 16px;display:grid;gap:16px;grid-template-columns:1fr;
+}
+.panel{
+  background:rgba(255,255,255,.92);
+  border-radius:16px;padding:18px;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);
+  display:flex;flex-direction:column;gap:14px;
+}
+.panel h2{
+  font-size:20px;font-weight:800;color:#0d2b52;border-left:6px solid #b71c1c;padding-left:10px;margin-right:auto;
+}
+.section-head{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between
+}
+.btn{border:none;border-radius:10px;padding:10px 14px;cursor:pointer;color:#fff;font-size:14px;font-weight:800;box-shadow:0 3px 8px rgba(0,0,0,.12);transition:transform .2s ease}
+.btn:hover{transform:translateY(-2px)}
+.btn.primary{background:#1a73e8}
+.btn.secondary{background:#6a1b9a}
+.btn.ghost{background:#eef2ff;color:#223}
+.small-btn{border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-weight:700;font-size:12px;background:#eef2ff;color:#223;margin-right:4px}
+.small-btn.danger{background:#fdecec;color:#b71c1c}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{border:1px solid #eef2fb;padding:8px 10px;text-align:left;vertical-align:top}
+.table th{background:#f7f9ff;color:#123}
+.taglist{display:flex;gap:6px;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;gap:6px;background:#eef2ff;border:1px solid #e2e8f0;border-radius:999px;padding:6px 10px;font-weight:700}
+.tag input{width:80px;text-align:center;border:1px solid #d9e2ef;border-radius:8px;padding:4px 6px}
+.tag input[type=text]{width:200px}
+.tag button{border:none;background:transparent;cursor:pointer;font-weight:900}
+.ackline{
+  display:inline-flex;              /* ne prend que la largeur du contenu */
+  align-items:center;
+  gap:6px;                          /* espace serré entre case et texte */
+  margin-top:4px;
+  font-size:14px;
+  color:#0d2b52;
+  justify-content:flex-start !important;  /* empêche l’écartement gauche/droite */
+}
+
+.ackline input{
+  transform:scale(1.1); /* ou 1.0 si tu veux la taille standard */
+  margin:0;
+}
+.small{font-size:12px;color:#555}
+.help{font-size:13px;color:#444}
+.muted{color:#666;font-size:12px}
+.hidden{display:none !important;}
+footer{text-align:center;color:#fff;font-size:13px;padding:20px}
+@media(max-width:900px){
+  .form-grid{grid-template-columns:1fr 1fr}
+  .form-grid .col-3{grid-column:span 2}
+  .form-grid .col-2{grid-column:span 1}
+}
+.form-grid{display:grid;gap:12px;grid-template-columns:repeat(6,minmax(0,1fr))}
+.form-grid .col-2{grid-column:span 2}
+.form-grid .col-3{grid-column:span 3}
+.form-grid .col-6{grid-column:1 / -1}
+input,select,textarea{width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;font-size:14px;}
+.form-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ===========================
+   📱 Version mobile (≤ 768px)
+   =========================== */
+@media (max-width: 768px) {
+
+  body{
+    min-height:100vh;
+    padding:12px;
+  }
+
+  /* HEADER en colonne, tout centré */
+  header{
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+
+  header img{
+    height: 50px;
+    margin-right: 0;     /* plus d'espace à droite en mobile */
+  }
+
+  header .title{
+    font-size: 20px;
+  }
+
+  header .subtitle{
+    font-size: 13px;
+  }
+
+  /* Bouton Accueil en plein largeur sous le titre */
+  .acceuil-btn{
+    position: static;          /* annule le position:absolute du desktop */
+    transform: none;
+    align-self: stretch;
+    width: 100%;
+    text-align: center;
+    padding: 8px 0;
+    font-size: 14px;
+    border-radius: 999px;
+  }
+
+  /* MAIN plus serré */
+  main{
+    margin: 16px auto;
+    padding: 0 8px;
+  }
+
+  .panel{
+    padding: 14px;
+  }
+
+  .panel h2{
+    font-size: 18px;
+  }
+
+  /* Formulaire en 1 seule colonne */
+  .form-grid{
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .form-grid .col-2,
+  .form-grid .col-3,
+  .form-grid .col-6{
+    grid-column: 1 / -1;
+  }
+
+  /* Boutons d’action en colonne / full-width */
+  .form-actions{
+    flex-direction: column;
+  }
+
+  .btn{
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Tags d’effets sur toute la largeur */
+  .taglist{
+    flex-direction: column;
+  }
+
+  .tag{
+    width: 100%;
+  }
+
+  .tag input[type="text"]{
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* 🔁 TABLEAUX : scroll horizontal sur mobile
+     (Déclaration, Historique, Demandes du centre) */
+  .panel > div[style*="overflow:auto"]{
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table{
+    min-width: 650px;     /* garde un tableau lisible, mais scrollable */
+    font-size: 13px;
+  }
+
+  .table th,
+  .table td{
+    padding: 6px 8px;
+  }
+}
+  
+</style>
+</head>
+<body>
+<header>
+  <img src="https://i.postimg.cc/LsB40JQq/logo-cismic.png" alt="Logo SDIS 30" onerror="this.src='https://via.placeholder.com/120x60?text=SDIS30'">
+  <div>
+    <div class="title">Gestion de l'habillement</div>
+    <div class="subtitle" id="cisLabel">—</div>
+  </div>
+  <button class="acceuil-btn" onclick="goAccueil()">⟵ Accueil</button>
+</header>
+
+<main>
+  <!-- Déclaration -->
+  <section class="panel">
+    <h2>🧺 Déclaration de dépôt</h2>
+    <p class="help">L'agent est rempli automatiquement à partir de la session. Ajoutez un ou plusieurs effets, renseignez une <strong>observation par article</strong>, puis validez en cochant la reconnaissance.</p>
+    <form id="habForm" onsubmit="return submitDepot(event)">
+      <div class="form-grid">
+        <div class="col-2"><label>Nom & prénom</label><input type="text" id="agentName" readonly></div>
+        <div><label>Matricule</label><input type="text" id="agentMat" readonly></div>
+
+        <!-- Email agent -->
+        <div class="col-2">
+          <label>Email de l’agent</label>
+          <input type="email" id="agentEmail" required placeholder="prenom.nom@exemple.fr">
+        </div>
+
+        <div><label>Date</label><input type="date" id="dateDepot" required></div>
+        <div class="col-3">
+          <label>Ajouter un effet</label>
+          <div style="display:flex;gap:8px">
+            <select id="articleSel"></select>
+            <!-- Champ quantité conservé mais caché -->
+            <input type="number" id="qteSel" min="1" step="1" value="1" style="width:100px;display:none" aria-hidden="true">
+            <button class="btn secondary" type="button" onclick="addEffet()">Ajouter</button>
+          </div>
+          <p class="small">Sélectionnez un effet puis cliquez sur <strong>Ajouter</strong>. Répétez l'opération pour plusieurs effets.</p>
+        </div>
+        <div class="col-6"><label>Effets sélectionnés</label><div id="effetsTags" class="taglist"></div></div>
+        <div class="col-6">
+  <label for="ack" class="ackline">
+    <span style="font-weight:600;margin-right:6px;">Reconnaissance</span>
+    <input type="checkbox" id="ack" required>
+    <span>Je reconnais avoir déposé l'article / les articles dans l'armoire <strong>propre et plié</strong>.</span>
+  </label>
+</div>
+
+        <div class="col-6 form-actions">
+          <button id="submitBtn" class="btn primary" type="submit">Enregistrer le dépôt</button>
+          <button class="btn ghost" type="button" onclick="clearForm()">Réinitialiser</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- Historique agent -->
+  <section class="panel">
+    <h2>📜 Historique de mes dépôts</h2>
+    <div style="overflow:auto">
+      <table class="table" id="histTable">
+        <thead>
+          <tr><th>Date</th><th>Agent</th><th>Matricule</th><th>Effets</th><th>Suivi / Actions</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="help">Affiche les dépôts saisis depuis votre session pour le CIS courant.</p>
+  </section>
+
+  <!-- Suivi centre -->
+  <section id="centrePanel" class="panel hidden" aria-hidden="true">
+    <div class="section-head">
+      <h2>📦 Demandes du centre (suivi)</h2>
+      <div>
+        <button id="btnPurgeAll" class="btn secondary" onclick="purgeAllDemands()" style="display:none">🗑️ Supprimer toutes les demandes</button>
+        <button id="btnGenE41" class="btn primary" onclick="generateAnnexeE41()">📝 Générer la feuille (Annexe E41 bis)</button>
+      </div>
+    </div>
+    <div style="overflow:auto">
+      <table class="table" id="centreTable">
+        <thead>
+          <tr>
+            <th>Date</th><th>Agent</th><th>Matricule</th><th>Effets</th><th>Statut</th><th>Gestion</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="help">Suivi centralisé des demandes de <strong>votre CIS</strong>. Les actions sont chronologiques : <em>Traité → Envoyé → Reçu</em>.<br>La feuille se génère uniquement pour les demandes <strong>✅ Traitée</strong> (et <em>non</em> encore <strong>📤 Envoyé</strong>).</p>
+  </section>
+</main>
+
+<footer>© CISMIC — Gestion habillement — 2025</footer>
+
+<!-- 🔌 Firebase + Firestore + stockage partagé -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="cloud-storage.js"></script>
+
+<script>
+/* =======================================================
+   🔁 Synchro Habillement <-> Firestore
+   ======================================================= */
+
+// Liste des clés à synchroniser dans Firestore
+function shouldSyncKey(key){
+  return key && key.startsWith("habillement_");
+}
+
+// 🔄 Cloud → Local : au chargement
+async function syncHabillementFromCloud(){
+  try{
+    if(typeof db === "undefined"){
+      console.warn("Firestore non initialisé.");
+      return;
+    }
+    const snap = await db.collection("accueilcs").get();
+    snap.forEach(doc=>{
+      if(shouldSyncKey(doc.id)){
+        localStorage.setItem(doc.id, JSON.stringify(doc.data()));
+      }
+    });
+    console.log("Habillement : sync Firestore → localStorage OK");
+  }catch(e){
+    console.error("syncHabillementFromCloud", e);
+  }
+}
+
+// 🔄 Local → Cloud : interception des setItem / removeItem
+(function(){
+  const origSet = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, val){
+    origSet(key, val);
+    if(shouldSyncKey(key)){
+      try{ cloudSetJSON(key, JSON.parse(val)); }
+      catch(e){ console.error("cloudSetJSON", e); }
+    }
+  };
+  
+  const origRem = localStorage.removeItem.bind(localStorage);
+  localStorage.removeItem = function(key){
+    if(shouldSyncKey(key)){
+      try{ db.collection("accueilcs").doc(key).delete(); }
+      catch(_){}
+    }
+    origRem(key);
+  };
+})();
+</script>
+
+<script>
+/* =========================
+   Données & helpers généraux
+   ========================= */
+const ARTICLES=['CASQUE F1','CASQUE F2','CAGOULE','CEINTURE','GANTS D\'INTERVENTION','GANTS TECHNIQUE','CLE POLYCOISE','SAC COMMANDO','VESTE TEXTILE','PANTALON TEXTILE','VESTE TSI','PANTALON TSI','SWEAT COTON','POLO TECHNIQUE MANCHE COURTE','POLO TECHNIQUE MANCHE LONGUE','SOFTSHELL','SHORT','TEE-SHIRT SPORT','CHAUSSETTES MIS BAS','RANGERS','BOTTES OU RANGERS 2° PAIRE','TENUES DE PLUIES','VELCROS','COUPE CEINTURE','BASKETS'];
+const ctx={user:null,cis:'',key:'habillement_'};
+
+function robustSession(){try{const raw=localStorage.getItem('csver_session');if(!raw)return null;const s=JSON.parse(raw);return s&&typeof s==='object'?s:null;}catch(_){return null;}}
+function getDisplayName(u){const n=((u?.prenom||'')+' '+(u?.nom||'')).trim();return n||u?.matricule||'Agent';}
+function todayISO(){return new Date().toISOString().slice(0,10);} 
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, m => ({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
+  }[m]));
+}
+function fmtDate(fr){try{const [Y,M,D]=fr.split('-');return [D,M,Y].join('-');}catch(_){return fr;}}
+function fmtDT(ts){try{const d=new Date(ts);return d.toLocaleString('fr-FR');}catch(_){return '—';}}
+function normCis(x){try{return String(x||"").replace(/^CIS\s*/i,"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();}catch(_){return String(x||"").toLowerCase();}}
+
+function readDepots(){const k=ctx.key+ctx.cis;const a=JSON.parse(localStorage.getItem(k)||'[]');return Array.isArray(a)?a:[];}
+function saveDepots(arr){const k=ctx.key+ctx.cis;localStorage.setItem(k,JSON.stringify(arr));}
+
+/* =========================
+   Permissions
+   ========================= */
+function getCurrentCisPerms(){
+  try{
+    const s = JSON.parse(localStorage.getItem("csver_session")||"null");
+    if(!s) return {};
+    const fiche = JSON.parse(localStorage.getItem("csver_user_"+s.matricule)||"null");
+    if(!fiche || !fiche.permissions) return {};
+    const cisCur = Array.isArray(s.cis)?s.cis[0]:s.cis;
+    const same = (a,b)=> normCis(a)===normCis(b);
+    const prim = fiche.cis && fiche.cis.primary ? fiche.cis.primary : null;
+    const isPrim = prim && same(prim,cisCur);
+    if(isPrim) return fiche.permissions.primary || {};
+    const sec = fiche.permissions.secondaries || {};
+    const k = sec[cisCur] ? cisCur : (Object.keys(sec).find(x=>same(x,cisCur)) || null);
+    return (k ? sec[k] : {}) || {};
+  }catch(_){ return {}; }
+}
+
+/* ✅ Correction 1 : autoriser gestionnaire OU admin */
+function canManage(){
+  try{
+    const p = getCurrentCisPerms();
+    return !!(p.gestion_habillement || p.admin);
+  }catch(_){ return false; }
+}
+
+/* ✅ Correction 2 : fonction manquante, utilisée par renderCentre() */
+function isAdmin(){
+  try{
+    const p = getCurrentCisPerms();
+    return !!p.admin;
+  }catch(_){ return false; }
+}
+
+/* =========================
+   Formulaire (panier)
+   ========================= */
+let panier=[]; let editingId=null;
+
+function renderPanier(){
+  const box=document.getElementById('effetsTags');
+  box.innerHTML='';
+  if(!panier.length){
+    box.innerHTML='<span class="small">Aucun effet ajouté.</span>'; return;
+  }
+  panier.forEach((e,i)=>{
+    if(typeof e.obs!=='string')e.obs='';
+    const div=document.createElement('div');
+    div.className='tag';
+    /* quantité figée : affichage × 1 */
+    div.innerHTML=`
+      <span>${escapeHtml(e.article)}</span>
+      <span>× 1</span>
+      <input type="text" placeholder="Observation (obligatoire)" value="${escapeHtml(e.obs)}">
+      <button title="Supprimer" onclick="removeEffet(${i})">✕</button>`;
+    div.querySelector('input[type="text"]').addEventListener('input',ev=>{
+      panier[i].obs=ev.target.value;
+    });
+    box.appendChild(div);
+  });
+}
+function addEffet(){
+  const sel=document.getElementById('articleSel');
+  const label=sel.value;
+  if(!label){alert('Choisissez un effet.');return;}
+  /* chaque clic = nouvelle ligne qte=1, duplication autorisée */
+  panier.push({article:label,qte:1,obs:''});
+  renderPanier();
+}
+function removeEffet(i){panier.splice(i,1);renderPanier();}
+function clearForm(){
+  panier=[];renderPanier();document.getElementById('ack').checked=false;
+  document.getElementById('dateDepot').value=todayISO();
+  document.getElementById('articleSel').selectedIndex=0;
+  const q = document.getElementById('qteSel'); if(q) q.value=1; /* ok même caché */
+  const mailEl = document.getElementById('agentEmail'); if(mailEl) mailEl.value='';
+  editingId=null;const b=document.getElementById('submitBtn');if(b)b.textContent='Enregistrer le dépôt';
+}
+
+/* =========================
+   Soumission d’un dépôt
+   ========================= */
+function submitDepot(ev){
+  if(ev)ev.preventDefault();
+  if(!ctx.user){alert('Session expirée.');return false;}
+  if(!panier.length){alert('Ajoutez au moins un effet.');return false;}
+  const manq=panier.filter(x=>!x.obs||!x.obs.trim());
+  if(manq.length){alert('Merci de renseigner une observation pour chaque article.');return false;}
+  if(!document.getElementById('ack').checked){alert('Veuillez cocher la reconnaissance.');return false;}
+
+  const base={
+    date:document.getElementById('dateDepot').value,
+    agent:getDisplayName(ctx.user),
+    matricule:ctx.user?.matricule||'',
+    agentEmail:(document.getElementById('agentEmail').value||'').trim(),
+    effets:panier.map(e=>({article:e.article,qte:1,obs:(e.obs||'').trim()})),
+    ack:true
+  };
+
+  const all=readDepots();
+  if(editingId){
+    const idx=all.findIndex(x=>x.id===editingId && x.matricule===(ctx.user?.matricule||''));
+    if(idx>-1){
+      if(hasAnyStatus(all[idx])){
+        alert("Cette demande est en cours de traitement. Modification impossible.");
+        return false;
+      }
+      all[idx]={...all[idx],...base,updatedTs:Date.now()};
+      saveDepots(all);renderHistory();renderCentre();clearForm();alert('Modification enregistrée.');
+      return false;
+    }
+  }
+
+  const entry={
+    id:'hab_'+Date.now()+"_"+Math.random().toString(36).slice(2,6),
+    ...base, createdTs:Date.now(),
+    status:{traite:{done:false},envoye:{done:false},recu:{done:false}}
+  };
+  all.push(entry);
+  saveDepots(all);
+  renderHistory();renderCentre();
+  clearForm();
+  alert('Dépôt enregistré.');
+  return false;
+}
+
+/* =========================
+   Historique agent
+   ========================= */
+function hasAnyStatus(e){
+  const s=e?.status||{};
+  return !!(s.traite?.done || s.envoye?.done || s.recu?.done);
+}
+function statusLines(st){
+  const L=[];
+  if(st?.traite?.done) L.push(`✅ <strong>Traitée</strong> le ${escapeHtml(fmtDT(st.traite.ts))} par ${escapeHtml(st.traite.by)}`);
+  if(st?.envoye?.done) L.push(`📤 <strong>Envoyée</strong> le ${escapeHtml(fmtDT(st.envoye.ts))} par ${escapeHtml(st.envoye.by)}`);
+  if(st?.recu?.done)   L.push(`📬 <strong>Reçue</strong> le ${escapeHtml(fmtDT(st.recu.ts))} par ${escapeHtml(st.recu.by)}`);
+  return L.join('<br>');
+}
+function renderHistory(){
+  const tb=document.querySelector('#histTable tbody');
+  const all=readDepots().filter(x=>x.matricule===(ctx.user?.matricule||''));
+  all.sort((a,b)=>(a.date===b.date?a.createdTs-b.createdTs:a.date.localeCompare(b.date)));
+
+  tb.innerHTML=all.map(e=>{
+    const eff=e.effets.map(x=>`${escapeHtml(x.article)} × ${x.qte} — ${escapeHtml(x.obs||'-')}`).join('<br>');
+    let actions='';
+    if(hasAnyStatus(e)){
+      actions = `<div class="small">${statusLines(e.status)}</div><div class="muted">Actions agent verrouillées.</div>`;
+    }else{
+      actions = `<button class='small-btn' onclick="editEntry('${e.id}')">Modifier</button>
+                 <button class='small-btn danger' onclick="deleteEntry('${e.id}')">Supprimer</button>`;
+    }
+    return `<tr>
+      <td>${fmtDate(e.date)}</td>
+      <td>${escapeHtml(e.agent)}</td>
+      <td>${escapeHtml(e.matricule)}</td>
+      <td>${eff}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="5" style="color:#666;padding:10px">Aucun dépôt enregistré.</td></tr>`;
+}
+function editEntry(id){
+  const all=readDepots();
+  const entry=all.find(x=>x.id===id && x.matricule===(ctx.user?.matricule||''));
+  if(!entry){alert('Entrée introuvable.');return;}
+  if(hasAnyStatus(entry)){ alert("Cette demande est en cours de traitement. Modification impossible."); return; }
+  document.getElementById('dateDepot').value=entry.date||todayISO();
+  panier=(entry.effets||[]).map(x=>({article:x.article,qte:1,obs:x.obs||''}));
+  renderPanier(); document.getElementById('ack').checked=!!entry.ack;
+  const mailEl = document.getElementById('agentEmail'); if(mailEl) mailEl.value = entry.agentEmail || '';
+  editingId=id; const b=document.getElementById('submitBtn'); if(b)b.textContent='Enregistrer les modifications';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteEntry(id){
+  const all=readDepots();
+  const idx=all.findIndex(x=>x.id===id && x.matricule===(ctx.user?.matricule||''));
+  if(idx<0){alert('Entrée introuvable.');return;}
+  if(hasAnyStatus(all[idx])){ alert("Cette demande est en cours de traitement. Suppression impossible."); return; }
+  if(!confirm('Supprimer ce dépôt ?'))return;
+  all.splice(idx,1); saveDepots(all); renderHistory(); renderCentre();
+}
+
+/* =========================
+   Suivi centre (workflow)
+   ========================= */
+function nextAllowed(st){
+  const S = st || {};
+  if(!S.traite?.done) return 'traite';
+  if(!S.envoye?.done) return 'envoye';
+  if(!S.recu?.done)   return 'recu';
+  return null;
+}
+function btnManageGroup(e){
+  const st = e.status || {};
+  const next = nextAllowed(st);
+  const mk = (key,label) => {
+    const ok = next === key;
+    const fn = key==='traite'?'markTraite': key==='envoye'?'markEnvoye':'markRecu';
+    return `<button class="small-btn ${ok?'':'danger'}" ${ok?`onclick="${fn}('${e.id}')"`:'disabled style="opacity:.45;cursor:not-allowed"'}>${label}</button>`;
+  };
+  return [mk('traite','✅ Traité'), mk('envoye','📤 Envoyé'), mk('recu','📬 Reçu')].join(' ');
+}
+function statusBadges(st){
+  const lines = statusLines(st);
+  return lines ? lines : '<span class="muted">En attente</span>';
+}
+function centreStatusCell(st){ return statusBadges(st||{}); }
+function renderCentre(){
+  const panel = document.getElementById('centrePanel');
+  const tbody = document.querySelector('#centreTable tbody');
+  const btn   = document.getElementById('btnGenE41');
+  const btnPurge = document.getElementById('btnPurgeAll');
+  if(!panel || !tbody) return;
+
+  const show = canManage();
+  panel.classList.toggle('hidden', !show);
+  panel.setAttribute('aria-hidden', show ? 'false' : 'true');
+
+  if(btn) btn.style.display = show ? '' : 'none';
+  if(btnPurge) btnPurge.style.display = (show && isAdmin()) ? '' : 'none';
+
+  if(!show){ tbody.innerHTML=''; return; }
+
+  const rows = readDepots()
+    .filter(e => !(e?.status?.recu?.done)) /* masquer les reçus */
+    .slice()
+    .sort((a,b)=> (a.date===b.date ? a.createdTs-b.createdTs : a.date.localeCompare(b.date)));
+
+  tbody.innerHTML = rows.map(e=>{
+    const eff=e.effets.map(x=>`${escapeHtml(x.article)} × ${x.qte} — ${escapeHtml(x.obs||'-')}`).join('<br>');
+    return `<tr>
+      <td>${fmtDate(e.date)}</td>
+      <td>${escapeHtml(e.agent)}</td>
+      <td>${escapeHtml(e.matricule)}</td>
+      <td>${eff}</td>
+      <td>${centreStatusCell(e.status)}</td>
+      <td>${btnManageGroup(e)}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="6" style="color:#666;padding:10px">Aucune demande pour le moment.</td></tr>`;
+}
+
+/* Purge totale (admin only) */
+function purgeAllDemands(){
+  if(!isAdmin()){ alert("Accès refusé : réservé à l'administrateur."); return; }
+  const all = readDepots();
+  const n = all.length;
+  if(n===0){ alert("Aucune demande à supprimer."); return; }
+  if(!confirm(`Supprimer TOUTES les demandes de ce CIS ?\n\nTotal : ${n} demande(s).\nAction irréversible.`)) return;
+
+  saveDepots([]);
+  renderHistory();
+  renderCentre();
+  alert("Toutes les demandes ont été supprimées.");
+}
+
+/* =========================
+   Email Outlook 365 — étape Reçu
+   ========================= */
+function openOutlook365(to, subject, body){
+  const bodyCRLF = body.replace(/\n/g, '\r\n');
+  const url = `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(to)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyCRLF)}`;
+  window.open(url, "_blank", "noopener");
+}
+function sendReceiptEmail(entry){
+  const to = (entry.agentEmail||'').trim();
+  if(!to){
+    alert("Aucune adresse email renseignée pour cet agent. Ajoutez-la depuis la déclaration, puis réessayez.");
+    return;
+  }
+  const dateFR = fmtDate(entry.date);
+  const articles = (entry.effets||[])
+      .map(x=>`• ${x.article} × ${x.qte} — ${x.obs||'-'}`)
+      .join('\n');
+
+  const subject = "📬 Habillement — Mise à disposition";
+  const body =
+`Bonjour ${entry.agent},
+
+${(entry.effets||[]).length>1
+  ? "Les effets suivants que vous avez déposés sont à votre disposition."
+  : "L'article suivant que vous avez déposé est à votre disposition."}
+
+Déposé le : ${dateFR}
+${articles ? "\n"+articles+"\n" : ""}
+Centre : CIS ${ctx.cis}
+
+Cordialement,
+${getDisplayName(ctx.user)}`;
+
+  openOutlook365(to, subject, body);
+}
+
+/* (modifié) : envoi mail + refresh quand on marque "Reçu" */
+function updateStatus(id, key){
+  if(!canManage()){ alert("Accès refusé : droit 'Gestion habillement' requis."); return; }
+  const all = readDepots();
+  const idx = all.findIndex(x=>x.id===id);
+  if(idx<0){ alert("Demande introuvable."); return; }
+  const cur = all[idx];
+  cur.status = cur.status || {traite:{done:false}, envoye:{done:false}, recu:{done:false}};
+  const expected = nextAllowed(cur.status);
+  if(!expected){ alert("Cette demande est déjà clôturée (Reçu)."); return; }
+  if(key !== expected){
+    const ordre = {traite:"Traité", envoye:"Envoyé", recu:"Reçu"};
+    alert(`Étape invalide. Prochaine étape attendue : "${ordre[expected]}".`);
+    return;
+  }
+  const who = getDisplayName(ctx.user);
+  cur.status[key] = { done:true, by: who, ts: Date.now() };
+  cur.updatedTs = Date.now();
+  all[idx] = cur;
+  saveDepots(all);
+  renderHistory(); renderCentre();
+
+  if(key === 'recu'){
+    try{ sendReceiptEmail(cur); }catch(_){}
+  }
+}
+function markTraite(id){ updateStatus(id,'traite'); }
+function markEnvoye(id){ updateStatus(id,'envoye'); }
+function markRecu(id){   updateStatus(id,'recu');   }
+
+/* =========================
+   Génération Annexe E41 bis
+   ========================= */
+function collectTraiteNonEnvoyeAsLines(){
+  const out=[];
+  readDepots().forEach(e=>{
+    if(e?.status?.traite?.done && !e?.status?.envoye?.done){
+      (e.effets||[]).forEach(it=>{
+        out.push({
+          matricule: e.matricule || '',
+          nomprenom: e.agent || '',
+          article:   it.article || '',
+          commentaire: it.obs || ''
+        });
+      });
+    }
+  });
+  return out;
+}
+
+function generateAnnexeE41(){
+  if(!canManage()){
+    alert("Accès refusé : droit 'Gestion habillement' requis."); return;
+  }
+  const lignes = collectTraiteNonEnvoyeAsLines();
+  if(!lignes.length){
+    alert("Aucune demande marquée ✅ Traité (et non 📤 Envoyé). Rien à générer."); return;
+  }
+
+  const n = lignes.length;
+  let base = 12, pad = 6;
+  if(n > 22) { base = 11; pad = 6; }
+  if(n > 26) { base = 10; pad = 5; }
+  if(n > 31) { base = 9;  pad = 4; }
+  if(n > 36) { base = 8;  pad = 3; }
+
+  const vpad = pad + 6;
+  const lineH = 1.35;
+
+  const centre = 'CIS ' + (ctx.cis || '');
+  const dateFR = new Date().toLocaleDateString('fr-FR');
+  const correspondant = getDisplayName(ctx.user);
+
+  const rowsHTML = lignes.map(l=>`
+    <tr>
+      <td class="c-centre">${escapeHtml(l.matricule)}</td>
+      <td class="c-centre">${escapeHtml(l.nomprenom)}</td>
+      <td class="c-centre">${escapeHtml(l.article)}</td>
+      <td class="c-centre">${escapeHtml(l.commentaire||'')}</td>
+      <td class="epi"></td>
+    </tr>`).join('');
+
+  const w = window.open('', '_blank');
+  w.document.write(`
+  <html><head><title>Annexe E41 bis — ${escapeHtml(centre)}</title>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4 landscape; margin: 12mm; }
+    html, body { height: 100%; }
+    body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;}
+    .head{
+      display:grid;
+      grid-template-columns: 1fr 180px;
+      gap: 8px;
+      align-items:center;
+      margin-bottom: 6px;
+    }
+    .title{
+      text-align:center;
+      font-weight:800;
+      line-height:1.2;
+    }
+    .title .l1{ text-transform:uppercase; font-size:${Math.round(base*1.45)}px; }
+    .title .l2{ font-size:${Math.round(base*1.25)}px; }
+    .title .l3{ font-size:${Math.round(base*1.25)}px; }
+    .logo{ text-align:right }
+    .logo img{ height:64px; }
+    .meta{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap:10px;
+      margin:10px 0 8px;
+      font-size:${Math.round(base*1.05)}px;
+      font-weight:700;
+    }
+    .meta .box{
+      padding:8px 10px;
+      border:1px solid #777;
+      border-radius:6px;
+    }
+    table{ width:100%; border-collapse:collapse; font-size:${base}px; table-layout:fixed; }
+    th,td{
+      border:1px solid #333;
+      padding:${vpad}px ${pad+2}px;
+      line-height:${lineH};
+      word-wrap:break-word;
+      vertical-align:middle;
+    }
+    th{ background:#f2f2f2; text-transform:uppercase; font-weight:700; text-align:center; }
+    th.red{ color:#c00000; }
+    col.matricule   { width:12%; }
+    col.nomprenom   { width:24%; }
+    col.article     { width:18%; }
+    col.commentaire { width:22%; }
+    col.reserv      { width:24%; }
+    td.c-centre { text-align:center; }
+    td.epi { text-align:left; vertical-align:top; }
+    table, tr, td, th { page-break-inside: avoid; }
+    .foot{
+      margin-top:8px;
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:10px;
+      font-size:${Math.round(base*1.0)}px;
+      font-weight:700;
+    }
+    .foot .cell{ border:1px solid #777; min-height:56px; padding:8px 10px; }
+    .muted{color:#666;font-weight:400}
+  </style>
+  </head>
+  <body>
+    <div class="head">
+      <div class="title">
+        <div class="l1">ANNEXE E41 BIS</div>
+        <div class="l2">FORMULAIRE</div>
+        <div class="l3">DEMANDE HABILLEMENT</div>
+      </div>
+      <div class="logo">
+        <img src="https://www.sdis30.fr/PublishingImages/Pages/SAPEUR-POMPIER-VOLONTAIRE/Logo%20Sdis%2030%202017.png" alt="SDIS 30" onerror="this.style.display='none'">
+      </div>
+    </div>
+
+    <div class="meta">
+      <div class="box">Centre&nbsp;: ${escapeHtml(centre)}</div>
+      <div class="box">Date&nbsp;: ${escapeHtml(dateFR)}</div>
+      <div class="box">Correspondant habillement&nbsp;: ${escapeHtml(correspondant)}</div>
+      <div class="box">Groupement&nbsp;: CEV/AIG ☐ &nbsp;&nbsp; GAR/CAM ☐ &nbsp;&nbsp; VDR ☐</div>
+    </div>
+
+    <table>
+      <colgroup>
+        <col class="matricule">
+        <col class="nomprenom">
+        <col class="article">
+        <col class="commentaire">
+        <col class="reserv">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Matricule</th>
+          <th>Nom prénom</th>
+          <th>Article</th>
+          <th>Commentaire</th>
+          <th class="red">RÉSERVÉ<br>SERVICE&nbsp;EPI</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHTML}
+      </tbody>
+    </table>
+
+    <div class="foot">
+      <div class="cell">Service EPI/Habillement&nbsp;:<br><span class="muted">/  /</span></div>
+      <div class="cell">Fiche N°</div>
+      <div class="cell">Signature du chef de centre ou correspondant</div>
+    </div>
+
+    <script>window.onload = () => window.print();<\/script>
+  </body></html>`);
+  w.document.close();
+}
+
+/* =========================
+   Navigation / session / init
+   ========================= */
+function goAccueil(){window.location.href='index.html';}
+function loadArticles(){
+  const sel=document.getElementById('articleSel');
+  sel.innerHTML='<option value="">— Choisir un effet —</option>'+ARTICLES.map(a=>`<option value="${a}">${a}</option>`).join('');
+}
+function fillAgent(){
+  const u=ctx.user;
+  document.getElementById('agentName').value=getDisplayName(u);
+  document.getElementById('agentMat').value=u?.matricule||'';
+}
+function loadSession(){
+  const u=robustSession();
+  if(!u){alert('Session expirée.');try{window.location.href='login.html';}catch(_){ }return;}
+  ctx.user=u; ctx.cis=Array.isArray(u.cis)?u.cis[0]:u.cis;
+  document.getElementById('cisLabel').textContent='Centre de Secours '+ctx.cis;
+  document.getElementById('dateDepot').value=todayISO();
+  fillAgent(); loadArticles(); renderPanier(); renderHistory(); renderCentre();
+}
+window.addEventListener('storage',e=>{
+  try{
+    if(!e.key) return;
+    if(e.key==='csver_session'){ const u=robustSession(); if(u){ ctx.user=u; fillAgent(); renderHistory(); renderCentre(); } }
+    if(e.key===ctx.key+ctx.cis){ renderHistory(); renderCentre(); }
+  }catch(_){}
+});
+document.addEventListener('DOMContentLoaded', async ()=>{
+  try{
+    if (typeof syncAccueilFromCloud === "function") {
+      // 🔁 synchro globale (accueilcs) si dispo
+      await syncAccueilFromCloud();
+    } else {
+      // 🔁 sinon, fallback sur la synchro locale Habillement
+      await syncHabillementFromCloud();
+    }
+  }catch(e){
+    console.error("Erreur de synchro initiale Habillement :", e);
+  }
+
+  // Puis seulement après la synchro, on charge l’interface
+  loadSession();
+});
+
+
+</script>
+</body>
+</html>
