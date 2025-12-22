@@ -207,14 +207,6 @@ main{
   background:#8b0000;
 }
 
-/* ✅ Aligne "🖨️ Imprimer" + bouton + dans le header Consignes */
-#formation-header .formation-actions{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-
-  
 #formation-list{
   padding:12px 14px;
   overflow:auto;max-height:100%;
@@ -943,12 +935,8 @@ nav.menu-bar a{ padding:10px 12px; }
 
    <!-- 📌 Consignes du jour (haut) -->
 <div id="formation-panel" class="panel">
- <div id="formation-header">
-  <span>📌 Consignes</span>
-
-  <div class="formation-actions">
-    <button id="btn-print-anom" class="print-btn" onclick="printAnomalies()">🖨️ Imprimer</button>
-
+  <div id="formation-header">
+    <span>📌 Consignes</span>
     <button
       type="button"
       id="consignes-plus-btn"
@@ -959,8 +947,8 @@ nav.menu-bar a{ padding:10px 12px; }
       +
     </button>
   </div>
+  <div id="formation-list"></div>
 </div>
-
 
 
 
@@ -998,6 +986,7 @@ nav.menu-bar a{ padding:10px 12px; }
     <div class="section-header">
       <h2>🚒 État des véhicules</h2>
       <div style="display:flex;gap:10px;align-items:center;">
+        <button id="btn-print-anom" class="print-btn" onclick="printAnomalies()">🖨️ Imprimer anomalies</button>
         <button id="btn-signal-anom" class="btn" onclick="openLink('vehicules.html')">Signaler une anomalie</button>
       </div>
     </div>
