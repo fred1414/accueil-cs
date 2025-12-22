@@ -1610,7 +1610,6 @@ function renderMateriel(list){
 
   
 /* Impression des anomalies */
-/* Impression consignes + anomalies (A4 recto/verso max) */
 function printAnomalies(){
   const session = JSON.parse(localStorage.getItem("csver_session") || "null");
   if(!session){ alert("Session expirée."); return; }
@@ -1623,147 +1622,57 @@ function printAnomalies(){
     if(a) nomComplet = ((a.prenom || "") + " " + (a.nom || "")).trim();
   }
 
-  const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
+  const cis = Array.isArray(session.cis) ? session.cis[0] : session.cis;
 
-  // =========================
-  // 1) CONSIGNES (actives "maintenant" sur la garde)
-  // =========================
-  let consignesAll = [];
-  try{
-    consignesAll = JSON.parse(localStorage.getItem("consignes_" + cisSel) || "[]");
-    if(!Array.isArray(consignesAll)) consignesAll = [];
-  }catch(_){ consignesAll = []; }
+  // ✅ 1) CONSIGNES = EXACTEMENT ce qui est affiché
+  const formationListEl = document.getElementById("formation-list");
+  const consignesHtml = formationListEl ? formationListEl.innerHTML : "<div class='hint'>Aucune consigne affichée.</div>";
 
-  function isActiveNow(c){
-    if(!c) return false;
-    if(c.cis !== cisSel) return false;
+  // ✅ 2) Véhicules / matériels
+  const vehs = JSON.parse(localStorage.getItem("vehicules_"+cis) || "[]");
+  const mats = JSON.parse(localStorage.getItem("materiel_"+cis)  || "[]");
 
-    const now = new Date();
-    const hour = now.getHours();
-
-    // logique "jour de garde" 06h -> 06h (comme ton panneau)
-    const serviceBase = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if(hour < 6) serviceBase.setDate(serviceBase.getDate() - 1);
-
-    const p = n => String(n).padStart(2,"0");
-    const serviceIso = `${serviceBase.getFullYear()}-${p(serviceBase.getMonth()+1)}-${p(serviceBase.getDate())}`;
-
-    const d1 = (c.dateDebut || "").trim();
-    const d2 = (c.dateFin || "").trim();
-
-    if(!d1) return false;
-    if(serviceIso < d1) return false;
-    if(d2 && serviceIso > d2) return false;
-
-    const rec  = (c.recurrence || "none").toLowerCase();
-    const per  = Number(c.recurrencePer || c.periodicite || 1) || 1;
-
-    const baseDate = new Date(d1 + "T00:00:00");
-    if(isNaN(baseDate.getTime())) return false;
-
-    const diffMs   = serviceBase - baseDate;
-    const diffDays = Math.floor(diffMs / (1000*60*60*24));
-    if(diffDays < 0) return false;
-
-    switch(rec){
-      case "once":
-        if(serviceIso !== d1) return false;
-        break;
-      case "daily":
-        if(diffDays % per !== 0) return false;
-        break;
-      case "weekly":{
-        const semaines = Math.floor(diffDays / 7);
-        if(semaines % per !== 0) return false;
-        break;
-      }
-      case "monthly":{
-        const monthsDiff = (serviceBase.getFullYear() - baseDate.getFullYear())*12
-                         + (serviceBase.getMonth() - baseDate.getMonth());
-        if(monthsDiff < 0 || monthsDiff % per !== 0) return false;
-        break;
-      }
-      case "yearly":{
-        const yearsDiff = serviceBase.getFullYear() - baseDate.getFullYear();
-        if(yearsDiff < 0 || yearsDiff % per !== 0) return false;
-        break;
-      }
-      case "none":
-      default:
-        break;
-    }
-
-    const validite = (c.validite || "24h").toLowerCase();
-    if(validite === "jour") return (hour >= 6 && hour < 18);
-    if(validite === "nuit") return (hour >= 18 || hour < 6);
-    return true; // 24h
-  }
-
-  const todayConsignes = consignesAll
-    .filter(isActiveNow)
-    .sort((a,b)=>{
-      const ordImp = {haute:0, moyenne:1, faible:2};
-      const ia = ordImp[(a.importance||"").toLowerCase()] ?? 99;
-      const ib = ordImp[(b.importance||"").toLowerCase()] ?? 99;
-      if(ia !== ib) return ia - ib;
-      return String(b.dateDebut||"").localeCompare(String(a.dateDebut||""));
-    });
-
-  function impColor(imp){
-    imp = String(imp||"").toLowerCase();
-    if(imp === "haute") return "#b71c1c";
-    if(imp === "moyenne") return "#ff9800";
-    return "#1a73e8";
-  }
-  function fmtFR(d){
-    try{ return new Date(d+"T00:00:00").toLocaleDateString("fr-FR"); }catch(_){ return d||""; }
-  }
-
-  // =========================
-  // 2) ANOMALIES véhicules + matériel + patrimoine
-  // =========================
-  const vehs = JSON.parse(localStorage.getItem("vehicules_"+cisSel) || "[]");
-  const mats = JSON.parse(localStorage.getItem("materiel_"+cisSel)  || "[]");
-  const patr = JSON.parse(localStorage.getItem("anomalies_"+cisSel) || "[]");
+  // (optionnel mais utile dans ton app : anomalies patrimoine)
+  const patr = JSON.parse(localStorage.getItem("anomalies_"+cis) || "[]");
 
   const anomaliesVeh = [];
   const anomaliesMat = [];
 
-  // 🚒 Véhicules : anomalies ouvertes (history !closed)
-  (Array.isArray(vehs)?vehs:[]).forEach(v=>{
-    (v.history||[]).filter(h=>!h.closed).forEach(h=>{
-      let agentAffiche = (h.agent||"").trim();
+  // 🚒 Véhicules : history ouverte
+  (Array.isArray(vehs) ? vehs : []).forEach(v=>{
+    (v.history || []).filter(h=>!h.closed).forEach(h=>{
+      let agentAffiche = (h.agent || "").trim();
       if(/^[0-9]+$/.test(agentAffiche) || agentAffiche === "") agentAffiche = nomComplet || "-";
 
-      let etatAffiche = h.level || "-";
+      let etatAffiche = (h.level || "");
       if(v.pretNom && v.etat === "Pret") etatAffiche += " — " + v.pretNom;
 
       anomaliesVeh.push({
-        support: (v.nom||"-"),
+        support: v.nom || "",
         etat: etatAffiche,
-        desc: h.text||"-",
+        desc: h.text || "",
         agent: agentAffiche
       });
     });
   });
 
-  // 🏭 Matériel (materiel_<cis>) : anomalies ouvertes
-  (Array.isArray(mats)?mats:[]).forEach(m=>{
-    (m.history||[]).filter(h=>!h.closed).forEach(h=>{
-      let agentAffiche = (h.agent||"").trim();
+  // 🏭 Matériel : history ouverte
+  (Array.isArray(mats) ? mats : []).forEach(m=>{
+    (m.history || []).filter(h=>!h.closed).forEach(h=>{
+      let agentAffiche = (h.agent || "").trim();
       if(/^[0-9]+$/.test(agentAffiche) || agentAffiche === "") agentAffiche = nomComplet || "-";
 
       anomaliesMat.push({
-        support: (m.nom||"-"),
-        etat: h.level || "-",
-        desc: h.text || "-",
+        support: m.nom || "",
+        etat: (h.level || ""),
+        desc: (h.text || ""),
         agent: agentAffiche,
         source: "Matériel"
       });
     });
   });
 
-  // 🏭 Patrimoine (anomalies_<cis>) : non clôturées (cloturee !== "oui")
+  // 🏭 Patrimoine : non clôturées (si présent dans ton storage)
   const mapCat = {
     menuiserie:"Menuiserie",
     chauffage_clim:"Chauffage clim",
@@ -1781,11 +1690,11 @@ function printAnomalies(){
     autre_demande:"Autre demande"
   };
 
-  (Array.isArray(patr)?patr:[])
-    .filter(a => a && a.cis === cisSel && a.cloturee !== "oui")
+  (Array.isArray(patr) ? patr : [])
+    .filter(a => a && a.cis === cis && a.cloturee !== "oui")
     .forEach(a=>{
-      const equip = (a.equipement||"-");
-      const cat   = mapCat[a.categorie] || (a.categorie||"");
+      const equip = (a.equipement || a.support || "-");
+      const cat   = mapCat[a.categorie] || (a.categorie || "");
       const urgent = !!a.urgent;
 
       const agent =
@@ -1795,212 +1704,123 @@ function printAnomalies(){
 
       anomaliesMat.push({
         support: equip,
-        etat: urgent ? "Indispo" : "Mineur",
+        etat: urgent ? "Indispo" : (a.etat || "Mineur"),
         desc,
         agent,
-        source: "Patrimoine",
-        date: a.dateSignalement || ""
+        source: "Patrimoine"
       });
     });
 
-  // Si rien du tout
-  if(todayConsignes.length===0 && anomaliesVeh.length===0 && anomaliesMat.length===0){
-    alert("Aucune consigne active et aucune anomalie en cours.");
-    return;
-  }
-
+  // Tri
   anomaliesVeh.sort((a,b)=>String(a.support).localeCompare(String(b.support),"fr",{sensitivity:"base"}));
   anomaliesMat.sort((a,b)=>String(a.support).localeCompare(String(b.support),"fr",{sensitivity:"base"}));
 
-  const dateGen = new Date().toLocaleString("fr-FR");
+  // Rien à imprimer ?
+  const consignesHasContent = formationListEl && formationListEl.textContent.trim().length > 0;
+  if(!consignesHasContent && anomaliesVeh.length===0 && anomaliesMat.length===0){
+    alert("Rien à imprimer (aucune consigne affichée, aucune anomalie en cours).");
+    return;
+  }
 
-  // =========================
-  // 3) HTML A4 (2 pages max)
-  // =========================
+  const date = new Date().toLocaleString("fr-FR");
+
   const w = window.open("", "_blank");
   w.document.write(`
-  <html>
-  <head>
-    <title>Consignes & Anomalies - ${escapeHtml(cisSel)}</title>
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+  <html><head>
+  <title>Consignes & anomalies</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+    @page { size: A4; margin: 12mm 10mm; }
 
-      @page { size: A4; margin: 12mm 10mm; }
-      *{ box-sizing:border-box; }
-      body{ font-family:'Inter',sans-serif; color:#111; margin:0; }
-      .wrap{ padding:0; }
+    *{ box-sizing:border-box; }
+    body{ font-family:Inter,Arial,sans-serif; color:#111; margin:0; }
+    header{display:flex;align-items:center;gap:10px;border-bottom:2px solid #b71c1c;padding:10px 0;margin:0 0 10px 0;}
+    header img{height:55px;}
+    header h1{flex:1;text-align:center;color:#b71c1c;font-size:20px;margin:0;}
+    header .meta{font-size:10.5px;color:#444;text-align:right;white-space:nowrap;}
 
-      header{
-        display:flex; align-items:center; gap:10px;
-        border-bottom:2px solid #b71c1c; padding:6mm 0 3mm; margin-bottom:3mm;
-      }
-      header img{ height:18mm; }
-      header .titles{ flex:1; }
-      header h1{ margin:0; font-size:16pt; color:#b71c1c; }
-      header .meta{ font-size:9pt; color:#444; text-align:right; white-space:nowrap; }
+    h2{color:#0d2b52;font-size:13px;margin:12px 0 6px 0;}
+    .hint{font-size:11px;color:#666;margin:6px 0;}
 
-      h2{ margin:3mm 0 2mm; font-size:11pt; color:#0d2b52; }
-      .hint{ font-size:8.5pt; color:#666; margin-top:-1mm; }
+    /* ✅ Consignes : on restyle ce qui vient du panneau */
+    .consignes-from-screen .journal-item{
+      border:1px solid #e3e6f3; border-radius:8px; padding:8px 10px;
+      margin:0 0 8px 0; break-inside: avoid; background:#fff;
+    }
+    .consignes-from-screen .title{
+      font-weight:800; font-size:12px; margin:0 0 4px 0; color:#0d2b52;
+    }
+    .consignes-from-screen .text{ font-size:11px; white-space:pre-wrap; }
+    .consignes-from-screen p{ font-size:11px; color:#555; }
 
-      /* CONSIGNES */
-      .consignes{
-        display:grid;
-        grid-template-columns: 1fr;
-        gap:2mm;
-      }
-      .consigne{
-        border:1px solid #e3e6f3; border-radius:6px;
-        padding:2.5mm 3mm;
-        break-inside: avoid;
-      }
-      .consigne .t{
-        font-size:10pt; font-weight:800; margin:0 0 1mm;
-        display:flex; align-items:center; gap:6px;
-      }
-      .dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
-      .consigne .b{ font-size:9.2pt; white-space:pre-wrap; margin:0; }
-      .consigne .m{ font-size:8pt; color:#555; margin-top:1mm; }
+    /* Tables anomalies */
+    table{width:100%;border-collapse:collapse;font-size:11px;}
+    th,td{border:1px solid #ccc;padding:6px 7px;text-align:left;vertical-align:top;}
+    th{background:#f4f4f4;color:#333;font-weight:800;}
+    tr:nth-child(even){background:#fafafa;}
 
-      /* TABLES */
-      table{ width:100%; border-collapse:collapse; font-size:8.8pt; }
-      th,td{ border:1px solid #d7dbe8; padding:2mm 2mm; vertical-align:top; }
-      th{ background:#f5f7fb; font-weight:800; color:#222; }
-      td{ white-space:pre-wrap; }
+    .page-break{ page-break-before: always; break-before: page; }
 
-      /* 2 pages max : on force les anomalies sur page 2 si beaucoup de consignes */
-      .page-break{ page-break-before: always; break-before: page; }
-
-      footer{
-        margin-top:4mm;
-        font-size:7.8pt; color:#666;
-        display:flex; justify-content:space-between; gap:10px;
-        border-top:1px solid #eee; padding-top:2mm;
-      }
-
-      /* Impression : éviter marges navigateur */
-      @media print{
-        a{ color:inherit; text-decoration:none; }
-      }
-    </style>
-  </head>
+    footer{text-align:right;margin-top:12px;font-size:10px;color:#666;border-top:1px solid #eee;padding-top:6px;}
+  </style></head>
   <body>
-    <div class="wrap">
-      <header>
-        <img src="https://i.postimg.cc/nnNsr7v1/logo-cismic.png" alt="Logo SDIS 30">
-        <div class="titles">
-          <h1>Consignes & anomalies en cours</h1>
-          <div class="hint">Centre : <b>${escapeHtml(cisSel)}</b></div>
-        </div>
-        <div class="meta">
-          Généré le ${escapeHtml(dateGen)}<br>
-          ${escapeHtml(nomComplet || "")}
-        </div>
-      </header>
 
-      ${
-        todayConsignes.length
-        ? `
-          <h2>📌 Consignes actives</h2>
-          <div class="consignes">
-            ${todayConsignes.map(c=>{
-              const color = impColor(c.importance);
-              const periode =
-                (c.dateDebut && c.dateFin)
-                  ? `Du ${fmtFR(c.dateDebut)} au ${fmtFR(c.dateFin)}`
-                  : (c.dateDebut ? `À partir du ${fmtFR(c.dateDebut)}` : "");
-              const valid = c.validite ? String(c.validite) : "";
-              const origine = c.serviceOrigine ? String(c.serviceOrigine) : "";
-              const meta = [periode, valid ? ("Validité: "+valid) : "", origine ? ("Origine: "+origine) : ""]
-                .filter(Boolean).join(" — ");
-
-              return `
-                <div class="consigne">
-                  <div class="t"><span class="dot" style="background:${color}"></span>${escapeHtml(c.titre || "Consigne")}</div>
-                  <div class="b">${escapeHtml(c.contenu || "")}</div>
-                  ${meta ? `<div class="m">${escapeHtml(meta)}</div>` : ``}
-                </div>
-              `;
-            }).join("")}
-          </div>
-        `
-        : `
-          <h2>📌 Consignes actives</h2>
-          <div class="hint">Aucune consigne active pour la garde en cours.</div>
-        `
-      }
-
-      <div class="page-break"></div>
-
-      <h2>🚒 Anomalies véhicules (en cours)</h2>
-      ${
-        anomaliesVeh.length
-        ? `
-          <table>
-            <thead>
-              <tr>
-                <th style="width:18%">Véhicule</th>
-                <th style="width:14%">État</th>
-                <th>Anomalie</th>
-                <th style="width:18%">Agent</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${anomaliesVeh.map(a=>`
-                <tr>
-                  <td>${escapeHtml(a.support)}</td>
-                  <td>${escapeHtml(a.etat)}</td>
-                  <td>${escapeHtml(a.desc)}</td>
-                  <td>${escapeHtml(a.agent)}</td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        `
-        : `<div class="hint">Aucune anomalie véhicule en cours.</div>`
-      }
-
-      <h2 style="margin-top:5mm;">🏭 Anomalies matériels (en cours)</h2>
-      ${
-        anomaliesMat.length
-        ? `
-          <table>
-            <thead>
-              <tr>
-                <th style="width:18%">Matériel</th>
-                <th style="width:12%">État</th>
-                <th>Anomalie</th>
-                <th style="width:18%">Agent</th>
-                <th style="width:12%">Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${anomaliesMat.map(a=>`
-                <tr>
-                  <td>${escapeHtml(a.support)}</td>
-                  <td>${escapeHtml(a.etat)}</td>
-                  <td>${escapeHtml(a.desc)}</td>
-                  <td>${escapeHtml(a.agent)}</td>
-                  <td>${escapeHtml(a.source || "—")}</td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        `
-        : `<div class="hint">Aucune anomalie matériel en cours.</div>`
-      }
-
-      <footer>
-        <div>Document interne — CISMIC</div>
-        <div>Centre ${escapeHtml(cisSel)} — ${escapeHtml(dateGen)}</div>
-      </footer>
-
-      <script>
-        window.onload = () => window.print();
-      <\/script>
+  <header>
+    <img src="https://i.postimg.cc/nnNsr7v1/logo-cismic.png" alt="Logo SDIS 30">
+    <h1>Consignes & anomalies en cours</h1>
+    <div class="meta">
+      Centre : <b>${escapeHtml(cis)}</b><br>
+      ${escapeHtml(date)}<br>
+      ${escapeHtml(nomComplet || "")}
     </div>
-  </body>
-  </html>
-  `);
+  </header>
+
+  <h2>📌 Consignes (affichage écran)</h2>
+  <div class="consignes-from-screen">
+    ${consignesHtml}
+  </div>
+
+  <div class="page-break"></div>
+
+  <h2>🚒 Véhicules avec anomalies</h2>
+  ${
+    anomaliesVeh.length
+    ? `<table>
+        <thead><tr><th style="width:18%">Véhicule</th><th style="width:14%">État</th><th>Anomalie</th><th style="width:18%">Agent</th></tr></thead>
+        <tbody>
+          ${anomaliesVeh.map(a=>`<tr>
+            <td>${escapeHtml(a.support)}</td>
+            <td>${escapeHtml(a.etat)}</td>
+            <td>${escapeHtml(a.desc)}</td>
+            <td>${escapeHtml(a.agent)}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>`
+    : `<div class="hint">Aucune anomalie véhicule en cours.</div>`
+  }
+
+  <h2>🏭 Anomalies matériels</h2>
+  ${
+    anomaliesMat.length
+    ? `<table>
+        <thead><tr><th style="width:18%">Matériel</th><th style="width:14%">État</th><th>Anomalie</th><th style="width:18%">Agent</th><th style="width:12%">Source</th></tr></thead>
+        <tbody>
+          ${anomaliesMat.map(a=>`<tr>
+            <td>${escapeHtml(a.support)}</td>
+            <td>${escapeHtml(a.etat)}</td>
+            <td>${escapeHtml(a.desc)}</td>
+            <td>${escapeHtml(a.agent)}</td>
+            <td>${escapeHtml(a.source || "—")}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>`
+    : `<div class="hint">Aucune anomalie matériel en cours.</div>`
+  }
+
+  <footer>Rapport généré le ${escapeHtml(date)}</footer>
+  <script>window.onload=()=>window.print();<\/script>
+  </body></html>`);
+
   w.document.close();
 }
 
