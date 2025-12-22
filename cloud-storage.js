@@ -75,7 +75,7 @@ function shouldSyncKey(key){
       || key.startsWith("habillement_")
       || key.startsWith("messages_")
       || key.startsWith("csver_user_")
-      || key.startsWith("consignes_");   // 🟣 consignes par CIS
+      || key.startsWith("consignes_")   // 🟣 consignes par CIS
       || key.startsWith("anomalies_");  // 🏭 anomalies matériel par CIS
 }
 
@@ -147,6 +147,7 @@ window.syncAccueilFromCloud = syncAccueilFromCloud;
     origRem(key);
   };
 })();
+
 
 
 
