@@ -4168,6 +4168,24 @@ function buildConsigneMap(year, monthIndex){
 })();
 </script>
 
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+  const btnPrint = document.getElementById("btn-print-anom");
+  const formationHeader = document.getElementById("formation-header");
+
+  if (!btnPrint || !formationHeader) return;
+
+  // Renommage
+  btnPrint.textContent = "🖨️ Imprimer";
+
+  // Déplacement SANS casser le layout
+  formationHeader.appendChild(btnPrint);
+
+  // Ajustement léger pour qu’il ne colle pas
+  btnPrint.style.marginLeft = "8px";
+});
+</script>
+
 
 <!-- FIN AJOUT -->
 
