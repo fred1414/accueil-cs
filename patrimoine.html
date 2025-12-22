@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<title>Anomalies matériel — CISMIC</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif}
+body{background:linear-gradient(135deg,#1d3f73 0%,#d43d3d 100%);min-height:100vh;display:flex;flex-direction:column;color:#222;}
+header{background:#fff;display:flex;align-items:center;justify-content:space-between;padding:14px 24px;box-shadow:0 4px 12px rgba(0,0,0,.15);}
+header img{height:60px}
+header .title{font-size:24px;color:#0d2b52;font-weight:800}
+header .subtitle{font-size:14px;color:#444;margin-top:4px}
+.acceuil-btn{background:#b71c1c;color:#fff;font-weight:800;border:none;border-radius:12px;padding:10px 14px;cursor:pointer;transition:.2s;font-size:14px;}
+.acceuil-btn:hover{background:#8b0000}
+
+main{flex:1;max-width:1100px;margin:20px auto;padding:0 16px;display:grid;gap:16px;grid-template-columns:1fr;}
+.panel{background:rgba(255,255,255,.92);border-radius:16px;padding:18px;box-shadow:0 4px 10px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:14px;}
+.panel h2{font-size:20px;font-weight:800;color:#0d2b52;border-left:6px solid #b71c1c;padding-left:10px;}
+.help{font-size:13px;color:#444}
+
+label{font-weight:700;color:#0d2b52;font-size:14px;margin-bottom:4px;display:block}
+input,textarea,select{width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;font-size:14px;}
+textarea{min-height:120px;resize:vertical;}
+
+.form-grid{display:grid;gap:12px;grid-template-columns:repeat(6,minmax(0,1fr));}
+.col-2{grid-column:span 2}
+.col-3{grid-column:span 3}
+.col-4{grid-column:span 4}
+.col-6{grid-column:1 / -1}
+
+.inline-group{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:14px;}
+.inline-group label{margin:0;display:flex;align-items:center;gap:6px;font-weight:600;color:#0d2b52;font-size:13px;}
+.inline-group input[type="checkbox"]{width:auto;margin:0;}
+
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;}
+.dot.red{background:#d32f2f;}
+.dot.blue{background:#1976d2;}
+.dot.green{background:#2e7d32;}
+.dot.gray{background:#64748b;}
+
+.btn{border:none;border-radius:10px;padding:12px 16px;cursor:pointer;color:#fff;font-size:15px;font-weight:800;box-shadow:0 3px 8px rgba(0,0,0,.12);transition:transform .2s ease;}
+.btn:hover{transform:translateY(-2px)}
+.btn.primary{background:#1a73e8}
+.btn.secondary{background:#6a1b9a}
+
+.info{background:#f7f9ff;border:1px solid #dfe6ff;color:#123;padding:10px 12px;border-radius:10px;font-size:13px;}
+.info strong{color:#0d2b52}
+.info.edit-mode{background:#fff3cd;border-color:#ffeeba;color:#856404;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.info.edit-mode button{border:none;border-radius:999px;padding:4px 10px;font-size:12px;background:#b71c1c;color:#fff;cursor:pointer;}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;}
+.search{flex:1;min-width:220px;display:flex;gap:8px;align-items:center;}
+.search input{flex:1;}
+
+.anom-list{display:flex;flex-direction:column;gap:10px;max-height:60vh;overflow-y:auto;padding-right:4px;}
+.anom-card{background:#fff;border-radius:12px;padding:10px 12px;border-left:6px solid #1976d2;box-shadow:0 2px 6px rgba(0,0,0,.08);}
+.anom-header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;}
+.anom-title{font-weight:800;color:#0d2b52;font-size:15px;margin-bottom:2px;}
+.anom-meta{font-size:12px;color:#555;display:flex;flex-wrap:wrap;gap:6px;}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:999px;font-size:11px;background:#f1f5f9;color:#1e293b;border:1px solid #e2e8f0;}
+.badge.ok{background:#e6fffa;border-color:#b2f5ea;color:#234e52;}
+.badge.warn{background:#fff3cd;border-color:#ffeeba;color:#856404;}
+.anom-body{font-size:14px;color:#333;margin-top:6px;white-space:pre-wrap;}
+.anom-footer{margin-top:6px;font-size:11px;color:#777;display:flex;flex-wrap:wrap;gap:8px;}
+
+.card-actions{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+.card-actions button{border:none;border-radius:999px;padding:5px 10px;font-size:11px;cursor:pointer;font-weight:700;}
+.card-actions .edit{background:#1a73e8;color:#fff;}
+.card-actions .delete{background:#b71c1c;color:#fff;}
+.card-actions .action{background:#0d2b52;color:#fff;}
+.card-actions .light{background:#64748b;color:#fff;}
+
+footer{text-align:center;color:#fff;font-size:13px;padding:20px}
+
+@media (max-width:900px){
+  .form-grid{grid-template-columns:1fr 1fr}
+  .col-2{grid-column:span 2}
+  .col-3{grid-column:span 2}
+  .col-4{grid-column:1 / -1}
+}
+@media (max-width:768px){
+  header{flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px 14px;text-align:center;}
+  header img{height:50px;display:block;margin:0 auto;}
+  header .title{font-size:20px;}
+  header .subtitle{font-size:13px;}
+  .acceuil-btn{align-self:stretch;width:100%;text-align:center;padding:8px 0;font-size:14px;border-radius:999px;}
+  main{margin:16px auto;padding:0 12px;}
+  .panel{padding:16px;}
+  .panel h2{font-size:18px;}
+  .form-grid{grid-template-columns:1fr;gap:10px;}
+  .col-2,.col-3,.col-4,.col-6{grid-column:1 / -1;}
+  textarea{min-height:110px;font-size:14px;}
+  .btn{width:100%;text-align:center;padding:10px 14px;font-size:14px;}
+}
+</style>
+</head>
+<body>
+<header>
+  <img src="https://i.postimg.cc/LsB40JQq/logo-cismic.png" alt="Logo SDIS 30">
+  <div>
+    <div class="title">Anomalies matériel</div>
+    <div class="subtitle" id="cisLabel">—</div>
+  </div>
+  <button class="acceuil-btn" onclick="goAccueil()">⟵ Accueil</button>
+</header>
+
+<main>
+
+  <section class="panel">
+    <h2>🛠️ Nouvelle anomalie</h2>
+
+    <div class="info" id="infoUser">Agent : <strong>—</strong></div>
+
+    <div id="editBanner" class="info edit-mode" style="display:none;">
+      <span>Mode édition : vous modifiez une anomalie existante.</span>
+      <button type="button" onclick="cancelEdit()">Annuler l’édition</button>
+    </div>
+
+    <p class="help">
+      Signale une panne (sèche-linge, portail, remise, etc.). Le suivi d’intervention se fait ensuite dans le tableau (boutons actions).
+    </p>
+
+    <form id="anomForm" onsubmit="return saveAnomalie(event)">
+      <div class="form-grid">
+
+        <div class="col-2">
+          <label for="dateSignalement">Date du signalement</label>
+          <input type="date" id="dateSignalement" required>
+        </div>
+
+        <div class="col-2">
+          <label for="zone">Zone / Localisation</label>
+          <input type="text" id="zone" placeholder="Ex : Buanderie / Remise / Cour" required>
+        </div>
+
+        <div class="col-2">
+          <label for="categorie">Catégorie</label>
+          <select id="categorie" required>
+            <option value="" disabled selected hidden>— Choisir —</option>
+            <option value="menuiserie">Menuiserie</option>
+            <option value="chauffage_clim">Chauffage clim</option>
+            <option value="ecs">Eau chaude sanitaire</option>
+            <option value="ecoulement_bouches">Écoulement bouches</option>
+            <option value="electricite">Électricité</option>
+            <option value="fuite_eau">Fuite d'eau</option>
+            <option value="nuisibles">Nuisibles (rongeurs et blattes)</option>
+            <option value="portail">Portail</option>
+            <option value="securite_incendie">Sécurité incendie</option>
+            <option value="station_carburant">Station carburant</option>
+            <option value="electromenager">Électroménager</option>
+            <option value="informatique">Informatique</option>
+            <option value="groupe_electrogene">Groupe électrogène</option>
+            <option value="autre_demande">Autre demande</option>
+          </select>
+
+          <!-- ✅ Bouton électroménager (obligatoire pour enregistrer) -->
+          <button
+            id="btnElectroForm"
+            class="btn secondary"
+            type="button"
+            style="display:none;margin-top:10px;padding:10px 12px;font-size:13px;"
+            onclick="openElectroForm()"
+          >
+            📄 Ouvrir le formulaire Électroménager
+          </button>
+          <div id="electroHint" style="display:none;margin-top:6px;font-size:12px;color:#856404;">
+            ⚠️ Obligatoire : vous devez ouvrir le formulaire avant d’enregistrer l’anomalie.
+          </div>
+
+          <!-- ✅ Case AS-Tech (obligatoire selon catégorie) -->
+          <div id="asTechWrap" style="display:none;margin-top:10px;">
+            <div class="inline-group">
+              <label style="display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" id="asTechOk">
+                <span class="dot blue"></span>
+                Demande AS-Tech effectuée
+              </label>
+            </div>
+            <div id="asTechHint" style="margin-top:6px;font-size:12px;color:#856404;">
+              ⚠️ Obligatoire : cochez “Demande AS-Tech effectuée” avant d’enregistrer.
+            </div>
+          </div>
+        </div>
+
+        <div class="col-3">
+          <label for="equipement">Équipement concerné</label>
+          <input type="text" id="equipement" placeholder="Ex : Sèche-linge n°1 / Portail remise" required>
+        </div>
+
+        <div class="col-3">
+          <label>Urgent</label>
+          <div class="inline-group">
+            <label><input type="checkbox" id="urgent"><span class="dot red"></span> Oui</label>
+            <span class="small" style="color:#555;font-size:12px;">Décoche si ce n’est pas urgent.</span>
+          </div>
+        </div>
+
+        <div class="col-6">
+          <label for="description">Description / Symptômes</label>
+          <textarea id="description" placeholder="Décris rapidement le problème (bruit, ne démarre pas, blocage, etc.)" required></textarea>
+        </div>
+
+        <div class="col-6" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+          <button id="btnSubmit" class="btn primary" type="submit">Enregistrer l’anomalie</button>
+          <button class="btn secondary" type="button" onclick="resetForm()">Réinitialiser</button>
+        </div>
+
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>📋 Tableau des anomalies</h2>
+    <p class="help">Affichage pour ton CIS, de la plus récente à la plus ancienne (suivi via boutons actions).</p>
+
+    <div class="toolbar">
+      <div class="search">
+        <input id="searchInput" type="text" placeholder="Rechercher (équipement, zone, entreprise, description…)" oninput="renderAnomalies()" />
+      </div>
+    </div>
+
+    <div id="anomList" class="anom-list"></div>
+  </section>
+
+</main>
+
+<footer>© CISMIC — Anomalies matériel — 2025</footer>
+
+<!-- 🔌 Firebase + Firestore + stockage partagé -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="cloud-storage.js"></script>
+
+<script>
+/* =========================
+   Règles électroménager
+   ========================= */
+const ELECTRO_FORM_URL = "https://drive.google.com/file/d/1lJMwMbSV9dhZD1uf7WYkt9uQ1JH9GD90/view?usp=sharing";
+let electroClickOk = false;
+
+function currentEditingElectroOk(){
+  if(!currentEditId) return false;
+  const all = readAnomalies();
+  const hit = all.find(x => x.id === currentEditId);
+  return !!hit?.electroFormOk;
+}
+function openElectroForm(){
+  electroClickOk = true;
+  window.open(ELECTRO_FORM_URL, "_blank", "noopener,noreferrer");
+}
+
+/* =========================
+   Règles AS-Tech
+   ========================= */
+const AS_TECH_REQUIRED = new Set([
+  "menuiserie",
+  "chauffage_clim",
+  "ecs",
+  "ecoulement_bouches",
+  "electricite",
+  "fuite_eau",
+  "nuisibles",
+  "portail",
+  "securite_incendie",
+  "station_carburant",
+  "groupe_electrogene"
+]);
+function isAsTechCategory(cat){ return AS_TECH_REQUIRED.has(cat); }
+
+/* ===== UI dépendante catégorie ===== */
+function updateElectroUI(){
+  const cat = (document.getElementById("categorie")?.value || "").trim();
+  const btn = document.getElementById("btnElectroForm");
+  const hint = document.getElementById("electroHint");
+  if(!btn || !hint) return;
+
+  const isElectro = (cat === "electromenager");
+  btn.style.display = isElectro ? "inline-block" : "none";
+  hint.style.display = isElectro ? "block" : "none";
+
+  if(!isElectro){
+    electroClickOk = false;
+  }
+}
+function updateAsTechUI(){
+  const cat = (document.getElementById("categorie")?.value || "").trim();
+  const wrap = document.getElementById("asTechWrap");
+  const cb = document.getElementById("asTechOk");
+  if(!wrap || !cb) return;
+
+  const need = isAsTechCategory(cat);
+  wrap.style.display = need ? "block" : "none";
+  if(!need){
+    cb.checked = false;
+  }
+}
+
+/* ===== Helpers ===== */
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+  }[m]));
+}
+function robustSession(){
+  try{
+    const raw = localStorage.getItem("csver_session");
+    if(!raw) return null;
+    const s = JSON.parse(raw);
+    return s && typeof s === "object" ? s : null;
+  }catch(_){ return null; }
+}
+function getDisplayName(u){
+  const n = (((u?.prenom||"")+" "+(u?.nom||"")).trim());
+  if(n) return n;
+  return u?.matricule || "Agent";
+}
+function fmtDateFR(dateStr){
+  if(!dateStr) return "—";
+  try{
+    const d = new Date(dateStr+"T00:00:00");
+    if(isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("fr-FR");
+  }catch(_){ return dateStr; }
+}
+function fmtDateTime(ts){
+  try{
+    const d=new Date(Number(ts)||0);
+    const p=n=>String(n).padStart(2,'0');
+    return `${p(d.getDate())}-${p(d.getMonth()+1)}-${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }catch(_){return "—";}
+}
+function todayIso(){
+  const d = new Date();
+  const p = n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+
+/* ===== Contexte page ===== */
+let ctx = { user:null, cis:"", key:"" };
+let currentEditId = null;
+
+function initPage(){
+  const sess = robustSession();
+  if(!sess){
+    alert("Session expirée.");
+    try{ window.location.href="login.html"; }catch(_){ }
+    return;
+  }
+
+  ctx.user = sess;
+  ctx.cis  = Array.isArray(sess.cis) ? (sess.cis[0] || "") : (sess.cis || "");
+  ctx.key  = "anomalies_"+ctx.cis;
+
+  document.getElementById("cisLabel").textContent = "Centre de Secours "+ctx.cis;
+  document.getElementById("infoUser").innerHTML =
+    'Agent : <strong>'+escapeHtml(getDisplayName(sess))+'</strong>';
+
+  const d = document.getElementById("dateSignalement");
+  if(d && !d.value) d.value = todayIso();
+
+  resetEditState();
+  updateElectroUI();
+  updateAsTechUI();
+  renderAnomalies();
+}
+
+/* ===== Stockage local ===== */
+function readAnomalies(){
+  try{
+    const arr = JSON.parse(localStorage.getItem(ctx.key)||"[]");
+    return Array.isArray(arr) ? arr : [];
+  }catch(_){ return []; }
+}
+function saveAnomaliesAll(arr){
+  localStorage.setItem(ctx.key, JSON.stringify(arr));
+}
+
+/* =========================================================
+   ✅ MAIN COURANTE : écrire quand une anomalie est clôturée
+   ========================================================= */
+function logToMainCourante(type, title, text, meta){
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+    if(!session) return;
+
+    const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
+    const keyJ = "journal_" + cisSel;
+
+    let arr = [];
+    try{
+      arr = JSON.parse(localStorage.getItem(keyJ) || "[]");
+      if(!Array.isArray(arr)) arr = [];
+    }catch(_){ arr = []; }
+
+    arr.push({
+      type: String(type||"NOTE").toUpperCase(),
+      ts: Date.now(),
+      title: String(title||""),
+      text: String(text||""),
+      meta: meta || {}
+    });
+
+    // limite sécurité
+    localStorage.setItem(keyJ, JSON.stringify(arr.slice(-500)));
+  }catch(_){}
+}
+
+function categorieLabel(c){
+  switch(c){
+    case "menuiserie": return "Menuiserie";
+    case "chauffage_clim": return "Chauffage clim";
+    case "ecs": return "Eau chaude sanitaire";
+    case "ecoulement_bouches": return "Écoulement bouches";
+    case "electricite": return "Électricité";
+    case "fuite_eau": return "Fuite d'eau";
+    case "nuisibles": return "Nuisibles";
+    case "portail": return "Portail";
+    case "securite_incendie": return "Sécurité incendie";
+    case "station_carburant": return "Station carburant";
+    case "electromenager": return "Électroménager";
+    case "informatique": return "Informatique";
+    case "groupe_electrogene": return "Groupe électrogène";
+    case "autre_demande": return "Autre demande";
+    default: return c || "—";
+  }
+}
+
+function logClotureAnomalieMateriel(anom){
+  if(!anom) return;
+  // anti-doublon : si déjà loggée une fois, on ne réécrit pas
+  if(anom.clotureLogTs) return;
+
+  const agent = (ctx?.user ? getDisplayName(ctx.user) : "—");
+  const titre = `Anomalie matériel clôturée — ${anom.equipement || "—"}`;
+
+  const txt =
+    `Zone : ${anom.zone || "—"} — Catégorie : ${categorieLabel(anom.categorie) || "—"}`
+    + (anom.entreprise ? ` — Entreprise : ${anom.entreprise}` : "")
+    + ` — clôturée par ${agent}`;
+
+  logToMainCourante(
+    "MATERIEL",
+    titre,
+    txt,
+    { source: "anomalies_materiel", anomalyId: anom.id || "" }
+  );
+
+  anom.clotureLogTs = Date.now();
+}
+
+
+function logCreationAnomalieMateriel(anom){
+  if(!anom) return;
+  // anti-doublon
+  if(anom.creationLogTs) return;
+
+  const agent = (ctx?.user ? getDisplayName(ctx.user) : "—");
+  const titre = `Anomalie matériel signalée — ${anom.equipement || "—"}`;
+
+  const txt =
+    `Zone : ${anom.zone || "—"} — Catégorie : ${categorieLabel(anom.categorie) || "—"}`
+    + (anom.urgent ? " — URGENT" : "")
+    + ` — signalée par ${agent}`;
+
+  logToMainCourante(
+    "MATERIEL",
+    titre,
+    txt,
+    { source: "anomalies_materiel", anomalyId: anom.id || "" }
+  );
+
+  anom.creationLogTs = Date.now();
+}
+
+/* ===== Mode édition ===== */
+function resetEditState(){
+  currentEditId = null;
+  const banner = document.getElementById("editBanner");
+  if(banner) banner.style.display = "none";
+  const submitBtn = document.getElementById("btnSubmit");
+  if(submitBtn) submitBtn.textContent = "Enregistrer l’anomalie";
+}
+function cancelEdit(){
+  resetEditState();
+  resetForm();
+}
+
+/* ===== Formulaire ===== */
+function resetForm(){
+  const d = document.getElementById("dateSignalement");
+  if(d) d.value = todayIso();
+
+  document.getElementById("zone").value = "";
+  document.getElementById("categorie").value = "";
+  document.getElementById("equipement").value = "";
+  document.getElementById("description").value = "";
+
+  const urg = document.getElementById("urgent");
+  if(urg) urg.checked = false;
+
+  electroClickOk = false;
+  const asCb = document.getElementById("asTechOk");
+  if(asCb) asCb.checked = false;
+
+  updateElectroUI();
+  updateAsTechUI();
+}
+
+function saveAnomalie(evt){
+  if(evt && evt.preventDefault) evt.preventDefault();
+  if(!ctx.user){
+    alert("Session expirée.");
+    return false;
+  }
+
+  const dateSignalement = (document.getElementById("dateSignalement").value||"").trim();
+  const zone = (document.getElementById("zone").value||"").trim();
+  const categorie = (document.getElementById("categorie").value||"").trim();
+  const equipement = (document.getElementById("equipement").value||"").trim();
+  const description = (document.getElementById("description").value||"").trim();
+  const urgent = !!document.getElementById("urgent")?.checked;
+  const asTechOk = !!document.getElementById("asTechOk")?.checked;
+
+  if(!dateSignalement){ alert("Merci de renseigner la date du signalement."); return false; }
+  if(!zone || !categorie || !equipement || !description){
+    alert("Zone, catégorie, équipement et description sont obligatoires.");
+    return false;
+  }
+
+  // ✅ Obligation clic formulaire électroménager
+  if(categorie === "electromenager"){
+    const alreadyOk = currentEditingElectroOk();
+    if(!alreadyOk && !electroClickOk){
+      alert("⚠️ Catégorie Électroménager : vous devez cliquer sur “Ouvrir le formulaire Électroménager” avant d’enregistrer.");
+      return false;
+    }
+  }
+
+  // ✅ Obligation case AS-Tech pour certaines catégories
+  if(isAsTechCategory(categorie) && !asTechOk){
+    alert("⚠️ Pour cette catégorie : la case “Demande AS-Tech effectuée” est obligatoire avant d’enregistrer.");
+    return false;
+  }
+
+  const all = readAnomalies();
+
+  if(currentEditId){
+    const idx = all.findIndex(a => a.id === currentEditId);
+    if(idx !== -1){
+      const existing = all[idx];
+
+      const electroFormOk = (categorie === "electromenager")
+        ? (existing.electroFormOk || electroClickOk)
+        : (existing.electroFormOk || false);
+
+      const electroFormTs = (categorie === "electromenager" && electroClickOk && !existing.electroFormOk)
+        ? Date.now()
+        : (existing.electroFormTs || 0);
+
+      const newAsTechOk = isAsTechCategory(categorie) ? true : false;
+      const asTechTs = (isAsTechCategory(categorie) && !existing.asTechOk)
+        ? Date.now()
+        : (existing.asTechTs || 0);
+
+      all[idx] = {
+        ...existing,
+        dateSignalement, zone, categorie, equipement, description,
+        urgent,
+        electroFormOk,
+        electroFormTs,
+        asTechOk: newAsTechOk,
+        asTechTs,
+        updatedTs: Date.now()
+      };
+
+      saveAnomaliesAll(all);
+      alert("Anomalie modifiée.");
+    }else{
+      alert("Impossible de retrouver l’anomalie à modifier.");
+    }
+  }else{
+    const anomalie = {
+      id: "anom_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),
+      cis: ctx.cis,
+      createdTs: Date.now(),
+      createdBy: {
+        matricule: ctx.user.matricule || "",
+        display: getDisplayName(ctx.user)
+      },
+      dateSignalement, zone, categorie, equipement, description,
+      urgent,
+      entreprise: "",
+      cloturee: "",
+      suiviTs: 0,
+
+      electroFormOk: (categorie === "electromenager") ? true : false,
+      electroFormTs: (categorie === "electromenager") ? Date.now() : 0,
+
+      asTechOk: isAsTechCategory(categorie) ? true : false,
+      asTechTs: isAsTechCategory(categorie) ? Date.now() : 0,
+
+      // ✅ log clôture (anti doublon)
+      clotureLogTs: 0
+    };
+    all.push(anomalie);
+    // 📝 écrire dans la main courante à la création
+    logCreationAnomalieMateriel(anomalie);
+    saveAnomaliesAll(all);
+    alert("Anomalie enregistrée.");
+  }
+
+  resetForm();
+  resetEditState();
+  electroClickOk = false;
+  renderAnomalies();
+  return false;
+}
+
+/* ===== Actions tableau : suivi intervention ===== */
+function setIntervention(id){
+  const all = readAnomalies();
+  const idx = all.findIndex(x=>x.id===id);
+  if(idx===-1) return;
+
+  const cur = all[idx];
+  const ent = prompt("Entreprise intervenue ?", cur.entreprise || "");
+  if(ent === null) return;
+  const entreprise = String(ent||"").trim();
+  if(!entreprise){
+    alert("Entreprise obligatoire (sinon utilise “Effacer suivi”).");
+    return;
+  }
+
+  const clot = confirm("Anomalie clôturée ?\n\nOK = Oui / Annuler = Non");
+  all[idx] = {
+    ...cur,
+    entreprise,
+    cloturee: clot ? "oui" : "non",
+    suiviTs: Date.now(),
+    updatedTs: Date.now()
+  };
+
+  // ✅ écrire dans la main courante uniquement quand c’est clôturé OUI
+  if(all[idx].cloturee === "oui"){
+    logClotureAnomalieMateriel(all[idx]);
+  }
+
+  saveAnomaliesAll(all);
+  renderAnomalies();
+}
+
+function toggleCloturee(id){
+  const all = readAnomalies();
+  const idx = all.findIndex(x=>x.id===id);
+  if(idx===-1) return;
+
+  const cur = all[idx];
+  if(!cur.entreprise){
+    alert("Renseigne d’abord une entreprise (bouton “Intervention”).");
+    return;
+  }
+
+  const next = (cur.cloturee === "oui") ? "non" : "oui";
+  all[idx] = {
+    ...cur,
+    cloturee: next,
+    suiviTs: Date.now(),
+    updatedTs: Date.now()
+  };
+
+  // ✅ écrire dans la main courante uniquement quand c’est clôturé OUI
+  if(all[idx].cloturee === "oui"){
+    logClotureAnomalieMateriel(all[idx]);
+  }
+
+  saveAnomaliesAll(all);
+  renderAnomalies();
+}
+
+function clearSuivi(id){
+  const all = readAnomalies();
+  const idx = all.findIndex(x=>x.id===id);
+  if(idx===-1) return;
+
+  const cur = all[idx];
+  if(!confirm("Effacer le suivi (entreprise + clôture) pour cette anomalie ?")) return;
+
+  all[idx] = {
+    ...cur,
+    entreprise: "",
+    cloturee: "",
+    suiviTs: 0,
+    updatedTs: Date.now()
+  };
+
+  saveAnomaliesAll(all);
+  renderAnomalies();
+}
+
+/* ===== Edition / suppression ===== */
+function startEditAnomalie(id){
+  const all = readAnomalies();
+  const a = all.find(x => x.id === id);
+  if(!a) return;
+
+  currentEditId = id;
+
+  document.getElementById("dateSignalement").value = a.dateSignalement || todayIso();
+  document.getElementById("zone").value = a.zone || "";
+  document.getElementById("categorie").value = a.categorie || "";
+  document.getElementById("equipement").value = a.equipement || "";
+  document.getElementById("description").value = a.description || "";
+
+  const urg = document.getElementById("urgent");
+  if(urg) urg.checked = !!a.urgent;
+
+  electroClickOk = false;
+  document.getElementById("asTechOk").checked = !!a.asTechOk;
+
+  updateElectroUI();
+  updateAsTechUI();
+
+  const banner = document.getElementById("editBanner");
+  if(banner) banner.style.display = "flex";
+  const submitBtn = document.getElementById("btnSubmit");
+  if(submitBtn) submitBtn.textContent = "Enregistrer les modifications";
+
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function deleteAnomalie(id){
+  const all = readAnomalies();
+  const a = all.find(x=>x.id===id);
+  if(!a) return;
+
+  if(!confirm("Supprimer cette anomalie ?\n\nÉquipement : "+(a.equipement||""))) return;
+
+  const remaining = all.filter(x=>x.id!==id);
+  saveAnomaliesAll(remaining);
+
+  if(currentEditId === id){
+    resetForm();
+    resetEditState();
+  }
+
+  renderAnomalies();
+}
+
+/* ===== Rendu ===== */
+function matchesSearch(a, q){
+  if(!q) return true;
+  const hay = [a.equipement,a.zone,a.description,a.entreprise,categorieLabel(a.categorie)].join(" ").toLowerCase();
+  return hay.includes(q.toLowerCase());
+}
+
+function renderAnomalies(){
+  const listEl = document.getElementById("anomList");
+  if(!listEl) return;
+
+  let arr = readAnomalies().filter(a=>a && a.cis===ctx.cis);
+  const q = (document.getElementById("searchInput")?.value||"").trim();
+
+  if(!arr.length){
+    listEl.innerHTML = "<p style='font-size:13px;color:#555;'>Aucune anomalie enregistrée pour ce centre.</p>";
+    return;
+  }
+
+  arr.sort((a,b)=>{
+    const da = a.dateSignalement || "";
+    const db = b.dateSignalement || "";
+    if(db === da) return (b.createdTs||0)-(a.createdTs||0);
+    return db.localeCompare(da);
+  });
+
+  arr = arr.filter(a=>matchesSearch(a,q));
+
+  if(!arr.length){
+    listEl.innerHTML = "<p style='font-size:13px;color:#555;'>Aucune anomalie pour cette recherche.</p>";
+    return;
+  }
+
+  listEl.innerHTML = "";
+  arr.forEach(a=>{
+    const card = document.createElement("div");
+    card.className = "anom-card";
+    card.style.borderLeftColor = a.urgent ? "#d32f2f" : "#1976d2";
+
+    const header = document.createElement("div");
+    header.className = "anom-header";
+
+    const left = document.createElement("div");
+    const title = document.createElement("div");
+    title.className = "anom-title";
+    title.textContent = a.equipement || "Anomalie";
+
+    const meta = document.createElement("div");
+    meta.className = "anom-meta";
+    meta.textContent = `Signalée le ${fmtDateFR(a.dateSignalement)} — ${categorieLabel(a.categorie)} — ${a.zone||"—"}`;
+
+    left.appendChild(title);
+    left.appendChild(meta);
+
+    const right = document.createElement("div");
+    right.style.display = "flex";
+    right.style.flexWrap = "wrap";
+    right.style.gap = "4px";
+    right.style.justifyContent = "flex-end";
+
+    const badgeU = document.createElement("span");
+    badgeU.className = "badge";
+    badgeU.innerHTML = `<span class="dot ${a.urgent?"red":"blue"}"></span> ${escapeHtml(a.urgent?"Urgent":"Normal")}`;
+    right.appendChild(badgeU);
+
+    if(a.entreprise){
+      const b = document.createElement("span");
+      b.className = "badge " + (a.cloturee==="oui" ? "ok" : "warn");
+      const lbl = (a.cloturee==="oui") ? "Clôturée" : "Intervention";
+      b.innerHTML = `<span class="dot ${a.cloturee==="oui" ? "green" : "gray"}"></span> ${lbl}`;
+      right.appendChild(b);
+    }
+
+    if(a.categorie === "electromenager"){
+      const b2 = document.createElement("span");
+      b2.className = "badge " + (a.electroFormOk ? "ok" : "warn");
+      b2.innerHTML = `<span class="dot ${a.electroFormOk ? "green" : "gray"}"></span> ${a.electroFormOk ? "Formulaire OK" : "Formulaire manquant"}`;
+      right.appendChild(b2);
+    }
+
+    if(isAsTechCategory(a.categorie)){
+      const b3 = document.createElement("span");
+      b3.className = "badge " + (a.asTechOk ? "ok" : "warn");
+      b3.innerHTML = `<span class="dot ${a.asTechOk ? "green" : "gray"}"></span> ${a.asTechOk ? "AS-Tech OK" : "AS-Tech manquant"}`;
+      right.appendChild(b3);
+    }
+
+    header.appendChild(left);
+    header.appendChild(right);
+
+    const body = document.createElement("div");
+    body.className = "anom-body";
+    let txt = a.description || "";
+
+    if(a.entreprise){
+      txt += `\n\nEntreprise : ${a.entreprise}`;
+      if(a.cloturee){
+        txt += `\nClôturée : ${a.cloturee==="oui" ? "Oui" : "Non"}`;
+      }
+      if(a.suiviTs){
+        txt += `\nSuivi maj : ${fmtDateTime(a.suiviTs)}`;
+      }
+    }
+
+    if(a.categorie === "electromenager" && a.electroFormOk && a.electroFormTs){
+      txt += `\nFormulaire ouvert : ${fmtDateTime(a.electroFormTs)}`;
+    }
+
+    if(isAsTechCategory(a.categorie) && a.asTechOk && a.asTechTs){
+      txt += `\nDemande AS-Tech effectuée : ${fmtDateTime(a.asTechTs)}`;
+    }
+
+    body.textContent = txt;
+
+    const footer = document.createElement("div");
+    footer.className = "anom-footer";
+    let footerHtml =
+      `<span>Créée le ${escapeHtml(fmtDateTime(a.createdTs||0))}</span>`+
+      `<span>par ${escapeHtml(a.createdBy?.display || "")}</span>`;
+    if(a.updatedTs){
+      footerHtml += `<span>Modifiée le ${escapeHtml(fmtDateTime(a.updatedTs))}</span>`;
+    }
+    footer.innerHTML = footerHtml;
+
+    const actions = document.createElement("div");
+    actions.className = "card-actions";
+
+    const btnInter = document.createElement("button");
+    btnInter.className = "action";
+    btnInter.type = "button";
+    btnInter.textContent = a.entreprise ? "Modifier intervention" : "Intervention";
+    btnInter.onclick = ()=>setIntervention(a.id);
+
+    const btnClo = document.createElement("button");
+    btnClo.className = "light";
+    btnClo.type = "button";
+    btnClo.textContent = "Basculer clôture";
+    btnClo.onclick = ()=>toggleCloturee(a.id);
+
+    const btnClear = document.createElement("button");
+    btnClear.className = "light";
+    btnClear.type = "button";
+    btnClear.textContent = "Effacer suivi";
+    btnClear.onclick = ()=>clearSuivi(a.id);
+
+    const btnEdit = document.createElement("button");
+    btnEdit.className = "edit";
+    btnEdit.type = "button";
+    btnEdit.textContent = "Modifier";
+    btnEdit.onclick = ()=>startEditAnomalie(a.id);
+
+    const btnDel = document.createElement("button");
+    btnDel.className = "delete";
+    btnDel.type = "button";
+    btnDel.textContent = "Supprimer";
+    btnDel.onclick = ()=>deleteAnomalie(a.id);
+
+    actions.appendChild(btnInter);
+    actions.appendChild(btnClo);
+    actions.appendChild(btnClear);
+    actions.appendChild(btnEdit);
+    actions.appendChild(btnDel);
+
+    card.appendChild(header);
+    card.appendChild(body);
+    card.appendChild(footer);
+    card.appendChild(actions);
+
+    listEl.appendChild(card);
+  });
+}
+
+/* Navigation */
+function goAccueil(){
+  try{ window.location.href="index.html"; }catch(_){ }
+}
+
+/* Init */
+window.addEventListener("DOMContentLoaded", async ()=>{
+  if(typeof syncAccueilFromCloud === "function"){
+    try{ await syncAccueilFromCloud(); }catch(e){ console.error("Erreur syncAccueilFromCloud :", e); }
+  }
+
+  const d = document.getElementById("dateSignalement");
+  if(d && !d.value) d.value = todayIso();
+
+  const catSel = document.getElementById("categorie");
+  if(catSel){
+    catSel.addEventListener("change", ()=>{
+      electroClickOk = false;
+      updateElectroUI();
+      updateAsTechUI();
+    });
+  }
+
+  initPage();
+});
+
+window.addEventListener("storage",(e)=>{
+  try{
+    if(!e.key) return;
+    if(e.key === "csver_session") initPage();
+    if(e.key === ctx.key) renderAnomalies();
+  }catch(_){ }
+});
+</script>
+</body>
+</html>
