@@ -891,7 +891,6 @@ nav.menu-bar a{ padding:10px 12px; }
 
     <li id="menu-patrimoine"><a href="#">Patrimoine</a>
       <ul>
-        <li><a href="#" onclick="return openLink('patrimoine.html', event)">Signaler un défaut</a></li>
         <li><a href="#" onclick="return openLink('http://symphonieboxprod', event)">As-Tech</a></li>
       </ul>
     </li>
@@ -1542,14 +1541,20 @@ function renderVehicules(vehicules){
 
   // 🏭 Matériels
   if(Array.isArray(mats) && mats.length>0){
-    const header=document.createElement("div");
-    header.className="vehicule-card";
-    header.style.background="#0d2b52";
-    header.innerHTML = `🏭 <strong>État matériels</strong><small>${mats.length} anomalie(s) en cours</small>`;
-    header.addEventListener("click", ()=>{ try{ window.location.href='patrimoine.html'; }catch(_){ } });
-    grid.appendChild(header);
+    // 👉 Titre (non cliquable) comme pour "État des véhicules"
+    const title = document.createElement("div");
+    title.style.gridColumn = "1 / -1";
+    title.style.display = "flex";
+    title.style.alignItems = "baseline";
+    title.style.gap = "8px";
+    title.style.margin = "6px 0 0";
+    title.style.fontWeight = "800";
+    title.style.color = "#0d2b52";
+    title.style.fontSize = "18px";
+    title.innerHTML = `🏭 État matériels <span style="font-weight:600;color:#555;font-size:12px;">(${mats.length} anomalie(s) en cours)</span>`;
+    grid.appendChild(title);
 
-    mats.forEach(m=>{
+mats.forEach(m=>{
       const div = document.createElement("div");
       div.className = "vehicule-card";
       div.style.background = getEtatColor(m.etat || "Mineur");
