@@ -4150,6 +4150,9 @@ function buildConsigneMap(year, monthIndex){
 
   }
 
+  // Premier affichage
+  renderAgenda();
+  
   btnPrev && btnPrev.addEventListener("click", function(){
     currentMonth.setMonth(currentMonth.getMonth() - 1);
     renderAgenda();
@@ -4163,8 +4166,7 @@ function buildConsigneMap(year, monthIndex){
   // Expose une fonction globale si tu veux forcer un refresh plus tard
   window.refreshAgendaCalendar = renderAgenda;
 
-  // Premier affichage
-  renderAgenda();
+
 })();
 </script>
 
