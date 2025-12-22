@@ -995,7 +995,7 @@ nav.menu-bar a{ padding:10px 12px; }
     <!-- 🏭 MATERIEL EN ANOMALIE -->
   <div class="section vehicules" id="materiel-section" style="display:none;margin-top:-10px;">
     <div class="section-header">
-      <h2>🏭 Matériel en anomalie</h2>
+      <h2>🏭 État matériels</h2>
     </div>
     <div id="materiel-grid"></div>
   </div>
@@ -1402,7 +1402,8 @@ window.addEventListener("storage",(e)=>{
     const user=JSON.parse(localStorage.getItem("csver_session")||"null");
     if(!user) return;
     const cisSel = Array.isArray(user.cis)?user.cis[0]:user.cis;
-    if(e.key===key || e.key==="journal_"+cisSel || e.key==="fma_data_v2"){
+    if(e.key===key || e.key==="journal_"+cisSel || e.key==="fma_data_v2" || e.key===("anomalies_"+cisSel)){
+      renderMateriel(buildMaterielEtatList(cisSel));
       renderVehicules(JSON.parse(localStorage.getItem(key)||"[]"));
       renderJournal();
       renderFormations();
@@ -1525,6 +1526,40 @@ function renderVehicules(vehicules){
   });
 }
 
+
+function buildMaterielEtatList(cisSel){
+  // À partir des anomalies Patrimoine (page "Anomalies matériel")
+  const keyAnom = "anomalies_" + cisSel;
+  let arr = [];
+  try{ arr = JSON.parse(localStorage.getItem(keyAnom) || "[]"); }catch(_){ arr = []; }
+  if(!Array.isArray(arr)) arr = [];
+
+  // On affiche uniquement les anomalies NON clôturées
+  const open = arr.filter(a => a && a.cis === cisSel && a.cloturee !== "oui");
+
+  // On évite les doublons de nom (si plusieurs entrées identiques)
+  const seen = new Set();
+  const list = [];
+  open.forEach(a=>{
+    const nom = String(a.equipement || "").trim();
+    if(!nom) return;
+    const k = nom.toLowerCase();
+    if(seen.has(k)) return;
+    seen.add(k);
+
+    list.push({
+      nom,
+      // Couleur du badge : urgent = rouge, sinon orange
+      etat: a.urgent ? "Indispo" : "Mineur"
+    });
+  });
+
+  // Tri alphabétique
+  list.sort((x,y)=>String(x.nom).localeCompare(String(y.nom), "fr", {sensitivity:"base"}));
+  return list;
+}
+
+
 function renderMateriel(list){
   const section = document.getElementById("materiel-section");
   const grid    = document.getElementById("materiel-grid");
@@ -1546,7 +1581,7 @@ function renderMateriel(list){
     div.style.background = getEtatColor(m.etat || "Mineur");
     const etatAff = escapeHtml(m.etat || "Mineur");
     div.innerHTML = `🏭 ${escapeHtml(m.nom)}<small>${etatAff}</small>`;
-    div.addEventListener("click", ()=>openVehiculeAnomalies(m.nom, "materiel"));
+    div.addEventListener("click", ()=>openVehiculeAnomalies(m.nom, "patrimoine"));
     grid.appendChild(div);
   });
 }
@@ -1659,6 +1694,7 @@ function openVehiculeAnomalies(vehName, typeHint){
 
     const vehs = JSON.parse(localStorage.getItem("vehicules_"+cisSel) || "[]");
     const mats = JSON.parse(localStorage.getItem("materiel_"+cisSel) || "[]");
+    const patr = JSON.parse(localStorage.getItem("anomalies_"+cisSel) || "[]");
 
     let source = null;
     let isMateriel = false;
@@ -1679,12 +1715,71 @@ function openVehiculeAnomalies(vehName, typeHint){
       }
     }
 
+
+    // 🔎 Dernier recours : anomalies Patrimoine (page "Anomalies matériel")
+    let patrimoineRows = [];
+    if(!source){
+      const nameLow = String(vehName||"").toLowerCase();
+      const list = Array.isArray(patr) ? patr : [];
+      const matches = list.filter(a => a && String(a.equipement||"").toLowerCase() === nameLow);
+      if(matches.length){
+        // On ne montre que les anomalies non clôturées
+        patrimoineRows = matches.filter(a => a.cloturee !== "oui");
+        if(patrimoineRows.length){
+          source = { nom: vehName, history: [] };
+          isMateriel = true;
+        }
+      }
+    }
     const title = document.getElementById("anom-title");
     const tbody = document.getElementById("anom-tbody");
     title.textContent = (isMateriel ? "Anomalies matériel — " : "Anomalies (en cours) — ") + (source ? (source.nom || vehName) : vehName);
     tbody.innerHTML = "";
 
-    if(!source || !Array.isArray(source.history)){
+    // ✅ Affichage Patrimoine
+    if(patrimoineRows && patrimoineRows.length){
+      const mapCat = {
+        menuiserie:"Menuiserie",
+        chauffage_clim:"Chauffage clim",
+        ecs:"Eau chaude sanitaire",
+        ecoulement_bouches:"Écoulement bouches",
+        electricite:"Électricité",
+        fuite_eau:"Fuite d\'eau",
+        nuisibles:"Nuisibles",
+        portail:"Portail",
+        securite_incendie:"Sécurité incendie",
+        station_carburant:"Station carburant",
+        electromenager:"Électroménager",
+        informatique:"Informatique",
+        groupe_electrogene:"Groupe électrogène",
+        autre_demande:"Autre demande"
+      };
+      const catLabel = c => mapCat[c] || (c||"-");
+
+      patrimoineRows
+        .sort((a,b)=>{
+          const da = String(a.dateSignalement||"");
+          const db = String(b.dateSignalement||"");
+          return db.localeCompare(da) || ((b.createdTs||0)-(a.createdTs||0));
+        })
+        .forEach(a=>{
+          const tr = document.createElement("tr");
+          const statut = a.entreprise ? (a.cloturee==="oui"?"Clôturée":"Intervention") : "Signalée";
+          const niveau = a.urgent ? "Urgent" : "Normal";
+          const desc = `${catLabel(a.categorie)} — ${a.zone||"-"}\n${a.description||"-"}`;
+          const agent = (a.createdBy && a.createdBy.display) ? a.createdBy.display : "-";
+          const dateTxt = a.dateSignalement ? a.dateSignalement : "-";
+          tr.innerHTML = `
+            <td>${escapeHtml(statut)}</td>
+            <td>${escapeHtml(niveau)}</td>
+            <td style="white-space:pre-wrap;">${escapeHtml(desc)}</td>
+            <td>${escapeHtml(agent)}</td>
+            <td>${escapeHtml(dateTxt)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+    }
+    else if(!source || !Array.isArray(source.history)){
       tbody.innerHTML = "<tr><td colspan='5' style='padding:10px;color:#666;'>Aucune anomalie en cours.</td></tr>";
     }else{
       const rows = [...source.history]
@@ -2165,6 +2260,7 @@ function typeToIcon(t){
     case "FMA": return "📘";
     case "PHARMA": return "💊";
     case "ANOMALIE": return "🚒";
+    case "MATERIEL": return "🏭";
     case "MNR": return "🧯";
     case "SOG": return "📣";
     default: return "📝";
@@ -2175,6 +2271,7 @@ function typeToTitle(t){
     case "FMA": return "FMA enregistrée";
     case "PHARMA": return "Commande pharmacie";
     case "ANOMALIE": return "Anomalie véhicule";
+    case "MATERIEL": return "Anomalie matériel";
     case "MNR": return "MNR";
     case "SOG": return "Info SOG";
     default: return "Note";
@@ -2207,7 +2304,8 @@ window.addEventListener("storage",(e)=>{
     const user=JSON.parse(localStorage.getItem("csver_session")||"null");
     if(!user) return;
     const cisSel = Array.isArray(user.cis)?user.cis[0]:user.cis;
-    if(e.key===key || e.key==="journal_"+cisSel || e.key==="fma_data_v2"){
+    if(e.key===key || e.key==="journal_"+cisSel || e.key==="fma_data_v2" || e.key===("anomalies_"+cisSel)){
+      renderMateriel(buildMaterielEtatList(cisSel));
       renderVehicules(JSON.parse(localStorage.getItem(key)||"[]"));
       renderJournal();
       renderFormations();
