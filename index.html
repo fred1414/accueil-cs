@@ -1624,16 +1624,14 @@ function printAnomalies(){
 
   const cis = Array.isArray(session.cis) ? session.cis[0] : session.cis;
 
-  // ✅ 1) CONSIGNES = EXACTEMENT ce qui est affiché
+  // ✅ CONSIGNES = EXACTEMENT ce qui est affiché
   const formationListEl = document.getElementById("formation-list");
   const consignesHtml = formationListEl ? formationListEl.innerHTML : "<div class='hint'>Aucune consigne affichée.</div>";
 
-  // ✅ 2) Véhicules / matériels
+  // ✅ Données anomalies
   const vehs = JSON.parse(localStorage.getItem("vehicules_"+cis) || "[]");
   const mats = JSON.parse(localStorage.getItem("materiel_"+cis)  || "[]");
-
-  // (optionnel mais utile dans ton app : anomalies patrimoine)
-  const patr = JSON.parse(localStorage.getItem("anomalies_"+cis) || "[]");
+  const patr = JSON.parse(localStorage.getItem("anomalies_"+cis) || "[]"); // optionnel
 
   const anomaliesVeh = [];
   const anomaliesMat = [];
@@ -1648,9 +1646,9 @@ function printAnomalies(){
       if(v.pretNom && v.etat === "Pret") etatAffiche += " — " + v.pretNom;
 
       anomaliesVeh.push({
-        support: v.nom || "",
-        etat: etatAffiche,
-        desc: h.text || "",
+        support: v.nom || "-",
+        etat: etatAffiche || "-",
+        desc: h.text || "-",
         agent: agentAffiche
       });
     });
@@ -1663,16 +1661,16 @@ function printAnomalies(){
       if(/^[0-9]+$/.test(agentAffiche) || agentAffiche === "") agentAffiche = nomComplet || "-";
 
       anomaliesMat.push({
-        support: m.nom || "",
-        etat: (h.level || ""),
-        desc: (h.text || ""),
+        support: m.nom || "-",
+        etat: (h.level || "-"),
+        desc: (h.text || "-"),
         agent: agentAffiche,
         source: "Matériel"
       });
     });
   });
 
-  // 🏭 Patrimoine : non clôturées (si présent dans ton storage)
+  // 🏭 Patrimoine : non clôturées (si présent)
   const mapCat = {
     menuiserie:"Menuiserie",
     chauffage_clim:"Chauffage clim",
@@ -1711,11 +1709,9 @@ function printAnomalies(){
       });
     });
 
-  // Tri
   anomaliesVeh.sort((a,b)=>String(a.support).localeCompare(String(b.support),"fr",{sensitivity:"base"}));
   anomaliesMat.sort((a,b)=>String(a.support).localeCompare(String(b.support),"fr",{sensitivity:"base"}));
 
-  // Rien à imprimer ?
   const consignesHasContent = formationListEl && formationListEl.textContent.trim().length > 0;
   if(!consignesHasContent && anomaliesVeh.length===0 && anomaliesMat.length===0){
     alert("Rien à imprimer (aucune consigne affichée, aucune anomalie en cours).");
@@ -1730,44 +1726,72 @@ function printAnomalies(){
   <title>Consignes & anomalies</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-    @page { size: A4; margin: 12mm 10mm; }
+
+    /* ✅ 1 page A4 recto (compact) */
+    @page { size: A4; margin: 8mm 7mm; }
 
     *{ box-sizing:border-box; }
     body{ font-family:Inter,Arial,sans-serif; color:#111; margin:0; }
-    header{display:flex;align-items:center;gap:10px;border-bottom:2px solid #b71c1c;padding:10px 0;margin:0 0 10px 0;}
-    header img{height:55px;}
-    header h1{flex:1;text-align:center;color:#b71c1c;font-size:20px;margin:0;}
-    header .meta{font-size:10.5px;color:#444;text-align:right;white-space:nowrap;}
 
-    h2{color:#0d2b52;font-size:13px;margin:12px 0 6px 0;}
-    .hint{font-size:11px;color:#666;margin:6px 0;}
+    header{
+      display:flex; align-items:center; gap:8px;
+      border-bottom:2px solid #b71c1c;
+      padding:4mm 0 2.5mm;
+      margin:0 0 2.5mm 0;
+    }
+    header img{height:14mm;}
+    header h1{flex:1;text-align:center;color:#b71c1c;font-size:13pt;margin:0;}
+    header .meta{font-size:8.2pt;color:#444;text-align:right;white-space:nowrap; line-height:1.2;}
 
-    /* ✅ Consignes : on restyle ce qui vient du panneau */
+    h2{color:#0d2b52;font-size:10pt;margin:2.5mm 0 1.5mm 0;}
+    .hint{font-size:8.6pt;color:#666;margin:1mm 0 2mm;}
+
+    /* ✅ Consignes : compact + on masque boutons/icônes éventuels */
     .consignes-from-screen .journal-item{
-      border:1px solid #e3e6f3; border-radius:8px; padding:8px 10px;
-      margin:0 0 8px 0; break-inside: avoid; background:#fff;
+      border:1px solid #e3e6f3; border-radius:6px;
+      padding:1.8mm 2.2mm;
+      margin:0 0 1.6mm 0;
+      break-inside: avoid;
+      background:#fff;
     }
     .consignes-from-screen .title{
-      font-weight:800; font-size:12px; margin:0 0 4px 0; color:#0d2b52;
+      font-weight:800; font-size:9.2pt; margin:0 0 0.8mm 0; color:#0d2b52;
     }
-    .consignes-from-screen .text{ font-size:11px; white-space:pre-wrap; }
-    .consignes-from-screen p{ font-size:11px; color:#555; }
+    .consignes-from-screen .text{
+      font-size:8.6pt; white-space:pre-wrap; line-height:1.2;
+    }
 
-    /* Tables anomalies */
-    table{width:100%;border-collapse:collapse;font-size:11px;}
-    th,td{border:1px solid #ccc;padding:6px 7px;text-align:left;vertical-align:top;}
-    th{background:#f4f4f4;color:#333;font-weight:800;}
-    tr:nth-child(even){background:#fafafa;}
+    /* Cache des éléments interactifs si présents dans la liste */
+    .consignes-from-screen button,
+    .consignes-from-screen .btn,
+    .consignes-from-screen .actions,
+    .consignes-from-screen .icon,
+    .consignes-from-screen .edit,
+    .consignes-from-screen .delete{
+      display:none !important;
+    }
 
-    .page-break{ page-break-before: always; break-before: page; }
+    /* ✅ Tables anomalies compactes */
+    table{width:100%;border-collapse:collapse;font-size:8.4pt; line-height:1.15;}
+    th,td{border:1px solid #cfd3df;padding:1.6mm 1.8mm;text-align:left;vertical-align:top;}
+    th{background:#f4f6fb;color:#333;font-weight:800;}
+    tr:nth-child(even){background:#fafbff;}
 
-    footer{text-align:right;margin-top:12px;font-size:10px;color:#666;border-top:1px solid #eee;padding-top:6px;}
+    footer{
+      margin-top:2.5mm;
+      font-size:7.6pt; color:#666;
+      border-top:1px solid #eee; padding-top:1.5mm;
+      display:flex; justify-content:space-between; gap:8px;
+    }
+
+    /* ✅ pas de saut de page + on essaye de tout garder sur 1 page */
+    .no-break{ break-inside: avoid; page-break-inside: avoid; }
   </style></head>
   <body>
 
   <header>
     <img src="https://i.postimg.cc/nnNsr7v1/logo-cismic.png" alt="Logo SDIS 30">
-    <h1>Consignes & anomalies en cours</h1>
+    <h1>Consignes & anomalies</h1>
     <div class="meta">
       Centre : <b>${escapeHtml(cis)}</b><br>
       ${escapeHtml(date)}<br>
@@ -1775,54 +1799,76 @@ function printAnomalies(){
     </div>
   </header>
 
-  <h2>📌 Consignes (affichage écran)</h2>
-  <div class="consignes-from-screen">
-    ${consignesHtml}
+  <div class="no-break">
+    <h2>📌 Consignes</h2>
+    <div class="consignes-from-screen">${consignesHtml}</div>
   </div>
 
-  <div class="page-break"></div>
+  <div class="no-break">
+    <h2>🚒 Véhicules avec anomalies</h2>
+    ${
+      anomaliesVeh.length
+      ? `<table>
+          <thead>
+            <tr>
+              <th style="width:18%">Véhicule</th>
+              <th style="width:14%">État</th>
+              <th>Anomalie</th>
+              <th style="width:18%">Agent</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${anomaliesVeh.map(a=>`<tr>
+              <td>${escapeHtml(a.support)}</td>
+              <td>${escapeHtml(a.etat)}</td>
+              <td>${escapeHtml(a.desc)}</td>
+              <td>${escapeHtml(a.agent)}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>`
+      : `<div class="hint">Aucune anomalie véhicule en cours.</div>`
+    }
+  </div>
 
-  <h2>🚒 Véhicules avec anomalies</h2>
-  ${
-    anomaliesVeh.length
-    ? `<table>
-        <thead><tr><th style="width:18%">Véhicule</th><th style="width:14%">État</th><th>Anomalie</th><th style="width:18%">Agent</th></tr></thead>
-        <tbody>
-          ${anomaliesVeh.map(a=>`<tr>
-            <td>${escapeHtml(a.support)}</td>
-            <td>${escapeHtml(a.etat)}</td>
-            <td>${escapeHtml(a.desc)}</td>
-            <td>${escapeHtml(a.agent)}</td>
-          </tr>`).join("")}
-        </tbody>
-      </table>`
-    : `<div class="hint">Aucune anomalie véhicule en cours.</div>`
-  }
+  <div class="no-break">
+    <h2>🏭 Anomalies matériels</h2>
+    ${
+      anomaliesMat.length
+      ? `<table>
+          <thead>
+            <tr>
+              <th style="width:18%">Matériel</th>
+              <th style="width:14%">État</th>
+              <th>Anomalie</th>
+              <th style="width:18%">Agent</th>
+              <th style="width:12%">Source</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${anomaliesMat.map(a=>`<tr>
+              <td>${escapeHtml(a.support)}</td>
+              <td>${escapeHtml(a.etat)}</td>
+              <td>${escapeHtml(a.desc)}</td>
+              <td>${escapeHtml(a.agent)}</td>
+              <td>${escapeHtml(a.source || "—")}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>`
+      : `<div class="hint">Aucune anomalie matériel en cours.</div>`
+    }
+  </div>
 
-  <h2>🏭 Anomalies matériels</h2>
-  ${
-    anomaliesMat.length
-    ? `<table>
-        <thead><tr><th style="width:18%">Matériel</th><th style="width:14%">État</th><th>Anomalie</th><th style="width:18%">Agent</th><th style="width:12%">Source</th></tr></thead>
-        <tbody>
-          ${anomaliesMat.map(a=>`<tr>
-            <td>${escapeHtml(a.support)}</td>
-            <td>${escapeHtml(a.etat)}</td>
-            <td>${escapeHtml(a.desc)}</td>
-            <td>${escapeHtml(a.agent)}</td>
-            <td>${escapeHtml(a.source || "—")}</td>
-          </tr>`).join("")}
-        </tbody>
-      </table>`
-    : `<div class="hint">Aucune anomalie matériel en cours.</div>`
-  }
+  <footer>
+    <div>Document interne — CISMIC</div>
+    <div>${escapeHtml(date)}</div>
+  </footer>
 
-  <footer>Rapport généré le ${escapeHtml(date)}</footer>
   <script>window.onload=()=>window.print();<\/script>
   </body></html>`);
 
   w.document.close();
 }
+
 
   
 /* 👁️ Consultation des anomalies d'un véhicule (lecture seule) */
