@@ -207,6 +207,22 @@ main{
   background:#8b0000;
 }
 
+/* ====== AJOUT : actions à droite dans le header "📌 Consignes" ====== */
+#formation-header-actions{
+  display: flex;
+  align-items: center;
+  gap: 8px;              /* espace entre 🖨️ et + */
+}
+
+/* bouton 🖨️ : même style/taille que le + (car on réutilise header-plus-btn) */
+.header-print-btn{
+  background: #6a1b9a;   /* violet */
+}
+.header-print-btn:hover{
+  background: #4a0e6a;
+}
+
+  
 #formation-list{
   padding:12px 14px;
   overflow:auto;max-height:100%;
@@ -936,19 +952,34 @@ nav.menu-bar a{ padding:10px 12px; }
    <!-- 📌 Consignes du jour (haut) -->
 <div id="formation-panel" class="panel">
   <div id="formation-header">
-    <span>📌 Consignes</span>
+  <span>📌 Consignes</span>
+
+  <div id="formation-header-actions">
+    <button
+      type="button"
+      id="consignes-print-btn"
+      class="header-plus-btn header-print-btn"
+      onclick="printAnomalies()"
+      title="Imprimer consignes + anomalies"
+      aria-label="Imprimer consignes + anomalies"
+    >
+      🖨️
+    </button>
+
     <button
       type="button"
       id="consignes-plus-btn"
       class="header-plus-btn"
       style="display:none;"
       onclick="return openLink('consignes.html', event)"
+      title="Ajouter / gérer les consignes"
+      aria-label="Ajouter / gérer les consignes"
     >
       +
     </button>
   </div>
-  <div id="formation-list"></div>
 </div>
+
 
 
 
@@ -986,7 +1017,6 @@ nav.menu-bar a{ padding:10px 12px; }
     <div class="section-header">
       <h2>🚒 État des véhicules</h2>
       <div style="display:flex;gap:10px;align-items:center;">
-        <button id="btn-print-anom" class="print-btn" onclick="printAnomalies()">🖨️ Imprimer anomalies</button>
         <button id="btn-signal-anom" class="btn" onclick="openLink('vehicules.html')">Signaler une anomalie</button>
       </div>
     </div>
