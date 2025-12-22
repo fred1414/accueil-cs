@@ -891,7 +891,6 @@ nav.menu-bar a{ padding:10px 12px; }
 
     <li id="menu-patrimoine"><a href="#">Patrimoine</a>
       <ul>
-        <li><a href="#" onclick="return openLink('patrimoine.html', event)">Signaler un défaut</a></li>
         <li><a href="#" onclick="return openLink('http://symphonieboxprod', event)">As-Tech</a></li>
       </ul>
     </li>
@@ -1510,12 +1509,26 @@ async function fetchMeteoVergeze(){
 /* Rendu véhicules */
 function renderVehicules(vehicules){
   const grid=document.getElementById("vehicule-grid");
+  if(!grid) return;
   grid.innerHTML="";
-  if(vehicules.length===0){
+
+  // ✅ Matériel (anomalies patrimoine non clôturées) — affiché dans le même tableau central
+  let mats = [];
+  try{
+    const session = JSON.parse(localStorage.getItem("csver_session") || "null");
+    const cisSel = session ? (Array.isArray(session.cis)?session.cis[0]:session.cis) : "";
+    if(cisSel) mats = buildMaterielEtatList(cisSel);
+  }catch(_){ mats = []; }
+
+  const vehs = Array.isArray(vehicules) ? vehicules : [];
+
+  if(vehs.length===0 && (!Array.isArray(mats) || mats.length===0)){
     grid.innerHTML="<p style='color:#666;text-align:center;'>Aucun véhicule enregistré.</p>";
     return;
   }
-  vehicules.forEach(v=>{
+
+  // 🚒 Véhicules
+  vehs.forEach(v=>{
     const div=document.createElement("div");
     div.className="vehicule-card";
     div.style.background=getEtatColor(v.etat||"Disponible");
@@ -1525,7 +1538,28 @@ function renderVehicules(vehicules){
     div.addEventListener('click', ()=>openVehiculeAnomalies(v.nom));
     grid.appendChild(div);
   });
+
+  // 🏭 Matériels
+  if(Array.isArray(mats) && mats.length>0){
+    const header=document.createElement("div");
+    header.className="vehicule-card";
+    header.style.background="#0d2b52";
+    header.innerHTML = `🏭 <strong>État matériels</strong><small>${mats.length} anomalie(s) en cours</small>`;
+    header.addEventListener("click", ()=>{ try{ window.location.href='patrimoine.html'; }catch(_){ } });
+    grid.appendChild(header);
+
+    mats.forEach(m=>{
+      const div = document.createElement("div");
+      div.className = "vehicule-card";
+      div.style.background = getEtatColor(m.etat || "Mineur");
+      const etatAff = escapeHtml(m.etat || "Mineur");
+      div.innerHTML = `🏭 ${escapeHtml(m.nom)}<small>${etatAff}</small>`;
+      div.addEventListener("click", ()=>openVehiculeAnomalies(m.nom, "patrimoine"));
+      grid.appendChild(div);
+    });
+  }
 }
+
 
 
 function buildMaterielEtatList(cisSel){
@@ -1562,29 +1596,9 @@ function buildMaterielEtatList(cisSel){
 
 
 function renderMateriel(list){
+  // (désormais affiché dans le tableau central via renderVehicules)
   const section = document.getElementById("materiel-section");
-  const grid    = document.getElementById("materiel-grid");
-  if(!section || !grid) return;
-
-  grid.innerHTML = "";
-  const items = Array.isArray(list) ? list : [];
-
-  if(items.length === 0){
-    section.style.display = "none";
-    return;
-  }
-
-  section.style.display = "block";
-
-  items.forEach(m=>{
-    const div = document.createElement("div");
-    div.className = "vehicule-card";
-    div.style.background = getEtatColor(m.etat || "Mineur");
-    const etatAff = escapeHtml(m.etat || "Mineur");
-    div.innerHTML = `🏭 ${escapeHtml(m.nom)}<small>${etatAff}</small>`;
-    div.addEventListener("click", ()=>openVehiculeAnomalies(m.nom, "patrimoine"));
-    grid.appendChild(div);
-  });
+  if(section) section.style.display = "none";
 }
 
   
