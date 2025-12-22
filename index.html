@@ -207,6 +207,34 @@ main{
   background:#8b0000;
 }
 
+/* Actions à droite du header Consignes */
+.header-actions{
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+
+/* Bouton icône (imprimante) */
+.header-icon-btn{
+  border:none;
+  border-radius:999px;
+  width:28px;
+  height:28px;
+  font-size:16px;
+  font-weight:700;
+  line-height:1;
+  cursor:pointer;
+  background:#2d6cdf;   /* bleu (modifiable) */
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.header-icon-btn:hover{
+  filter:brightness(0.92);
+}
+
+  
 #formation-list{
   padding:12px 14px;
   overflow:auto;max-height:100%;
@@ -935,19 +963,33 @@ nav.menu-bar a{ padding:10px 12px; }
 
    <!-- 📌 Consignes du jour (haut) -->
 <div id="formation-panel" class="panel">
-  <div id="formation-header">
-    <span>📌 Consignes</span>
+ <div id="formation-header">
+  <span>📌 Consignes</span>
+
+  <div class="header-actions">
+    <button
+      type="button"
+      id="consignes-print-btn"
+      class="header-icon-btn"
+      onclick="printAnomalies()"
+      title="Imprimer consignes + anomalies"
+      aria-label="Imprimer consignes + anomalies"
+    >
+      🖨️
+    </button>
+
     <button
       type="button"
       id="consignes-plus-btn"
       class="header-plus-btn"
       style="display:none;"
       onclick="return openLink('consignes.html', event)"
+      title="Ajouter / gérer les consignes"
+      aria-label="Ajouter / gérer les consignes"
     >
       +
     </button>
   </div>
-  <div id="formation-list"></div>
 </div>
 
 
@@ -986,7 +1028,6 @@ nav.menu-bar a{ padding:10px 12px; }
     <div class="section-header">
       <h2>🚒 État des véhicules</h2>
       <div style="display:flex;gap:10px;align-items:center;">
-        <button id="btn-print-anom" class="print-btn" onclick="printAnomalies()">🖨️ Imprimer anomalies</button>
         <button id="btn-signal-anom" class="btn" onclick="openLink('vehicules.html')">Signaler une anomalie</button>
       </div>
     </div>
