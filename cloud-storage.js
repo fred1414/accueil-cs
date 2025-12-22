@@ -76,6 +76,7 @@ function shouldSyncKey(key){
       || key.startsWith("messages_")
       || key.startsWith("csver_user_")
       || key.startsWith("consignes_");   // 🟣 consignes par CIS
+      || key.startsWith("anomalies_");  // 🏭 anomalies matériel par CIS
 }
 
 window.shouldSyncKey = shouldSyncKey;
@@ -146,5 +147,6 @@ window.syncAccueilFromCloud = syncAccueilFromCloud;
     origRem(key);
   };
 })();
+
 
 
