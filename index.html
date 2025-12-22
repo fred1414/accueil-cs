@@ -1127,8 +1127,7 @@ nav.menu-bar a{ padding:10px 12px; }
 
 
 <script>
-    // Premier affichage
-  renderAgenda();
+
 function openLink(url, evt){
   if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
   try{
@@ -4152,7 +4151,8 @@ function buildConsigneMap(year, monthIndex){
 
   }
 
-
+    // Premier affichage
+  renderAgenda();
   
   btnPrev && btnPrev.addEventListener("click", function(){
     currentMonth.setMonth(currentMonth.getMonth() - 1);
