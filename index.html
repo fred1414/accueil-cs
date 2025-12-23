@@ -1903,7 +1903,7 @@ function openVehiculeAnomalies(vehName, typeHint){
     const cisSel = Array.isArray(session.cis) ? session.cis[0] : session.cis;
 
     const vehs = JSON.parse(localStorage.getItem("vehicules_"+cisSel) || "[]");
-    const mats = JSON.parse(localStorage.getItem("materiel_"+cisSel) || "[]");
+    const mats = JSON.parse(localStorage.getItem("materiel_"+cisSel)  || "[]");
     const patr = JSON.parse(localStorage.getItem("anomalies_"+cisSel) || "[]");
 
     let source = null;
@@ -1925,7 +1925,6 @@ function openVehiculeAnomalies(vehName, typeHint){
       }
     }
 
-
     // 🔎 Dernier recours : anomalies Patrimoine (page "Anomalies matériel")
     let patrimoineRows = [];
     if(!source){
@@ -1941,20 +1940,49 @@ function openVehiculeAnomalies(vehName, typeHint){
         }
       }
     }
+
     const title = document.getElementById("anom-title");
     const tbody = document.getElementById("anom-tbody");
-    title.textContent = (isMateriel ? "Anomalies matériel — " : "Anomalies (en cours) — ") + (source ? (source.nom || vehName) : vehName);
-    tbody.innerHTML = "";
+    const theadRow = document.getElementById("anom-thead-row");
 
-    // ✅ Affichage Patrimoine
+    if(title){
+      title.textContent =
+        (isMateriel ? "Anomalies matériel — " : "Anomalies (en cours) — ") +
+        (source ? (source.nom || vehName) : vehName);
+    }
+    if(tbody) tbody.innerHTML = "";
+
+    // Helpers
+    function formatJJMMAAAA(v){
+      const s = String(v || "").trim();
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if(m) return `${m[3]}-${m[2]}-${m[1]}`;
+      return s || "-";
+    }
+
+    // ✅ Affichage Patrimoine (ce que tu vois quand tu cliques un badge 🏭)
     if(patrimoineRows && patrimoineRows.length){
+
+      // Colonnes demandées : Date | Niveau | Catégorie | Matériel | Lieu | Description | Agent
+      if(theadRow){
+        theadRow.innerHTML = `
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Date</th>
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Niveau</th>
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Catégorie</th>
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Matériel</th>
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Lieu</th>
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Description</th>
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Agent</th>
+        `;
+      }
+
       const mapCat = {
         menuiserie:"Menuiserie",
         chauffage_clim:"Chauffage clim",
         ecs:"Eau chaude sanitaire",
         ecoulement_bouches:"Écoulement bouches",
         electricite:"Électricité",
-        fuite_eau:"Fuite d\'eau",
+        fuite_eau:"Fuite d'eau",
         nuisibles:"Nuisibles",
         portail:"Portail",
         securite_incendie:"Sécurité incendie",
@@ -1974,30 +2002,67 @@ function openVehiculeAnomalies(vehName, typeHint){
         })
         .forEach(a=>{
           const tr = document.createElement("tr");
-          const statut = a.entreprise ? (a.cloturee==="oui"?"Clôturée":"Intervention") : "Signalée";
-          const niveau = a.urgent ? "Urgent" : "Normal";
-          const desc = `${catLabel(a.categorie)} — ${a.zone||"-"}\n${a.description||"-"}`;
-          const agent = (a.createdBy && a.createdBy.display) ? a.createdBy.display : "-";
-          const dateTxt = a.dateSignalement ? a.dateSignalement : "-";
+
+          const dateTxt   = formatJJMMAAAA(a.dateSignalement || a.date || "-");
+          const niveau    = a.urgent ? "Urgent" : "Mineur";
+          const categorie = catLabel(a.categorie);
+          const materiel  = a.equipement || a.support || (source && source.nom) || "-";
+          const lieu      = a.zone || "-";
+          const desc      = a.description || a.desc || "-";
+          const agent     = (a.createdBy && a.createdBy.display) ? a.createdBy.display : "-";
+
           tr.innerHTML = `
-            <td>${escapeHtml(statut)}</td>
+            <td>${escapeHtml(dateTxt)}</td>
             <td>${escapeHtml(niveau)}</td>
+            <td>${escapeHtml(categorie)}</td>
+            <td>${escapeHtml(materiel)}</td>
+            <td>${escapeHtml(lieu)}</td>
             <td style="white-space:pre-wrap;">${escapeHtml(desc)}</td>
             <td>${escapeHtml(agent)}</td>
-            <td>${escapeHtml(dateTxt)}</td>
           `;
           tbody.appendChild(tr);
         });
+
+      if(tbody && tbody.children.length === 0){
+        tbody.innerHTML = "<tr><td colspan='7' style='padding:10px;color:#666;'>Aucune anomalie en cours.</td></tr>";
+      }
     }
+
+    // ❌ Pas Patrimoine : véhicules / matériel “history” (affichage par défaut)
     else if(!source || !Array.isArray(source.history)){
-      tbody.innerHTML = "<tr><td colspan='5' style='padding:10px;color:#666;'>Aucune anomalie en cours.</td></tr>";
+      // remet l'entête par défaut
+      if(theadRow){
+        theadRow.innerHTML = `
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Statut</th>
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Niveau</th>
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Description</th>
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Agent</th>
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Date</th>
+        `;
+      }
+      if(tbody){
+        tbody.innerHTML = "<tr><td colspan='5' style='padding:10px;color:#666;'>Aucune anomalie en cours.</td></tr>";
+      }
     }else{
-      const rows = [...source.history]
+      // remet l'entête par défaut
+      if(theadRow){
+        theadRow.innerHTML = `
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Statut</th>
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Niveau</th>
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Description</th>
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Agent</th>
+          <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Date</th>
+        `;
+      }
+
+      const rows = (Array.isArray(source.history) ? source.history : [])
         .filter(h => !h.closed)
         .sort((a,b)=>{
           const ta = a.timestamp||a.date||0, tb = b.timestamp||b.date||0;
           return (tb - ta) || String(a.text||"").localeCompare(String(b.text||""));
         });
+
+      if(!tbody) return;
 
       if(rows.length === 0){
         tbody.innerHTML = "<tr><td colspan='5' style='padding:10px;color:#666;'>Aucune anomalie en cours.</td></tr>";
@@ -2008,15 +2073,15 @@ function openVehiculeAnomalies(vehName, typeHint){
           const niveau = h.level || "-";
           const desc   = h.text || "-";
           const agent  = h.agent || "-";
-          let dateTxt = "-";
-          if(h.date){ dateTxt = h.date; }
+          const dateTxt = h.date ? h.date : "-";
 
+          // ordre cohérent avec l'entête par défaut
           tr.innerHTML = `
-            <td>${escapeHtml(dateTxt)}</td>
-            <td>${escapeHtml(agent)}</td>
-            <td>${escapeHtml(desc)}</td>
-            <td>${escapeHtml(niveau)}</td>
             <td>${escapeHtml(statut)}</td>
+            <td>${escapeHtml(niveau)}</td>
+            <td style="white-space:pre-wrap;">${escapeHtml(desc)}</td>
+            <td>${escapeHtml(agent)}</td>
+            <td>${escapeHtml(dateTxt)}</td>
           `;
           tbody.appendChild(tr);
         });
@@ -2025,10 +2090,12 @@ function openVehiculeAnomalies(vehName, typeHint){
 
     const modal = document.getElementById("anom-modal");
     if(modal){ modal.style.display = "flex"; }
+
   }catch(e){
     alert("Impossible d'afficher les anomalies.");
   }
 }
+
 
 
 /* 📝 Main courante : collecte anomalies + entrées personnalisées */
@@ -3012,7 +3079,7 @@ renderMateriel(JSON.parse(localStorage.getItem(keyMat)||"[]"));
     <div id="anom-content" style="padding:16px 20px;max-height:65vh;overflow:auto;">
       <table style="width:100%;border-collapse:collapse;">
         <thead>
-          <tr>
+          <tr id="anom-thead-row">
             <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Statut</th>
             <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Niveau</th>
             <th style="text-align:left;border-bottom:2px solid #eee;padding:8px;">Description</th>
