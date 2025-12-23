@@ -511,6 +511,13 @@ main{
 .journal-item .body .text{color:#333;margin-bottom:4px}
 .journal-item .body .date{font-size:12px;color:#666}
 
+	/* Réservations véhicules (dans 📌 Consignes) : pas en gras */
+#formation-list .reservation-line{
+  font-weight:400;
+  color:#333;
+}
+
+
 footer{text-align:center;color:#fff;font-size:13px;padding:25px;margin-top:auto;}
 
 /* =========================================================
@@ -591,6 +598,7 @@ nav.menu-bar a{ padding:10px 12px; }
   font-size:15px;
 }
 
+	
   
 .fma-pending-card .head{
   display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
@@ -2518,8 +2526,9 @@ if(dest)  line += ` à ${dest}`;
 
 
         body.innerHTML = `
-  <div class="title">${escapeHtml(line)}</div>
+  <div class="reservation-line">${escapeHtml(line)}</div>
 `;
+
 
         wrap.appendChild(body);
         list.appendChild(wrap);
