@@ -1722,12 +1722,14 @@ function printAnomalies(){
       const desc = (cat ? `[${cat}] ` : "") + (a.description || a.desc || "-");
 
       anomaliesMat.push({
-        support: equip,
-        etat: urgent ? "Indispo" : (a.etat || "Mineur"),
-        desc,
-        agent,
-        source: "Patrimoine"
-      });
+  support: equip,
+  lieu: (a.zone || "-"),               // ✅ Zone / Localisation Patrimoine
+  etat: urgent ? "Indispo" : (a.etat || "Mineur"),
+  desc,
+  agent
+  // plus besoin de "source" pour l’impression
+});
+
     });
 
   anomaliesVeh.sort((a,b)=>String(a.support).localeCompare(String(b.support),"fr",{sensitivity:"base"}));
@@ -1853,30 +1855,31 @@ function printAnomalies(){
 
   <div class="no-break">
     <h2>🏭 Anomalies matériels</h2>
-    ${
-      anomaliesMat.length
-      ? `<table>
-          <thead>
-            <tr>
-              <th style="width:18%">Matériel</th>
-              <th style="width:14%">État</th>
-              <th>Anomalie</th>
-              <th style="width:18%">Agent</th>
-              <th style="width:12%">Source</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${anomaliesMat.map(a=>`<tr>
-              <td>${escapeHtml(a.support)}</td>
-              <td>${escapeHtml(a.etat)}</td>
-              <td>${escapeHtml(a.desc)}</td>
-              <td>${escapeHtml(a.agent)}</td>
-              <td>${escapeHtml(a.source || "—")}</td>
-            </tr>`).join("")}
-          </tbody>
-        </table>`
-      : `<div class="hint">Aucune anomalie matériel en cours.</div>`
-    }
+${
+  anomaliesMat.length
+  ? `<table>
+      <thead>
+        <tr>
+          <th style="width:18%">Matériel</th>
+          <th style="width:18%">Lieu</th>
+          <th style="width:12%">État</th>
+          <th>Anomalie</th>
+          <th style="width:18%">Agent</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${anomaliesMat.map(a=>`<tr>
+          <td>${escapeHtml(a.support)}</td>
+          <td>${escapeHtml(a.lieu || "-")}</td>
+          <td>${escapeHtml(a.etat)}</td>
+          <td>${escapeHtml(a.desc)}</td>
+          <td>${escapeHtml(a.agent)}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`
+  : `<div class="hint">Aucune anomalie matériel en cours.</div>`
+}
+
   </div>
 
   <footer>
