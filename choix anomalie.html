@@ -32,68 +32,104 @@ header .subtitle{font-size:14px;color:#444;margin-top:4px}
 
 /* MAIN */
 main{
-  flex:1;max-width:1100px;margin:20px auto;padding:0 16px;
-  display:grid;gap:16px;grid-template-columns:1fr;
+  flex:1;
+  max-width:1300px;        /* ✅ plus large globalement */
+  margin:20px auto;
+  padding:0 16px;
+  display:grid;
+  place-items:center;      /* ✅ centre le panel */
 }
+
+/* ✅ Panel (tableau) élargi et moins “tube” */
 .panel{
   background:rgba(255,255,255,.92);
   border-radius:18px;
-  padding:20px;
-  box-shadow:0 6px 16px rgba(0,0,0,.10);
-  display:flex;flex-direction:column;gap:14px;
+  padding:22px 24px;
+  box-shadow:0 10px 24px rgba(0,0,0,.12);
+  display:flex;
+  flex-direction:column;
+  gap:14px;
 
-  /* ✅ carte moins “haute” + plus large pour accueillir des GROS boutons */
-  max-width:820px;
   width:100%;
-  margin:0 auto;
+  max-width:980px;         /* ✅ beaucoup plus large */
+  min-height:220px;        /* ✅ évite la carte trop haute vide */
 }
+
 .panel h2{
   font-size:22px;font-weight:800;color:#0d2b52;
   border-left:6px solid #b71c1c;padding-left:10px
 }
 .help{font-size:14px;color:#444}
 
-/* ✅ Boutons ENORMES + Véhicules à gauche / Patrimoine à droite */
+/* ✅ Grille 2 colonnes pour gros boutons */
 .buttons{
-  display:flex;
-  gap:18px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:22px;
   width:100%;
-  margin-top:10px;
+  margin-top:8px;
 }
 
+/* ✅ Boutons “carte” alignés proprement */
 .btn{
-  flex:1 1 0;
   display:flex;
   align-items:center;
-  justify-content:center;
-  gap:12px;
+  justify-content:flex-start;
+  gap:18px;
 
-  /* ✅ énorme */
-  padding:30px 22px;
-  font-size:28px;
-  font-weight:900;
-  min-height:120px;
+  padding:26px 26px;
+  min-height:140px;        /* ✅ gros */
+  border-radius:22px;
 
-  border:none;
-  border-radius:20px;
-  cursor:pointer;
   color:#fff;
   text-decoration:none;
+  font-weight:900;
+  font-size:30px;
 
-  box-shadow:0 12px 26px rgba(0,0,0,.18);
-  transition:transform .2s ease, filter .2s ease;
+  box-shadow:0 14px 28px rgba(0,0,0,.18);
+  transition:transform .18s ease, filter .18s ease;
+  position:relative;
+  overflow:hidden;
 }
+
 .btn:hover{
-  transform:translateY(-3px);
+  transform:translateY(-4px);
   filter:brightness(1.05);
 }
 
-/* Couleurs */
-.btn.primary{background:#1a73e8}
-.btn.secondary{background:#6a1b9a}
+/* ✅ Icône plus grande + bien centrée */
+.btn .icon{
+  width:64px;height:64px;
+  display:grid;place-items:center;
+  font-size:42px;
+  background:rgba(255,255,255,.18);
+  border-radius:18px;
+  flex:0 0 auto;
+}
+
+/* ✅ Texte */
+.btn .label{
+  display:flex;
+  flex-direction:column;
+  line-height:1.05;
+}
+.btn .label small{
+  font-size:14px;
+  font-weight:700;
+  opacity:.9;
+  margin-top:6px;
+}
+
+/* ✅ Styles des 2 boutons */
+.btn.primary{
+  background:linear-gradient(135deg,#1a73e8 0%, #165fc2 100%);
+}
+.btn.secondary{
+  background:linear-gradient(135deg,#6a1b9a 0%, #4a1670 100%);
+}
 
 /* Footer */
-footer{text-align:center;color:#fff;font-size:13px;padding:20px}
+footer{text-align:center;color:#fff;font-size:13px;padding:18px}
 
 /* 📱 Mobile */
 @media (max-width:768px){
@@ -109,19 +145,33 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
   }
 
   main{margin:16px auto;padding:0 12px}
-  .panel{padding:16px; max-width:100%;}
+
+  .panel{
+    max-width:100%;
+    padding:16px;
+    min-height:auto;
+  }
   .panel h2{font-size:18px}
   .help{font-size:13px}
 
-  /* ✅ gros boutons en colonne sur mobile */
-  .buttons{flex-direction:column; gap:14px;}
+  /* ✅ en colonne sur mobile */
+  .buttons{
+    grid-template-columns:1fr;
+    gap:14px;
+  }
+
   .btn{
-    width:100%;
     font-size:22px;
-    min-height:96px;
-    padding:22px 18px;
+    min-height:100px;
+    padding:18px 18px;
     border-radius:18px;
   }
+  .btn .icon{
+    width:52px;height:52px;
+    font-size:34px;
+    border-radius:16px;
+  }
+  .btn .label small{font-size:12px}
 }
 </style>
 </head>
@@ -142,10 +192,23 @@ footer{text-align:center;color:#fff;font-size:13px;padding:20px}
     <p class="help">Merci de choisir la catégorie concernée.</p>
 
     <div class="buttons">
-      <!-- ✅ gauche -->
-      <a class="btn primary" href="vehicules.html">🚒 Véhicules</a>
-      <!-- ✅ droite -->
-      <a class="btn secondary" href="patrimoine.html">🏛️ Patrimoine</a>
+      <!-- ✅ Véhicules à gauche -->
+      <a class="btn primary" href="vehicules.html">
+        <span class="icon">🚒</span>
+        <span class="label">
+          Véhicules
+          <small>Déclarer une anomalie véhicule</small>
+        </span>
+      </a>
+
+      <!-- ✅ Patrimoine à droite (beau + aligné) -->
+      <a class="btn secondary" href="patrimoine.html">
+        <span class="icon">🏛️</span>
+        <span class="label">
+          Patrimoine
+          <small>Déclarer une anomalie bâtiment</small>
+        </span>
+      </a>
     </div>
   </section>
 </main>
