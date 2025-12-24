@@ -467,12 +467,32 @@ function getSessionAgentDisplay(u){
   return name||u?.matricule||"Agent";
 }
 
+function getSession(){
+  try { return JSON.parse(localStorage.getItem("csver_session")||"null"); }
+  catch { return null; }
+}
+
+function getRealUserFromSession(){
+  const s = getSession();
+  if(!s || !s.matricule) return null;
+  const raw = localStorage.getItem("csver_user_" + s.matricule);
+  if(!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+
+  
 /* Autorisation édition: admin OU SPP */
 function canEdit(){
-  if(!user) return false;
-  const role=(user.role||"").toLowerCase().trim();
-  return user.isAdmin===true || role==="admin" || role==="spp";
+  const real = getRealUserFromSession();
+  if(!real) return false;
+
+  const statut = String(real.statut || "").toUpperCase().trim();   // "SPP"
+  const isAdmin = real.permissions?.primary?.admin === true;      // vrai admin
+
+  return isAdmin || statut === "SPP";
 }
+
 
 function getRadioValue(name){
   const el=document.querySelector(`input[name="${name}"]:checked`);
@@ -620,8 +640,12 @@ function loadHistory(v){
 
     // Loupe visible seulement SPP/Admin
     const editBtn = canEdit()
-      ? `<button class="icon-btn" title="Modifier" onclick="openEditAnomaly(${currentVehiculeIndex},${h.timestamp})">🔍</button>`
-      : "";
+  ? `<button type="button" class="icon-btn" title="Modifier"
+        onclick="event.stopPropagation(); openEditAnomaly(${currentVehiculeIndex}, ${h.timestamp});">
+        🔍
+     </button>`
+  : "";
+
 
     const tr=document.createElement("tr");
     tr.innerHTML=
@@ -633,7 +657,11 @@ function loadHistory(v){
        <td>${ai}</td>
        <td style="white-space:nowrap;display:flex;gap:6px;">
          ${editBtn}
-         <button class='close-anomaly' onclick='closeAnomaly(${currentVehiculeIndex},${h.timestamp})'>Clôturer</button>
+         <button type="button" class='close-anomaly'
+  onclick='event.stopPropagation(); closeAnomaly(${currentVehiculeIndex},${h.timestamp})'>
+  Clôturer
+</button>
+
        </td>`;
     tbody.appendChild(tr);
   });
@@ -790,4 +818,5 @@ function printAnomalies(){
 
 </body>
 </html>
+
 
