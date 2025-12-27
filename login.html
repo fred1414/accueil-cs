@@ -34,7 +34,6 @@
   .field-label { text-align:left; font-size:14px; font-weight:600; color:#004aad; margin-top:4px; }
   .muted a { color:#004aad; text-decoration:underline; cursor:pointer; }
 
-  /* --- Modale Mentions légales --- */
   .modal-overlay{
     position: fixed;
     inset: 0;
@@ -92,8 +91,7 @@
   <h2>Connexion — CISMIC</h2>
 
   <input id="matricule" type="text" placeholder="Matricule" autocomplete="username">
-  
-  <!-- CIS à choisir si l'utilisateur en a plusieurs -->
+
   <div id="cis-container" style="display:none;">
     <div class="field-label">CIS</div>
     <select id="cisSelect"></select>
@@ -101,14 +99,15 @@
 
   <input id="password" type="password" placeholder="Mot de passe" autocomplete="current-password">
   <button id="loginBtn" onclick="login()">Se connecter</button>
-  <p class="muted">Mot de passe provisoire : <code>temp&lt;matricule&gt;</code></p>
+
+  <p class="muted">Mot de passe provisoire : fourni par l’administrateur</p>
   <p class="muted"><a onclick="forgotWithQuestion(event)">Mot de passe oublié ? Répondre à ma question</a></p>
+
   <p class="muted"><strong>© 2025 CISMIC — Marque déposée</strong></p>
   <p class="muted"><strong>Tous droits réservés</strong></p>
   <p class="muted"><a href="#" onclick="openMentions(event)">Mentions légales</a></p>
 </div>
 
-<!-- Modale Mentions légales -->
 <div id="mentionsModal" class="modal-overlay" onclick="closeMentions()">
   <div class="modal" onclick="event.stopPropagation()">
     <h3>Mentions légales</h3>
@@ -129,7 +128,6 @@ Toute utilisation non autorisée pourra faire l’objet de poursuites.
   </div>
 </div>
 
-<!-- 🔌 Firebase + Firestore + cloud-storage -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="cloud-storage.js"></script>
@@ -137,64 +135,73 @@ Toute utilisation non autorisée pourra faire l’objet de poursuites.
 <script>
 const INDEX_PATH = "index.html";
 
-/* --------- util SHA-256 (MDP principal, pour rester compatible) --------- */
-async function hash(text){
-  const enc = new TextEncoder();
-  const data = enc.encode(text);
-  const buf = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+/* ===================== Utils ===================== */
+function safeInt(x, d=150000){
+  const n = Number.parseInt(String(x), 10);
+  return Number.isFinite(n) ? n : d;
+}
+function b64ToBytes(b64){
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+function bytesToB64(bytes){
+  let bin = "";
+  bytes.forEach(b=>bin += String.fromCharCode(b));
+  return btoa(bin);
 }
 
-/* --------- util PBKDF2 (question secrète) --------- */
-async function pbkdf2Hash(secret, saltHex, iterations=100000){
+/* ===================== PBKDF2 Base64 (mot de passe) ===================== */
+async function pbkdf2HashB64(password, saltB64, iterations=150000){
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveBits"]);
+  const salt = b64ToBytes(saltB64);
+  const bits = await crypto.subtle.deriveBits(
+    { name:"PBKDF2", salt, iterations: safeInt(iterations, 150000), hash:"SHA-256" },
+    keyMaterial,
+    256
+  );
+  return bytesToB64(new Uint8Array(bits));
+}
+function randomSaltB64(len=16){
+  const salt = new Uint8Array(len);
+  crypto.getRandomValues(salt);
+  return bytesToB64(salt);
+}
+async function hashPasswordToRecord(password){
+  const iters = 150000;
+  const salt = randomSaltB64(16);
+  const hash = await pbkdf2HashB64(password, salt, iters);
+  return { kdf:"pbkdf2", iters, salt, hash };
+}
+
+/* ===================== PBKDF2 Hex (question secrète) ===================== */
+async function pbkdf2HashHex(secret, saltHex, iterations=100000){
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(secret), {name:"PBKDF2"}, false, ["deriveBits"]);
   const salt = new Uint8Array(saltHex.match(/.{1,2}/g).map(h=>parseInt(h,16)));
-  const bits = await crypto.subtle.deriveBits({name:"PBKDF2", hash:"SHA-256", salt, iterations}, keyMaterial, 256);
+  const bits = await crypto.subtle.deriveBits(
+    {name:"PBKDF2", hash:"SHA-256", salt, iterations: safeInt(iterations, 100000)},
+    keyMaterial,
+    256
+  );
   return Array.from(new Uint8Array(bits)).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
-function genSalt(n=16){ const b=new Uint8Array(n); crypto.getRandomValues(b); return Array.from(b).map(x=>x.toString(16).padStart(2,"0")).join(""); }
-
-/* --------- liste de questions secrètes --------- */
-const SECRET_QUESTIONS = [
-  "Quel est le nom de votre premier animal de compagnie ?",
-  "Dans quelle ville êtes-vous né(e) ?",
-  "Quel était le nom de votre école primaire ?",
-  "Quel est votre film préféré ?",
-  "Quel est le prénom de votre meilleur ami d’enfance ?",
-  "Quel est votre plat préféré ?",
-  "Autre : je saisis ma propre question"
-];
-function selectSecretQuestion(){
-  const menu = SECRET_QUESTIONS.map((q,i)=>`${i+1}. ${q}`).join("\n");
-  while(true){
-    const ans = prompt("Choisissez une question (entrez le numéro) :\n\n"+menu);
-    if(ans===null) return null;
-    const idx = parseInt(ans,10);
-    if(!Number.isInteger(idx) || idx<1 || idx>SECRET_QUESTIONS.length){ alert("Numéro invalide."); continue; }
-    const picked = SECRET_QUESTIONS[idx-1];
-    if(picked.startsWith("Autre")){
-      let custom = "";
-      do{
-        custom = prompt("Saisissez VOTRE question (au moins 10 caractères) :") || "";
-        if(custom===null) return null;
-      }while(custom.trim().length<10);
-      return custom.trim();
-    }
-    return picked;
-  }
+function genSaltHex(n=16){
+  const b=new Uint8Array(n);
+  crypto.getRandomValues(b);
+  return Array.from(b).map(x=>x.toString(16).padStart(2,"0")).join("");
 }
 
-/* ===================== AJOUT : Politique MDP ===================== */
+/* ===================== Politique MDP ===================== */
 function checkPasswordPolicy(pwd){
   const errors = [];
   if (!pwd || pwd.length < 10) errors.push("au moins 10 caractères");
   if (!/[A-Z]/.test(pwd)) errors.push("au moins 1 majuscule");
-  // caractère spécial = non lettre / non chiffre / non espace
   if (!/[^A-Za-z0-9\s]/.test(pwd)) errors.push("au moins 1 caractère spécial (ex: ! ? @ #)");
   return errors;
 }
-
 async function promptNewPassword(){
   while(true){
     const newPwd = prompt("Nouveau mot de passe (10 caractères min, 1 majuscule, 1 caractère spécial) :");
@@ -213,27 +220,61 @@ async function promptNewPassword(){
       alert("Mot de passe invalide :\n- " + errs.join("\n- "));
       continue;
     }
-
     return newPwd;
   }
 }
-/* ================================================================ */
 
-/* --------- compat & normalisation du schéma utilisateur --------- */
+/* ===================== Questions secrètes ===================== */
+const SECRET_QUESTIONS = [
+  "Quel est le nom de votre premier animal de compagnie ?",
+  "Dans quelle ville êtes-vous né(e) ?",
+  "Quel était le nom de votre école primaire ?",
+  "Quel est votre film préféré ?",
+  "Quel est le prénom de votre meilleur ami d’enfance ?",
+  "Quel est votre plat préféré ?",
+  "Autre : je saisis ma propre question"
+];
+function selectSecretQuestion(){
+  const menu = SECRET_QUESTIONS.map((q,i)=>`${i+1}. ${q}`).join("\n");
+  while(true){
+    const ans = prompt("Choisissez une question (entrez le numéro) :\n\n"+menu);
+    if(ans===null) return null;
+    const idx = parseInt(ans,10);
+    if(!Number.isInteger(idx) || idx<1 || idx>SECRET_QUESTIONS.length){
+      alert("Numéro invalide.");
+      continue;
+    }
+    const picked = SECRET_QUESTIONS[idx-1];
+    if(picked.startsWith("Autre")){
+      let custom = "";
+      do{
+        custom = prompt("Saisissez VOTRE question (au moins 10 caractères) :") || "";
+        if(custom===null) return null;
+      }while(custom.trim().length<10);
+      return custom.trim();
+    }
+    return picked;
+  }
+}
+
+/* ===================== Normalisation user (compatible Admin) ===================== */
 function normalizeUser(uRaw){
   const u = JSON.parse(JSON.stringify(uRaw||{}));
+
   if (Array.isArray(u.cis)) {
     const primary = u.cis[0] || "";
-    const rest = (u.cis.slice(1)||[]).map(c=>({ cis:c, role: u.role || "agent" }));
+    const rest = (u.cis.slice(1)||[]).map(c=>({ cis:c, statut: u.statut || "SPV" }));
     u.cis = { primary, secondaries: rest };
-    u.role = u.role || "agent";
   } else if (typeof u.cis === "string") {
     u.cis = { primary: u.cis, secondaries: [] };
-    u.role = u.role || "agent";
   } else {
     u.cis = u.cis || { primary:"", secondaries:[] };
-    u.role = u.role || "agent";
   }
+
+  u.permissions = u.permissions || { primary:{}, secondaries:{} };
+  u.permissions.primary = u.permissions.primary || {};
+  u.permissions.secondaries = u.permissions.secondaries || {};
+
   const seen = new Set();
   const primLC = (u.cis.primary||"").toLowerCase();
   u.cis.secondaries = (u.cis.secondaries||[]).filter(s=>{
@@ -242,33 +283,39 @@ function normalizeUser(uRaw){
     if(k===primLC || seen.has(k)) return false;
     seen.add(k); return true;
   });
+
   return u;
 }
 
-/* --------- Accès utilisateur via Firestore --------- */
+/* ===================== Cloud load/save ===================== */
+/* ✅ MODIF #1 : loadUser ne touche plus au localStorage (cache mémoire seulement) */
+const MEM_USER_CACHE = new Map();
 async function loadUser(matricule){
   const key = "csver_user_" + matricule;
 
-  // 1) Cloud d'abord
+  if (MEM_USER_CACHE.has(key)) return MEM_USER_CACHE.get(key);
+
   const cloudUser = await cloudGetJSON(key, null);
   if (cloudUser) {
-    localStorage.setItem(key, JSON.stringify(cloudUser)); // cache local
+    MEM_USER_CACHE.set(key, cloudUser);
     return cloudUser;
   }
 
-  // 2) Fallback ancien système (uniquement local)
-  const data = localStorage.getItem(key);
-  return data ? JSON.parse(data) : null;
+  // on ne lit pas le localStorage ici (pour ne pas raviver/écrire)
+  return null;
 }
 
-async function saveUser(matricule, userObj){
+/* ✅ IMPORTANT : on garde saveUserCloud fonctionnelle (création / reset / maj mdp) */
+async function saveUserCloud(matricule, userObj){
   const key = "csver_user_" + matricule;
-  localStorage.setItem(key, JSON.stringify(userObj));   // cache local
-  await cloudSetJSON(key, userObj);                    // sauvegarde cloud
+  localStorage.setItem(key, JSON.stringify(userObj)); // conserve ton fonctionnement existant
+  await cloudSetJSON(key, userObj);
 }
 
-/* ---------- pré-remplir la liste des CIS ---------- */
-document.getElementById("matricule").addEventListener("blur", preloadCis);
+/* ===================== CIS : plus de preload au blur ===================== */
+/* ✅ MODIF #2 : on ne précharge plus rien au blur du matricule */
+// document.getElementById("matricule").addEventListener("blur", preloadCis);
+
 document.getElementById("matricule").addEventListener("input", (e)=>{
   if(!e.target.value.trim()){
     document.getElementById("cis-container").style.display="none";
@@ -278,7 +325,30 @@ document.getElementById("matricule").addEventListener("input", (e)=>{
   }
 });
 
-function preloadCis(){
+/* ✅ MODIF #3 : choix CIS après mot de passe OK */
+let CIS_STEP = false;
+let CIS_USER = null;
+
+function resetCisStep(){
+  CIS_STEP = false;
+  CIS_USER = null;
+  document.getElementById("cis-container").style.display="none";
+  const sel = document.getElementById("cisSelect");
+  sel.innerHTML="";
+  sel.disabled = false;
+}
+document.getElementById("matricule").addEventListener("input", resetCisStep);
+document.getElementById("password").addEventListener("input", resetCisStep);
+
+function roleForCis(user, cis, kind){
+  if(kind === "principal"){
+    return user.permissions?.primary?.admin ? "admin" : "agent";
+  }
+  return user.permissions?.secondaries?.[cis]?.admin ? "admin" : "agent";
+}
+
+/* (On garde preloadCis si tu veux l’appeler manuellement ailleurs, mais il n’est plus appelé automatiquement.) */
+async function preloadCis(){
   const matricule = document.getElementById("matricule").value.trim();
   const cisWrap = document.getElementById("cis-container");
   const sel = document.getElementById("cisSelect");
@@ -290,19 +360,23 @@ function preloadCis(){
     return;
   }
 
-  const data = localStorage.getItem("csver_user_"+matricule);
-  if(!data){
+  const userData = await loadUser(matricule);
+  if(!userData){
     cisWrap.style.display = "none";
     sel.innerHTML = "";
     sel.disabled = false;
     return;
   }
 
-  const user = normalizeUser(JSON.parse(data));
+  const user = normalizeUser(userData);
 
   const entries = [];
-  if (user.cis.primary) entries.push({ cis: user.cis.primary, role: user.role, kind: "principal" });
-  (user.cis.secondaries||[]).forEach(s=> entries.push({ cis: s.cis, role: s.role || "agent", kind: "secondaire" }));
+  if (user.cis.primary){
+    entries.push({ cis: user.cis.primary, kind:"principal", role: roleForCis(user, user.cis.primary, "principal") });
+  }
+  (user.cis.secondaries||[]).forEach(s=>{
+    entries.push({ cis: s.cis, kind:"secondaire", role: roleForCis(user, s.cis, "secondaire") });
+  });
 
   if(entries.length === 0){
     cisWrap.style.display = "none";
@@ -325,12 +399,85 @@ function preloadCis(){
   cisWrap.style.display = "block";
 }
 
-/* ----------------------- login ----------------------- */
+/* ===================== Vérification mot de passe (PBKDF2 only) ===================== */
+async function verifyPassword(user, password){
+  const pwd = (password || "").trim();
+  if(!pwd) return false;
+
+  if(user?.kdf === "pbkdf2" && user?.salt && user?.hash && user?.iters){
+    const calc = await pbkdf2HashB64(pwd, user.salt, user.iters);
+    return calc === user.hash;
+  }
+
+  if(user?.password?.kdf === "pbkdf2" && user?.password?.salt && user?.password?.hash && user?.password?.iters){
+    const calc = await pbkdf2HashB64(pwd, user.password.salt, user.password.iters);
+    return calc === user.password.hash;
+  }
+
+  return false;
+}
+
+/* ===================== Première connexion : on passe en PBKDF2 robuste ===================== */
+async function firstLoginForceChange(matricule, user){
+  const newPwd = await promptNewPassword();
+  if(newPwd === null) return false;
+
+  const q = selectSecretQuestion();
+  if(!q) return false;
+
+  const a = prompt("Réponse (respectez majuscules/espaces — vide accepté) :");
+  if(a === null) return false;
+
+  const saltQ = genSaltHex();
+  const hashQ = await pbkdf2HashHex(a, saltQ, 100000);
+  user.secret_question = { q, hash: hashQ, salt: saltQ, iters: 100000 };
+
+  const rec = await hashPasswordToRecord(newPwd);
+  user.kdf = rec.kdf;
+  user.iters = rec.iters;
+  user.salt = rec.salt;
+  user.hash = rec.hash;
+
+  await saveUserCloud(matricule, user);
+
+  alert("Mot de passe mis à jour ✅. Vous pouvez vous connecter.");
+  return true;
+}
+
+/* ===================== LOGIN ===================== */
 async function login(){
   const matricule = document.getElementById("matricule").value.trim();
-  const password = document.getElementById("password").value.trim();
+  const password  = document.getElementById("password").value.trim();
+
   if(!matricule || !password){
     alert("Merci de remplir les champs matricule et mot de passe.");
+    return;
+  }
+
+  // ✅ MODIF #4 : si on est déjà à l’étape CIS, on finalise
+  if (CIS_STEP && CIS_USER){
+    const sel = document.getElementById("cisSelect");
+    const opt = sel.selectedOptions[0];
+
+    const chosen = {
+      cis: sel.value,
+      role: opt?.dataset?.role || "agent",
+      kind: opt?.dataset?.kind || "principal"
+    };
+
+    localStorage.setItem("csver_session", JSON.stringify({
+      matricule: CIS_USER.matricule,
+      prenom: CIS_USER.prenom || "",
+      nom: CIS_USER.nom || "",
+      cis: chosen.cis,
+      role: chosen.role,
+      cis_kind: chosen.kind,
+      cis_all: CIS_USER.cis
+    }));
+
+    const displayName = (CIS_USER.prenom ? CIS_USER.prenom+" " : "") + (CIS_USER.nom || CIS_USER.matricule);
+    alert(`Bienvenue ${displayName} (${chosen.role}) — CIS : ${chosen.cis}`);
+    window.location.href = INDEX_PATH;
     return;
   }
 
@@ -342,81 +489,84 @@ async function login(){
 
   let user = normalizeUser(userData);
 
-  // Première connexion : mot de passe provisoire -> définir MDP + question secrète
-  if(!user.hash){
-    const temp = "temp"+matricule;
-    if(password!==temp){
-      alert("Mot de passe provisoire incorrect.");
+  if(!user.secret_question || !user.secret_question.q){
+    const ok = await verifyPassword(user, password);
+    if(!ok){
+      alert("Mot de passe incorrect.");
       return;
     }
-
-    const newPwd = await promptNewPassword();
-    if(newPwd === null) return;
-
-    const q = selectSecretQuestion();
-    if(!q) return;
-    const a = prompt("Réponse (respectez majuscules/espaces — vide accepté) :");
-    if(a===null) return;
-
-    const saltQ = genSalt();
-    const hashQ = await pbkdf2Hash(a, saltQ, 100000);
-
-    user.secret_question = { q, hash: hashQ, salt: saltQ, iters: 100000 };
-    user.hash = await hash(newPwd);
-
-    await saveUser(matricule, user);
-    alert("Mot de passe et question secrète enregistrés. Connecte-toi maintenant.");
+    await firstLoginForceChange(matricule, user);
     return;
   }
 
-  const hashed = await hash(password);
-  if(hashed!==user.hash){
+  const ok = await verifyPassword(user, password);
+  if(!ok){
     alert("Mot de passe incorrect.");
     return;
   }
 
+  // ✅ MODIF #5 : afficher le CIS seulement après mdp OK
   const entries = [];
-  if (user.cis.primary) entries.push({ cis:user.cis.primary, role:user.role, kind:"principal" });
-  (user.cis.secondaries||[]).forEach(s=> entries.push({ cis:s.cis, role:s.role||"agent", kind:"secondaire" }));
+  if (user.cis.primary){
+    entries.push({ cis:user.cis.primary, kind:"principal", role: roleForCis(user, user.cis.primary, "principal") });
+  }
+  (user.cis.secondaries||[]).forEach(s=>{
+    entries.push({ cis:s.cis, kind:"secondaire", role: roleForCis(user, s.cis, "secondaire") });
+  });
 
   if(entries.length === 0){
     alert("Aucun CIS associé à ce compte. Contacte un administrateur.");
     return;
   }
 
+  const cisWrap = document.getElementById("cis-container");
   const sel = document.getElementById("cisSelect");
-  let chosen = entries[0];
-  if(entries.length > 1){
-    if(!sel || sel.options.length === 0){
-      alert("Merci de choisir ton CIS.");
-      preloadCis();
-      return;
-    }
-    const cVal = sel.value;
-    const opt = sel.selectedOptions[0];
-    chosen = {
-      cis: cVal,
+
+  sel.innerHTML = "";
+  entries.forEach(e=>{
+    const opt = document.createElement("option");
+    opt.value = e.cis;
+    opt.textContent = e.kind === "principal" ? `${e.cis} (principal)` : `${e.cis} (secondaire)`;
+    opt.dataset.role = e.role;
+    opt.dataset.kind = e.kind;
+    sel.appendChild(opt);
+  });
+
+  sel.disabled = (entries.length === 1);
+  cisWrap.style.display = "block";
+
+  // Si un seul CIS, on finalise tout de suite
+  if(entries.length === 1){
+    const opt = sel.options[0];
+    const chosen = {
+      cis: sel.value,
       role: opt?.dataset?.role || "agent",
       kind: opt?.dataset?.kind || "principal"
     };
+
+    localStorage.setItem("csver_session", JSON.stringify({
+      matricule: user.matricule,
+      prenom: user.prenom || "",
+      nom: user.nom || "",
+      cis: chosen.cis,
+      role: chosen.role,
+      cis_kind: chosen.kind,
+      cis_all: user.cis
+    }));
+
+    const displayName = (user.prenom ? user.prenom+" " : "") + (user.nom || user.matricule);
+    alert(`Bienvenue ${displayName} (${chosen.role}) — CIS : ${chosen.cis}`);
+    window.location.href = INDEX_PATH;
+    return;
   }
 
-  localStorage.setItem("csver_session", JSON.stringify({
-    matricule: user.matricule,
-    prenom: user.prenom || "",
-    nom: user.nom || "",
-    cis: chosen.cis,
-    role: chosen.role,
-    cis_kind: chosen.kind,
-    cis_all: user.cis
-  }));
-
-  const displayName = (user.prenom ? user.prenom+" " : "") + (user.nom || user.matricule);
-  alert(`Bienvenue ${displayName} (${chosen.role}) — CIS : ${chosen.cis}`);
-  window.location.href = INDEX_PATH;
+  // Sinon, on attend le choix puis un 2e clic
+  CIS_STEP = true;
+  CIS_USER = user;
+  alert("Mot de passe OK ✅. Choisissez votre CIS puis cliquez à nouveau sur « Se connecter ».");
 }
 
-/* ---- Mot de passe oublié : répondre à la question ---- */
+/* ===================== Mot de passe oublié (PBKDF2 aussi) ===================== */
 async function forgotWithQuestion(ev){
   ev && ev.preventDefault();
 
@@ -430,8 +580,9 @@ async function forgotWithQuestion(ev){
   }
 
   let user = normalizeUser(userData);
+
   if(!user.secret_question || !user.secret_question.q){
-    alert("Aucune question secrète définie pour ce compte.");
+    alert("Aucune question secrète définie pour ce compte. Contactez un administrateur.");
     return;
   }
 
@@ -439,21 +590,26 @@ async function forgotWithQuestion(ev){
   const ans = prompt("Votre réponse (retapez exactement votre phrase — vide accepté) :");
   if(ans === null) return;
 
-  const h = await pbkdf2Hash(ans, user.secret_question.salt, user.secret_question.iters || 100000);
+  const h = await pbkdf2HashHex(ans, user.secret_question.salt, user.secret_question.iters || 100000);
   if(h !== user.secret_question.hash){
     alert("Réponse incorrecte.");
     return;
   }
 
-  const p1 = await promptNewPassword();
-  if(p1 === null) return;
-  user.hash = await hash(p1);
+  const newPwd = await promptNewPassword();
+  if(newPwd === null) return;
 
-  await saveUser(matricule, user);
+  const rec = await hashPasswordToRecord(newPwd);
+  user.kdf = rec.kdf;
+  user.iters = rec.iters;
+  user.salt = rec.salt;
+  user.hash = rec.hash;
+
+  await saveUserCloud(matricule, user);
   alert("Mot de passe réinitialisé. Vous pouvez vous connecter.");
 }
 
-/* --- Mentions légales (modale) --- */
+/* --- Mentions légales --- */
 function openMentions(ev){
   ev && ev.preventDefault();
   document.getElementById("mentionsModal").style.display = "flex";
