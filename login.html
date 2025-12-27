@@ -92,7 +92,7 @@
   <h2>Connexion — CISMIC</h2>
 
   <input id="matricule" type="text" placeholder="Matricule" autocomplete="username">
-  
+
   <!-- CIS à choisir si l'utilisateur en a plusieurs -->
   <div id="cis-container" style="display:none;">
     <div class="field-label">CIS</div>
@@ -101,7 +101,8 @@
 
   <input id="password" type="password" placeholder="Mot de passe" autocomplete="current-password">
   <button id="loginBtn" onclick="login()">Se connecter</button>
-  <p class="muted">Mot de passe provisoire : <code>temp&lt;matricule&gt;</code></p>
+
+  <!-- ✅ On NE divulgue plus le mot de passe provisoire dans l'UI -->
   <p class="muted"><a onclick="forgotWithQuestion(event)">Mot de passe oublié ? Répondre à ma question</a></p>
   <p class="muted"><strong>© 2025 CISMIC — Marque déposée</strong></p>
   <p class="muted"><strong>Tous droits réservés</strong></p>
@@ -137,7 +138,7 @@ Toute utilisation non autorisée pourra faire l’objet de poursuites.
 <script>
 const INDEX_PATH = "index.html";
 
-/* --------- util SHA-256 (MDP principal, pour rester compatible) --------- */
+/* --------- util SHA-256 (MDP principal) --------- */
 async function hash(text){
   const enc = new TextEncoder();
   const data = enc.encode(text);
@@ -145,7 +146,7 @@ async function hash(text){
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 
-/* --------- util PBKDF2 (question secrète) --------- */
+/* --------- util PBKDF2 (question secrète + MDP provisoire admin) --------- */
 async function pbkdf2Hash(secret, saltHex, iterations=100000){
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(secret), {name:"PBKDF2"}, false, ["deriveBits"]);
@@ -185,7 +186,7 @@ function selectSecretQuestion(){
   }
 }
 
-/* ===================== AJOUT : Politique MDP ===================== */
+/* ===================== Politique MDP robuste ===================== */
 function checkPasswordPolicy(pwd){
   const errors = [];
   if (!pwd || pwd.length < 10) errors.push("au moins 10 caractères");
@@ -325,6 +326,61 @@ function preloadCis(){
   cisWrap.style.display = "block";
 }
 
+/* ====== NOUVEAU : vérification MDP provisoire sécurisé (si présent) ======
+   - Nouveau système recommandé : l'admin enregistre :
+       user.temp_hash (PBKDF2),
+       user.temp_salt,
+       user.temp_iters,
+       user.must_change_password = true
+   - Compat : si aucun temp_hash et aucun user.hash => ancien provisoire "temp<matricule>"
+*/
+async function verifyTempPassword(user, matricule, password){
+  if (user && user.temp_hash && user.temp_salt) {
+    const iters = user.temp_iters || 100000;
+    const h = await pbkdf2Hash(password, user.temp_salt, iters);
+    return h === user.temp_hash;
+  }
+  // compat legacy (si tu as encore des comptes sans hash/temp_hash)
+  if (!user.hash && !user.temp_hash) {
+    return password === ("temp" + matricule);
+  }
+  return false;
+}
+
+/* ====== NOUVEAU : forcer changement MDP robuste ====== */
+async function forceChangePasswordFlow(matricule, user){
+  alert("Première connexion : vous devez définir un nouveau mot de passe robuste.");
+
+  const newPwd = await promptNewPassword();
+  if (newPwd === null) return false;
+
+  // On force la question secrète si elle n'existe pas
+  if(!user.secret_question || !user.secret_question.q){
+    const q = selectSecretQuestion();
+    if(!q) return false;
+    const a = prompt("Réponse (respectez majuscules/espaces — vide accepté) :");
+    if(a===null) return false;
+
+    const saltQ = genSalt();
+    const hashQ = await pbkdf2Hash(a, saltQ, 100000);
+    user.secret_question = { q, hash: hashQ, salt: saltQ, iters: 100000 };
+  }
+
+  user.hash = await hash(newPwd);
+
+  // ✅ on retire l'obligation
+  user.must_change_password = false;
+
+  // ✅ si un provisoire sécurisé était stocké, on le supprime après changement
+  delete user.temp_hash;
+  delete user.temp_salt;
+  delete user.temp_iters;
+
+  await saveUser(matricule, user);
+  alert("Mot de passe enregistré. Connectez-vous à nouveau avec votre nouveau mot de passe.");
+  return true;
+}
+
 /* ----------------------- login ----------------------- */
 async function login(){
   const matricule = document.getElementById("matricule").value.trim();
@@ -342,39 +398,38 @@ async function login(){
 
   let user = normalizeUser(userData);
 
-  // Première connexion : mot de passe provisoire -> définir MDP + question secrète
+  // 1) Cas provisoire (nouveau système PBKDF2 ou legacy temp<matricule>)
+  const tempOK = await verifyTempPassword(user, matricule, password);
+  if (tempOK) {
+    // ✅ impose le changement
+    user.must_change_password = true;
+
+    const done = await forceChangePasswordFlow(matricule, user);
+    if(done) return;
+    return; // si annulé
+  }
+
+  // 2) Cas normal : mot de passe déjà défini
   if(!user.hash){
-    const temp = "temp"+matricule;
-    if(password!==temp){
-      alert("Mot de passe provisoire incorrect.");
-      return;
-    }
-
-    const newPwd = await promptNewPassword();
-    if(newPwd === null) return;
-
-    const q = selectSecretQuestion();
-    if(!q) return;
-    const a = prompt("Réponse (respectez majuscules/espaces — vide accepté) :");
-    if(a===null) return;
-
-    const saltQ = genSalt();
-    const hashQ = await pbkdf2Hash(a, saltQ, 100000);
-
-    user.secret_question = { q, hash: hashQ, salt: saltQ, iters: 100000 };
-    user.hash = await hash(newPwd);
-
-    await saveUser(matricule, user);
-    alert("Mot de passe et question secrète enregistrés. Connecte-toi maintenant.");
+    // Aucun MDP défini et pas de provisoire reconnu
+    alert("Aucun mot de passe défini. Contacte un administrateur.");
     return;
   }
 
   const hashed = await hash(password);
-  if(hashed!==user.hash){
+  if(hashed !== user.hash){
     alert("Mot de passe incorrect.");
     return;
   }
 
+  // ✅ Si l'admin a imposé must_change_password (reset / procédure), on force ici aussi
+  if (user.must_change_password === true) {
+    const done = await forceChangePasswordFlow(matricule, user);
+    if(done) return;
+    return;
+  }
+
+  // Choix CIS
   const entries = [];
   if (user.cis.primary) entries.push({ cis:user.cis.primary, role:user.role, kind:"principal" });
   (user.cis.secondaries||[]).forEach(s=> entries.push({ cis:s.cis, role:s.role||"agent", kind:"secondaire" }));
@@ -447,7 +502,11 @@ async function forgotWithQuestion(ev){
 
   const p1 = await promptNewPassword();
   if(p1 === null) return;
+
   user.hash = await hash(p1);
+
+  // ✅ après un reset utilisateur, on laisse l'accès direct (pas besoin de must_change_password)
+  user.must_change_password = false;
 
   await saveUser(matricule, user);
   alert("Mot de passe réinitialisé. Vous pouvez vous connecter.");
