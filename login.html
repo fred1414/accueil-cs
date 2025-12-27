@@ -53,6 +53,7 @@
   <button id="loginBtn" onclick="login()">Se connecter</button>
   <p class="muted">Mot de passe provisoire : <code>temp&lt;matricule&gt;</code></p>
   <p class="muted"><a onclick="forgotWithQuestion(event)">Mot de passe oublié ? Répondre à ma question</a></p>
+  <p class="muted">Règle mot de passe : 10 caractères min, 1 majuscule, 1 caractère spécial.</p>
 </div>
 
   
@@ -111,6 +112,40 @@ function selectSecretQuestion(){
     return picked;
   }
 }
+
+/* ===================== AJOUT : Politique MDP ===================== */
+function checkPasswordPolicy(pwd){
+  const errors = [];
+  if (!pwd || pwd.length < 10) errors.push("au moins 10 caractères");
+  if (!/[A-Z]/.test(pwd)) errors.push("au moins 1 majuscule");
+  // caractère spécial = non lettre / non chiffre / non espace
+  if (!/[^A-Za-z0-9\s]/.test(pwd)) errors.push("au moins 1 caractère spécial (ex: ! ? @ #)");
+  return errors;
+}
+
+async function promptNewPassword(){
+  while(true){
+    const newPwd = prompt("Nouveau mot de passe (10 caractères min, 1 majuscule, 1 caractère spécial) :");
+    if(newPwd === null) return null;
+
+    const confirmPwd = prompt("Confirmez le mot de passe :");
+    if(confirmPwd === null) return null;
+
+    if(newPwd !== confirmPwd){
+      alert("Les mots de passe ne correspondent pas.");
+      continue;
+    }
+
+    const errs = checkPasswordPolicy(newPwd);
+    if(errs.length){
+      alert("Mot de passe invalide :\n- " + errs.join("\n- "));
+      continue;
+    }
+
+    return newPwd;
+  }
+}
+/* ================================================================ */
 
 /* --------- compat & normalisation du schéma utilisateur --------- */
 function normalizeUser(uRaw){
@@ -243,12 +278,10 @@ async function login(){
       return;
     }
 
-    const newPwd = prompt("Nouveau mot de passe :");
-    const confirmPwd = prompt("Confirmez le mot de passe :");
-    if(!newPwd || newPwd!==confirmPwd){
-      alert("Les mots de passe ne correspondent pas.");
-      return;
-    }
+    /* ======= MODIF NECESSAIRE : nouveau MDP avec règles ======= */
+    const newPwd = await promptNewPassword();
+    if(newPwd === null) return;
+    /* ========================================================= */
 
     const q = selectSecretQuestion();
     if(!q) return;
@@ -343,27 +376,15 @@ async function forgotWithQuestion(ev){
     return;
   }
 
-  const p1 = prompt("Nouveau mot de passe :");
-  const p2 = prompt("Confirmez le mot de passe :");
-  if(!p1 || p1!==p2){
-    alert("Les mots de passe ne correspondent pas.");
-    return;
-  }
-
+  /* ======= MODIF NECESSAIRE : nouveau MDP avec règles ======= */
+  const p1 = await promptNewPassword();
+  if(p1 === null) return;
   user.hash = await hash(p1);
+  /* ========================================================= */
+
   await saveUser(matricule, user);
   alert("Mot de passe réinitialisé. Vous pouvez vous connecter.");
 }
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
