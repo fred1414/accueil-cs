@@ -102,8 +102,9 @@
   <input id="password" type="password" placeholder="Mot de passe" autocomplete="current-password">
   <button id="loginBtn" onclick="login()">Se connecter</button>
 
-  <!-- ✅ On NE divulgue plus le mot de passe provisoire dans l'UI -->
+  <p class="muted">Mot de passe provisoire : fourni par l’administrateur</p>
   <p class="muted"><a onclick="forgotWithQuestion(event)">Mot de passe oublié ? Répondre à ma question</a></p>
+
   <p class="muted"><strong>© 2025 CISMIC — Marque déposée</strong></p>
   <p class="muted"><strong>Tous droits réservés</strong></p>
   <p class="muted"><a href="#" onclick="openMentions(event)">Mentions légales</a></p>
@@ -138,64 +139,66 @@ Toute utilisation non autorisée pourra faire l’objet de poursuites.
 <script>
 const INDEX_PATH = "index.html";
 
-/* --------- util SHA-256 (MDP principal) --------- */
-async function hash(text){
+/* ===================== SHA-256 (compat anciens comptes) ===================== */
+async function sha256Hex(text){
   const enc = new TextEncoder();
   const data = enc.encode(text);
   const buf = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 
-/* --------- util PBKDF2 (question secrète + MDP provisoire admin) --------- */
-async function pbkdf2Hash(secret, saltHex, iterations=100000){
+/* ===================== PBKDF2 (compat Admin actuel) ===================== */
+function b64ToBytes(b64){
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+function bytesToB64(bytes){
+  let bin = "";
+  bytes.forEach(b=>bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+async function pbkdf2HashB64(password, saltB64, iterations=150000){
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+  const salt = b64ToBytes(saltB64);
+  const bits = await crypto.subtle.deriveBits(
+    { name:"PBKDF2", salt, iterations, hash:"SHA-256" },
+    keyMaterial,
+    256
+  );
+  return bytesToB64(new Uint8Array(bits));
+}
+
+/* ===================== Question secrète (PBKDF2 Hex, comme ton ancien login) ===================== */
+async function pbkdf2HashHex(secret, saltHex, iterations=100000){
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(secret), {name:"PBKDF2"}, false, ["deriveBits"]);
   const salt = new Uint8Array(saltHex.match(/.{1,2}/g).map(h=>parseInt(h,16)));
   const bits = await crypto.subtle.deriveBits({name:"PBKDF2", hash:"SHA-256", salt, iterations}, keyMaterial, 256);
   return Array.from(new Uint8Array(bits)).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
-function genSalt(n=16){ const b=new Uint8Array(n); crypto.getRandomValues(b); return Array.from(b).map(x=>x.toString(16).padStart(2,"0")).join(""); }
-
-/* --------- liste de questions secrètes --------- */
-const SECRET_QUESTIONS = [
-  "Quel est le nom de votre premier animal de compagnie ?",
-  "Dans quelle ville êtes-vous né(e) ?",
-  "Quel était le nom de votre école primaire ?",
-  "Quel est votre film préféré ?",
-  "Quel est le prénom de votre meilleur ami d’enfance ?",
-  "Quel est votre plat préféré ?",
-  "Autre : je saisis ma propre question"
-];
-function selectSecretQuestion(){
-  const menu = SECRET_QUESTIONS.map((q,i)=>`${i+1}. ${q}`).join("\n");
-  while(true){
-    const ans = prompt("Choisissez une question (entrez le numéro) :\n\n"+menu);
-    if(ans===null) return null;
-    const idx = parseInt(ans,10);
-    if(!Number.isInteger(idx) || idx<1 || idx>SECRET_QUESTIONS.length){ alert("Numéro invalide."); continue; }
-    const picked = SECRET_QUESTIONS[idx-1];
-    if(picked.startsWith("Autre")){
-      let custom = "";
-      do{
-        custom = prompt("Saisissez VOTRE question (au moins 10 caractères) :") || "";
-        if(custom===null) return null;
-      }while(custom.trim().length<10);
-      return custom.trim();
-    }
-    return picked;
-  }
+function genSaltHex(n=16){
+  const b=new Uint8Array(n);
+  crypto.getRandomValues(b);
+  return Array.from(b).map(x=>x.toString(16).padStart(2,"0")).join("");
 }
 
-/* ===================== Politique MDP robuste ===================== */
+/* ===================== Politique MDP (robuste) ===================== */
 function checkPasswordPolicy(pwd){
   const errors = [];
   if (!pwd || pwd.length < 10) errors.push("au moins 10 caractères");
   if (!/[A-Z]/.test(pwd)) errors.push("au moins 1 majuscule");
-  // caractère spécial = non lettre / non chiffre / non espace
   if (!/[^A-Za-z0-9\s]/.test(pwd)) errors.push("au moins 1 caractère spécial (ex: ! ? @ #)");
   return errors;
 }
-
 async function promptNewPassword(){
   while(true){
     const newPwd = prompt("Nouveau mot de passe (10 caractères min, 1 majuscule, 1 caractère spécial) :");
@@ -214,15 +217,47 @@ async function promptNewPassword(){
       alert("Mot de passe invalide :\n- " + errs.join("\n- "));
       continue;
     }
-
     return newPwd;
   }
 }
-/* ================================================================ */
 
-/* --------- compat & normalisation du schéma utilisateur --------- */
+/* ===================== Questions secrètes ===================== */
+const SECRET_QUESTIONS = [
+  "Quel est le nom de votre premier animal de compagnie ?",
+  "Dans quelle ville êtes-vous né(e) ?",
+  "Quel était le nom de votre école primaire ?",
+  "Quel est votre film préféré ?",
+  "Quel est le prénom de votre meilleur ami d’enfance ?",
+  "Quel est votre plat préféré ?",
+  "Autre : je saisis ma propre question"
+];
+function selectSecretQuestion(){
+  const menu = SECRET_QUESTIONS.map((q,i)=>`${i+1}. ${q}`).join("\n");
+  while(true){
+    const ans = prompt("Choisissez une question (entrez le numéro) :\n\n"+menu);
+    if(ans===null) return null;
+    const idx = parseInt(ans,10);
+    if(!Number.isInteger(idx) || idx<1 || idx>SECRET_QUESTIONS.length){
+      alert("Numéro invalide.");
+      continue;
+    }
+    const picked = SECRET_QUESTIONS[idx-1];
+    if(picked.startsWith("Autre")){
+      let custom = "";
+      do{
+        custom = prompt("Saisissez VOTRE question (au moins 10 caractères) :") || "";
+        if(custom===null) return null;
+      }while(custom.trim().length<10);
+      return custom.trim();
+    }
+    return picked;
+  }
+}
+
+/* ===================== Normalisation user ===================== */
 function normalizeUser(uRaw){
   const u = JSON.parse(JSON.stringify(uRaw||{}));
+
   if (Array.isArray(u.cis)) {
     const primary = u.cis[0] || "";
     const rest = (u.cis.slice(1)||[]).map(c=>({ cis:c, role: u.role || "agent" }));
@@ -235,6 +270,7 @@ function normalizeUser(uRaw){
     u.cis = u.cis || { primary:"", secondaries:[] };
     u.role = u.role || "agent";
   }
+
   const seen = new Set();
   const primLC = (u.cis.primary||"").toLowerCase();
   u.cis.secondaries = (u.cis.secondaries||[]).filter(s=>{
@@ -243,10 +279,11 @@ function normalizeUser(uRaw){
     if(k===primLC || seen.has(k)) return false;
     seen.add(k); return true;
   });
+
   return u;
 }
 
-/* --------- Accès utilisateur via Firestore --------- */
+/* ===================== Cloud load/save ===================== */
 async function loadUser(matricule){
   const key = "csver_user_" + matricule;
 
@@ -257,18 +294,17 @@ async function loadUser(matricule){
     return cloudUser;
   }
 
-  // 2) Fallback ancien système (uniquement local)
+  // 2) Fallback local
   const data = localStorage.getItem(key);
   return data ? JSON.parse(data) : null;
 }
-
 async function saveUser(matricule, userObj){
   const key = "csver_user_" + matricule;
-  localStorage.setItem(key, JSON.stringify(userObj));   // cache local
-  await cloudSetJSON(key, userObj);                    // sauvegarde cloud
+  localStorage.setItem(key, JSON.stringify(userObj));
+  await cloudSetJSON(key, userObj);
 }
 
-/* ---------- pré-remplir la liste des CIS ---------- */
+/* ===================== Précharger CIS ===================== */
 document.getElementById("matricule").addEventListener("blur", preloadCis);
 document.getElementById("matricule").addEventListener("input", (e)=>{
   if(!e.target.value.trim()){
@@ -279,7 +315,7 @@ document.getElementById("matricule").addEventListener("input", (e)=>{
   }
 });
 
-function preloadCis(){
+async function preloadCis(){
   const matricule = document.getElementById("matricule").value.trim();
   const cisWrap = document.getElementById("cis-container");
   const sel = document.getElementById("cisSelect");
@@ -291,15 +327,15 @@ function preloadCis(){
     return;
   }
 
-  const data = localStorage.getItem("csver_user_"+matricule);
-  if(!data){
+  const userData = await loadUser(matricule);
+  if(!userData){
     cisWrap.style.display = "none";
     sel.innerHTML = "";
     sel.disabled = false;
     return;
   }
 
-  const user = normalizeUser(JSON.parse(data));
+  const user = normalizeUser(userData);
 
   const entries = [];
   if (user.cis.primary) entries.push({ cis: user.cis.primary, role: user.role, kind: "principal" });
@@ -326,65 +362,59 @@ function preloadCis(){
   cisWrap.style.display = "block";
 }
 
-/* ====== NOUVEAU : vérification MDP provisoire sécurisé (si présent) ======
-   - Nouveau système recommandé : l'admin enregistre :
-       user.temp_hash (PBKDF2),
-       user.temp_salt,
-       user.temp_iters,
-       user.must_change_password = true
-   - Compat : si aucun temp_hash et aucun user.hash => ancien provisoire "temp<matricule>"
-*/
-async function verifyTempPassword(user, matricule, password){
-  if (user && user.temp_hash && user.temp_salt) {
-    const iters = user.temp_iters || 100000;
-    const h = await pbkdf2Hash(password, user.temp_salt, iters);
-    return h === user.temp_hash;
+/* ===================== Vérification mot de passe ===================== */
+async function verifyPassword(user, password){
+  const pwd = (password || "").trim();
+
+  // ✅ Nouveau format (Admin actuel) : PBKDF2 base64
+  if(user && user.kdf === "pbkdf2" && user.salt && user.hash && user.iters){
+    const calc = await pbkdf2HashB64(pwd, user.salt, user.iters);
+    return calc === user.hash;
   }
-  // compat legacy (si tu as encore des comptes sans hash/temp_hash)
-  if (!user.hash && !user.temp_hash) {
-    return password === ("temp" + matricule);
+
+  // ✅ Ancien format : SHA-256 hex
+  if(user && user.hash){
+    const h = await sha256Hex(pwd);
+    return h === user.hash;
   }
+
   return false;
 }
 
-/* ====== NOUVEAU : forcer changement MDP robuste ====== */
-async function forceChangePasswordFlow(matricule, user){
-  alert("Première connexion : vous devez définir un nouveau mot de passe robuste.");
-
+/* ===================== Première connexion = pas de question secrète ===================== */
+async function firstLoginForceChange(matricule, user){
+  // À ce stade, le provisoire est OK -> on force MDP robuste + question secrète
   const newPwd = await promptNewPassword();
-  if (newPwd === null) return false;
+  if(newPwd === null) return false;
 
-  // On force la question secrète si elle n'existe pas
-  if(!user.secret_question || !user.secret_question.q){
-    const q = selectSecretQuestion();
-    if(!q) return false;
-    const a = prompt("Réponse (respectez majuscules/espaces — vide accepté) :");
-    if(a===null) return false;
+  const q = selectSecretQuestion();
+  if(!q) return false;
 
-    const saltQ = genSalt();
-    const hashQ = await pbkdf2Hash(a, saltQ, 100000);
-    user.secret_question = { q, hash: hashQ, salt: saltQ, iters: 100000 };
-  }
+  const a = prompt("Réponse (respectez majuscules/espaces — vide accepté) :");
+  if(a === null) return false;
 
-  user.hash = await hash(newPwd);
+  const saltQ = genSaltHex();
+  const hashQ = await pbkdf2HashHex(a, saltQ, 100000);
 
-  // ✅ on retire l'obligation
-  user.must_change_password = false;
+  user.secret_question = { q, hash: hashQ, salt: saltQ, iters: 100000 };
 
-  // ✅ si un provisoire sécurisé était stocké, on le supprime après changement
-  delete user.temp_hash;
-  delete user.temp_salt;
-  delete user.temp_iters;
+  // ✅ On repasse en “mdp normal” SHA-256 (compat historique)
+  user.hash = await sha256Hex(newPwd);
+  delete user.kdf;
+  delete user.salt;
+  delete user.iters;
 
   await saveUser(matricule, user);
-  alert("Mot de passe enregistré. Connectez-vous à nouveau avec votre nouveau mot de passe.");
+
+  alert("Mot de passe mis à jour ✅. Vous pouvez vous connecter.");
   return true;
 }
 
-/* ----------------------- login ----------------------- */
+/* ===================== LOGIN ===================== */
 async function login(){
   const matricule = document.getElementById("matricule").value.trim();
-  const password = document.getElementById("password").value.trim();
+  const password  = document.getElementById("password").value.trim();
+
   if(!matricule || !password){
     alert("Merci de remplir les champs matricule et mot de passe.");
     return;
@@ -398,34 +428,22 @@ async function login(){
 
   let user = normalizeUser(userData);
 
-  // 1) Cas provisoire (nouveau système PBKDF2 ou legacy temp<matricule>)
-  const tempOK = await verifyTempPassword(user, matricule, password);
-  if (tempOK) {
-    // ✅ impose le changement
-    user.must_change_password = true;
-
-    const done = await forceChangePasswordFlow(matricule, user);
+  // ✅ Première connexion / après reset Admin : pas de question secrète => provisoire
+  if(!user.secret_question || !user.secret_question.q){
+    const ok = await verifyPassword(user, password);
+    if(!ok){
+      alert("Mot de passe incorrect.");
+      return;
+    }
+    const done = await firstLoginForceChange(matricule, user);
     if(done) return;
-    return; // si annulé
-  }
-
-  // 2) Cas normal : mot de passe déjà défini
-  if(!user.hash){
-    // Aucun MDP défini et pas de provisoire reconnu
-    alert("Aucun mot de passe défini. Contacte un administrateur.");
     return;
   }
 
-  const hashed = await hash(password);
-  if(hashed !== user.hash){
+  // ✅ Connexion normale
+  const ok = await verifyPassword(user, password);
+  if(!ok){
     alert("Mot de passe incorrect.");
-    return;
-  }
-
-  // ✅ Si l'admin a imposé must_change_password (reset / procédure), on force ici aussi
-  if (user.must_change_password === true) {
-    const done = await forceChangePasswordFlow(matricule, user);
-    if(done) return;
     return;
   }
 
@@ -441,16 +459,16 @@ async function login(){
 
   const sel = document.getElementById("cisSelect");
   let chosen = entries[0];
+
   if(entries.length > 1){
     if(!sel || sel.options.length === 0){
       alert("Merci de choisir ton CIS.");
-      preloadCis();
+      await preloadCis();
       return;
     }
-    const cVal = sel.value;
     const opt = sel.selectedOptions[0];
     chosen = {
-      cis: cVal,
+      cis: sel.value,
       role: opt?.dataset?.role || "agent",
       kind: opt?.dataset?.kind || "principal"
     };
@@ -471,7 +489,7 @@ async function login(){
   window.location.href = INDEX_PATH;
 }
 
-/* ---- Mot de passe oublié : répondre à la question ---- */
+/* ===================== Mot de passe oublié ===================== */
 async function forgotWithQuestion(ev){
   ev && ev.preventDefault();
 
@@ -485,8 +503,9 @@ async function forgotWithQuestion(ev){
   }
 
   let user = normalizeUser(userData);
+
   if(!user.secret_question || !user.secret_question.q){
-    alert("Aucune question secrète définie pour ce compte.");
+    alert("Aucune question secrète définie pour ce compte. Contactez un administrateur.");
     return;
   }
 
@@ -494,19 +513,19 @@ async function forgotWithQuestion(ev){
   const ans = prompt("Votre réponse (retapez exactement votre phrase — vide accepté) :");
   if(ans === null) return;
 
-  const h = await pbkdf2Hash(ans, user.secret_question.salt, user.secret_question.iters || 100000);
+  const h = await pbkdf2HashHex(ans, user.secret_question.salt, user.secret_question.iters || 100000);
   if(h !== user.secret_question.hash){
     alert("Réponse incorrecte.");
     return;
   }
 
-  const p1 = await promptNewPassword();
-  if(p1 === null) return;
+  const newPwd = await promptNewPassword();
+  if(newPwd === null) return;
 
-  user.hash = await hash(p1);
-
-  // ✅ après un reset utilisateur, on laisse l'accès direct (pas besoin de must_change_password)
-  user.must_change_password = false;
+  user.hash = await sha256Hex(newPwd);
+  delete user.kdf;
+  delete user.salt;
+  delete user.iters;
 
   await saveUser(matricule, user);
   alert("Mot de passe réinitialisé. Vous pouvez vous connecter.");
