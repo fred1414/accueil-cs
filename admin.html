@@ -43,7 +43,7 @@
   align-items:flex-start;      /* au lieu de center */
   justify-content:center;
   padding:20px;
-  overflow:auto;              /* ? important : la modale peut scroller si nécessaire */
+  overflow:auto;              /* ✅ important : la modale peut scroller si nécessaire */
   z-index:9999;
 }
 
@@ -54,8 +54,8 @@
   width:100%;
   padding:18px 20px;
   box-shadow:0 10px 30px rgba(0,0,0,0.25);
-  max-height:calc(100vh - 40px); /* ? limite la hauteur */
-  overflow-y:auto;               /* ? contenu scrollable */
+  max-height:calc(100vh - 40px); /* ✅ limite la hauteur */
+  overflow-y:auto;               /* ✅ contenu scrollable */
 }
 
   .modal h3{margin-bottom:8px;color:#004aad}
@@ -92,8 +92,14 @@
   .perm-divider { border-top: 1px dashed #cfd7ff; height: 0; margin: 8px 0; }
   .perm-subtitle { font-weight: 700; color: #233; margin: 2px 0 6px; }
 
+  /* ===== AJOUTS : champs mot de passe provisoire ===== */
+  .pw-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
+  .pw-row input{margin-bottom:0}
+  .pw-mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;letter-spacing:.3px}
+  @media (max-width:700px){ .pw-row{grid-template-columns:1fr} }
+
 /* ===========================
-   ? Version mobile (<= 768px)
+   📱 Version mobile (<= 768px)
    =========================== */
 @media (max-width: 768px) {
 
@@ -240,7 +246,7 @@
   <div class="top-bar">
     <h2>Liste des utilisateurs</h2>
     <div class="right-actions">
-      <div class="search-box">? <input type="text" id="search" placeholder="Rechercher (matricule, nom, prénom, statut ou CIS)..."></div>
+      <div class="search-box">🔎 <input type="text" id="search" placeholder="Rechercher (matricule, nom, prénom, statut ou CIS)..."></div>
       <button id="dirBtn" class="btn-ghost" style="display:none" onclick="openDirectory()">📋 Répertoire agents</button>
       <button class="btn-primary" onclick="showForm()">➕ Nouvel utilisateur</button>
     </div>
@@ -274,6 +280,39 @@
     <label>Prénom :</label>
     <input type="text" id="prenom">
 
+    <!-- ✅ AJOUT : Mot de passe provisoire (création) -->
+    <div id="pwCreatePanel" class="inline-box" style="display:none">
+      <div style="font-weight:700;margin-bottom:6px">Mot de passe provisoire</div>
+      <label style="margin-top:0">Mot de passe provisoire (à transmettre à l'agent) :</label>
+      <div class="pw-row">
+        <input type="text" id="tempPassword" class="pw-mono" placeholder="Clique sur Générer (recommandé) ou saisis un mot de passe">
+        <button type="button" class="btn-ghost" id="btnGenPw">🎲 Générer</button>
+        <button type="button" class="btn-primary" id="btnCopyPw">📋 Copier</button>
+      </div>
+      <div class="hint" id="pwCreateHint">
+        Le mot de passe n'est <strong>jamais</strong> stocké en clair : seul un <strong>hachage</strong> est enregistré.
+        Pense à le <strong>copier</strong> et à le transmettre à l'agent.
+      </div>
+    </div>
+
+    <!-- ✅ AJOUT : Réinitialisation MDP (édition) -->
+    <div id="pwResetPanel" class="inline-box" style="display:none">
+      <div style="font-weight:700;margin-bottom:6px">Réinitialiser le mot de passe</div>
+      <label style="margin-top:0;">
+        <input type="checkbox" id="resetPwCheck" style="width:auto;margin-right:6px;">
+        Générer / définir un nouveau mot de passe provisoire
+      </label>
+      <div id="resetPwInner" style="display:none">
+        <div class="pw-row" style="margin-top:8px">
+          <input type="text" id="resetPassword" class="pw-mono" placeholder="Clique sur Générer ou saisis un nouveau mot de passe">
+          <button type="button" class="btn-ghost" id="btnGenResetPw">🎲 Générer</button>
+          <button type="button" class="btn-primary" id="btnCopyResetPw">📋 Copier</button>
+        </div>
+        <div class="hint">Si tu coches, le mot de passe sera remplacé à l'enregistrement.</div>
+      </div>
+    </div>
+    <!-- ✅ FIN AJOUT -->
+
     <div class="cis-wrap">
       <div>
         <label>Statut (CIS principal) :</label>
@@ -291,7 +330,7 @@
       </div>
     </div>
 
-    <!-- ? AJOUT : bloc permis + visite médicale -->
+    <!-- 🟨 Suivi médical & permis -->
     <div id="medPanel" class="inline-box">
       <div style="font-weight:700;margin-bottom:6px">Suivi médical & permis</div>
       <div class="cis-wrap">
@@ -317,22 +356,21 @@
         Ces informations sont également visibles dans la page <strong>Mes infos</strong> de l'agent.
       </div>
     </div>
-    <!-- ? FIN AJOUT -->
 
-    <!-- ? Accès menus (CIS principal) -->
+    <!-- 🟦 Accès menus (CIS principal) -->
     <div id="permPanel" class="inline-box">
       <div class="perm-title">Accès menus (CIS principal)</div>
       <div class="perm-grid" id="permPrimaryGrid"></div>
       <div class="hint" id="permPrimaryHint">Si <strong>SOG</strong> est coché -> accès à <em>tous</em> les menus sauf « Administrateur » + boutons véhicules visibles.<br>Si <strong>seul</strong> « Agent du centre » est coché -> visibles : Agent du centre, Formation, FDF, Habillement et boutons véhicules cachés.</div>
     </div>
 
-    <!-- ? Mon CIS (secondaire) -->
+    <!-- 🟩 Mon CIS (secondaire) -->
     <div id="myCisPanel" class="inline-box" style="display:none">
       <div style="font-weight:700;margin-bottom:6px">Mon CIS (secondaire) -- droits & statut</div>
       <div id="myCisContent"></div>
     </div>
 
-    <!-- ? Mutation -->
+    <!-- 🟥 Mutation -->
     <div id="mutatePanel" class="inline-box" style="display:none">
       <div style="font-weight:600;margin-bottom:6px">Mutation de l'agent</div>
       <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
@@ -342,17 +380,17 @@
       <div class="hint">La mutation définit un <strong>nouveau CIS principal</strong> et retire l'agent de votre CIS (même en secondaire). Il disparaîtra de votre liste.</div>
     </div>
 
-    <!-- ? Super Admin : gestion de TOUS les secondaires -->
+    <!-- 🟪 Super Admin : gestion des secondaires -->
     <div id="allSecPanel" class="inline-box" style="display:none">
       <div style="font-weight:700;margin-bottom:6px">Affectations secondaires (toutes)</div>
       <div id="allSecRows"></div>
-      <button class="btn-ghost" id="allSecAddBtn" type="button">? Ajouter un CIS secondaire</button>
+      <button class="btn-ghost" id="allSecAddBtn" type="button">➕ Ajouter un CIS secondaire</button>
       <div class="hint">En tant que Super Admin (1414), tu peux ajouter/modifier/supprimer toutes les affectations secondaires <em>et</em> leurs droits.</div>
     </div>
 
     <div style="margin-top:14px">
-      <button class="btn-primary" onclick="saveUser()">? Enregistrer</button>
-      <button class="btn-close" onclick="cancelForm()">? Annuler</button>
+      <button class="btn-primary" onclick="saveUser()">✅ Enregistrer</button>
+      <button class="btn-close" onclick="cancelForm()">❌ Annuler</button>
     </div>
   </div>
 </div>
@@ -385,10 +423,9 @@
   </div>
 </div>
 
-<!-- ? Firebase + Firestore + stockage partagé -->
+<!-- 🔥 Firebase + Firestore + stockage partagé -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <!-- <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script> -->
-<!-- Add firebase-auth for authentication -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="cloud-storage.js"></script>
   
@@ -396,7 +433,7 @@
 <script>
 
 /* ===================================================
-   ? Intégration Firestore pour les utilisateurs
+   🔥 Intégration Firestore pour les utilisateurs
    =================================================== */
 
 const cisListe = [
@@ -605,7 +642,6 @@ function writePermsToForm(prefix, obj){
   });
 }
 
-
 /* Permissions helpers */
 function setPrimaryPermsDisabled(flag){
   const grid = document.getElementById('permPrimaryGrid');
@@ -626,7 +662,115 @@ function setPrimaryPermsDisabled(flag){
   }
 }
 
+/* ===========================
+   ✅ AJOUT : Gestion MDP provisoire (hash + UI)
+   =========================== */
+const pwCreatePanel = document.getElementById('pwCreatePanel');
+const pwResetPanel  = document.getElementById('pwResetPanel');
+const fldTempPw     = document.getElementById('tempPassword');
+const btnGenPw      = document.getElementById('btnGenPw');
+const btnCopyPw     = document.getElementById('btnCopyPw');
 
+const resetPwCheck  = document.getElementById('resetPwCheck');
+const resetPwInner  = document.getElementById('resetPwInner');
+const fldResetPw    = document.getElementById('resetPassword');
+const btnGenResetPw = document.getElementById('btnGenResetPw');
+const btnCopyResetPw= document.getElementById('btnCopyResetPw');
+
+function randomPassword(len=12){
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#-_$";
+  const arr = new Uint32Array(len);
+  crypto.getRandomValues(arr);
+  let out = "";
+  for(let i=0;i<len;i++){
+    out += alphabet[arr[i] % alphabet.length];
+  }
+  return out;
+}
+function b64(bytes){
+  let bin = "";
+  bytes.forEach(b=>bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+async function pbkdf2Hash(password, saltBytes, iters=150000){
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name:"PBKDF2", salt:saltBytes, iterations:iters, hash:"SHA-256" },
+    keyMaterial,
+    256
+  );
+  return new Uint8Array(bits);
+}
+async function hashPasswordToRecord(password){
+  const salt = new Uint8Array(16);
+  crypto.getRandomValues(salt);
+  const iters = 150000;
+  const hashBytes = await pbkdf2Hash(password, salt, iters);
+  return {
+    kdf: "pbkdf2",
+    iters,
+    salt: b64(salt),
+    hash: b64(hashBytes),
+  };
+}
+async function copyToClipboard(text){
+  try{
+    await navigator.clipboard.writeText(text);
+    return true;
+  }catch{
+    // fallback
+    const ta=document.createElement('textarea');
+    ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    let ok=false;
+    try{ ok=document.execCommand('copy'); }catch{}
+    document.body.removeChild(ta);
+    return ok;
+  }
+}
+
+function setupPwButtons(){
+  if(btnGenPw){
+    btnGenPw.onclick = ()=>{ fldTempPw.value = randomPassword(12); };
+  }
+  if(btnCopyPw){
+    btnCopyPw.onclick = async ()=>{
+      const v=(fldTempPw.value||"").trim();
+      if(!v){ alert("Aucun mot de passe à copier."); return; }
+      const ok = await copyToClipboard(v);
+      alert(ok ? "✅ Mot de passe copié." : "⚠️ Copie impossible (bloquée). Sélectionne puis copie manuellement.");
+    };
+  }
+
+  if(resetPwCheck){
+    resetPwCheck.onchange = ()=>{
+      resetPwInner.style.display = resetPwCheck.checked ? "block" : "none";
+      if(!resetPwCheck.checked && fldResetPw) fldResetPw.value = "";
+    };
+  }
+  if(btnGenResetPw){
+    btnGenResetPw.onclick = ()=>{ fldResetPw.value = randomPassword(12); };
+  }
+  if(btnCopyResetPw){
+    btnCopyResetPw.onclick = async ()=>{
+      const v=(fldResetPw.value||"").trim();
+      if(!v){ alert("Aucun mot de passe à copier."); return; }
+      const ok = await copyToClipboard(v);
+      alert(ok ? "✅ Mot de passe copié." : "⚠️ Copie impossible (bloquée). Sélectionne puis copie manuellement.");
+    };
+  }
+}
+/* ===========================
+   ✅ FIN AJOUT
+   =========================== */
 
 /* Rendu du tableau */
 function renderTable(filter=""){
@@ -719,7 +863,7 @@ function deleteUser(matricule){
     cancelForm();
   }
 
-  alert("? Utilisateur supprimé.");
+  alert("✅ Utilisateur supprimé.");
   renderTable(document.getElementById("search").value);
 }
 
@@ -735,7 +879,7 @@ const fldMat=document.getElementById('matricule');
 const fldNom=document.getElementById('nom');
 const fldPre=document.getElementById('prenom');
 
-// ? AJOUT : références aux champs permis / visite
+// 🟨 AJOUT : références aux champs permis / visite
 const fldPermisCTitulaire=document.getElementById('permisCTitulaire');
 const fldPermisCDate=document.getElementById('permisCDate');
 const fldVisiteMedProchaine=document.getElementById('visiteMedProchaine');
@@ -755,7 +899,7 @@ function populateCisSelect(sel, exclude=""){
     .map(c=>`<option value="${c}">${c}</option>`).join('');
 }
 
-/* ? AJOUT : logique d'activation de la date permis C */
+/* 🟨 AJOUT : logique d'activation de la date permis C */
 function updatePermisAdminUi(){
   if(!fldPermisCTitulaire || !fldPermisCDate) return;
   const titulaire = !!fldPermisCTitulaire.checked;
@@ -791,7 +935,7 @@ function applyLocks(edit){
   setPrimaryPermsDisabled(!canEditPrimaryPerms);
 }
 
-/* ? Mon CIS (secondaire) */
+/* 🟩 Mon CIS (secondaire) */
 function refreshMyCisPanel(){
   const panel=document.getElementById('myCisPanel');
   const content=document.getElementById('myCisContent');
@@ -824,7 +968,7 @@ function refreshMyCisPanel(){
       <div class="perm-title">Droits sur ${mine}</div>
       <div class="perm-grid" id="myCisPermGrid">${makePermCheckboxes('mycis', secPerms)}</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
-        <button class="btn-primary" id="btnMyCisSave">? Enregistrer</button>
+        <button class="btn-primary" id="btnMyCisSave">✅ Enregistrer</button>
         <button class="btn-delete" id="btnMyCisRemove">Retirer de mon CIS</button>
       </div>
       <div class="hint">Vous modifiez le <strong>rattachement secondaire</strong> à ${mine} (statut et droits).</div>
@@ -837,7 +981,7 @@ function refreshMyCisPanel(){
       let upd=updateSecondaryStatut(JSON.parse(raw), mine, newStatut);
       upd=assignSecondary(upd, mine, newStatut, newPerms);
       localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(upd));
-      alert("? Rôle secondaire & droits mis à jour.");
+      alert("✅ Rôle secondaire & droits mis à jour.");
       cancelForm();
       renderTable(document.getElementById("search").value);
     };
@@ -846,7 +990,7 @@ function refreshMyCisPanel(){
       const raw=localStorage.getItem("csver_user_"+u.matricule); if(!raw){alert("Utilisateur introuvable.");return;}
       const upd=removeSecondary(JSON.parse(raw), mine);
       localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(upd));
-      alert("? Rattachement secondaire supprimé.");
+      alert("✅ Rattachement secondaire supprimé.");
       cancelForm();
       renderTable(document.getElementById("search").value);
     };
@@ -874,14 +1018,14 @@ function refreshMyCisPanel(){
       const raw=localStorage.getItem("csver_user_"+u.matricule); if(!raw){alert("Utilisateur introuvable.");return;}
       const upd=assignSecondary(JSON.parse(raw), mine, statut, perms);
       localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(upd));
-      alert("? Rattaché à votre CIS avec droits.");
+      alert("✅ Rattaché à votre CIS avec droits.");
       cancelForm();
       renderTable(document.getElementById("search").value);
     };
   }
 }
 
-/* Mutation */
+/* 🟥 Mutation */
 function refreshMutatePanel(){
   if(isSuperAdmin()){ mutatePanel.style.display='none'; return; }
   if(!isAdminRole() || !editMode || !editingOriginal){ mutatePanel.style.display='none'; return; }
@@ -908,13 +1052,13 @@ function refreshMutatePanel(){
       .filter(s => normCis(s.cis||"") !== normCis(oldMine||""));
 
     localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(data));
-    alert(`? Agent muté vers ${newCis}. Il est retiré de ${oldMine}.`);
+    alert(`✅ Agent muté vers ${newCis}. Il est retiré de ${oldMine}.`);
     cancelForm();
     renderTable(document.getElementById("search").value);
   };
 }
 
-/* Panneau Super Admin : toutes les affectations secondaires */
+/* 🟪 Panneau Super Admin : toutes les affectations secondaires */
 function refreshAllSecPanel(){
   const panel=document.getElementById('allSecPanel');
   const rows=document.getElementById('allSecRows');
@@ -980,13 +1124,26 @@ function showForm(edit=false){
   document.getElementById("userForm").style.display="block";
   document.getElementById("formTitle").textContent=edit?"Modifier un utilisateur":"Créer un utilisateur";
   applyLocks(edit);
+
+  /* ✅ AJOUT : panneaux MDP selon mode */
+  if(pwCreatePanel) pwCreatePanel.style.display = edit ? "none" : "block";
+  if(pwResetPanel)  pwResetPanel.style.display  = edit ? "block" : "none";
+  if(!edit){
+    if(fldTempPw) fldTempPw.value = "";
+  }else{
+    if(resetPwCheck){ resetPwCheck.checked=false; }
+    if(resetPwInner){ resetPwInner.style.display="none"; }
+    if(fldResetPw) fldResetPw.value = "";
+  }
+  /* ✅ FIN AJOUT */
+
   if(!edit){
     const defaultCis = isAdminRole() ? myCis() : "";
     populateCisPrincipal(defaultCis);
     statutPrincipalSel.value='SPV';
     fldMat.value=""; fldNom.value=""; fldPre.value="";
 
-    // reset champs permis & visite ?
+    // reset champs permis & visite
     if(fldPermisCTitulaire){ fldPermisCTitulaire.checked=false; }
     if(fldPermisCDate){ fldPermisCDate.value=""; }
     if(fldVisiteMedProchaine){ fldVisiteMedProchaine.value=""; }
@@ -1023,6 +1180,13 @@ function cancelForm(){
   if(fldVisiteMedProchaine){ fldVisiteMedProchaine.value=""; }
   updatePermisAdminUi();
 
+  /* ✅ AJOUT : reset champs MDP */
+  if(fldTempPw) fldTempPw.value = "";
+  if(resetPwCheck) resetPwCheck.checked = false;
+  if(resetPwInner) resetPwInner.style.display = "none";
+  if(fldResetPw) fldResetPw.value = "";
+  /* ✅ FIN AJOUT */
+
   populateCisPrincipal("");
   document.getElementById('permPrimaryGrid').innerHTML = "";
   document.getElementById('allSecRows').innerHTML='';
@@ -1043,7 +1207,7 @@ function validateUserPayload(p){
   return null;
 }
 
-function saveUser(){
+async function saveUser(){
   let matricule=fldMat.value.trim(), nom=fldNom.value.trim(), prenom=fldPre.value.trim();
   let statut=statutPrincipalSel.value, cisPrimary=cisPrincipalSel.value;
 
@@ -1062,7 +1226,7 @@ function saveUser(){
 
   const primaryPerms = readPermsFromForm('primary');
 
-  // ? AJOUT : lecture des champs permis / visite
+  // 🟨 lecture des champs permis / visite
   const permisCTitulaire = fldPermisCTitulaire ? !!fldPermisCTitulaire.checked : false;
   let permisCDate = fldPermisCDate ? (fldPermisCDate.value || "") : "";
   const visiteMedProchaine = fldVisiteMedProchaine ? (fldVisiteMedProchaine.value || "") : "";
@@ -1106,34 +1270,89 @@ function saveUser(){
     statut,
     cis:{primary:cisPrimary,secondaries},
     permissions:{ primary: primaryPerms, secondaries: secPerms },
-    // ? AJOUT : champs persos
+    // 🟨 champs persos
     permisCTitulaire,
     permisCDate,
     visiteMedProchaine
   };
+
+  // ✅ mot de passe provisoire obligatoire en création / optionnel en reset
+  try{
+    if(!editMode){
+      const pw = (fldTempPw?.value || "").trim();
+      if(!pw){
+        alert("Merci de générer ou saisir un mot de passe provisoire.");
+        return;
+      }
+      if(pw.length < 8){
+        alert("Mot de passe trop court (minimum 8 caractères).");
+        return;
+      }
+      const rec = await hashPasswordToRecord(pw);
+      payload.kdf = rec.kdf;
+      payload.iters = rec.iters;
+      payload.salt = rec.salt;
+      payload.hash = rec.hash;
+    }else{
+      if(resetPwCheck?.checked){
+        const pw2 = (fldResetPw?.value || "").trim();
+        if(!pw2){
+          alert("Tu as coché la réinitialisation : saisis ou génère le nouveau mot de passe.");
+          return;
+        }
+        if(pw2.length < 8){
+          alert("Mot de passe trop court (minimum 8 caractères).");
+          return;
+        }
+        const rec2 = await hashPasswordToRecord(pw2);
+        payload.kdf = rec2.kdf;
+        payload.iters = rec2.iters;
+        payload.salt = rec2.salt;
+        payload.hash = rec2.hash;
+      }
+    }
+  }catch(e){
+    console.error("Erreur hash MDP:", e);
+    alert("Erreur lors de la génération du mot de passe (navigateur ?).");
+    return;
+  }
+  // ✅ FIN AJOUT
+
   const err=validateUserPayload(payload); if(err){ alert(err); return; }
 
   if(editMode){
     const existing=JSON.parse(localStorage.getItem("csver_user_"+currentMatricule)||"null");
-    ["hash","salt","iters","kdf","secret_question"].forEach(k=>{ if(existing?.[k]!=null) payload[k]=existing[k]; });
+    // ⬇️ on garde l'ancien mot de passe si pas de reset
+    if(!(resetPwCheck?.checked)){
+      ["hash","salt","iters","kdf"].forEach(k=>{ if(existing?.[k]!=null) payload[k]=existing[k]; });
+    }
+    // ⬇️ tes champs existants
+    ["secret_question"].forEach(k=>{ if(existing?.[k]!=null) payload[k]=existing[k]; });
 
     if(currentMatricule!==matricule){ localStorage.removeItem("csver_user_"+currentMatricule); }
     localStorage.setItem("csver_user_"+matricule, JSON.stringify(payload));
+
+    /* ✅ MODIF MINIMALE : double sécurité cloud */
+    if(window.cloudSetJSON){
+      try { await cloudSetJSON("csver_user_"+matricule, payload); } catch(e){}
+    }
   }else{
-  // ? Empêcher la création si le matricule existe déjà
-  if (localStorage.getItem("csver_user_" + matricule)) {
-    alert("? Un utilisateur avec ce matricule existe déjà. La création est annulée.");
-    // Si tu veux aussi vider le formulaire complètement, décommente la ligne suivante :
-    // cancelForm();
-    return; // on arrête là, rien n'est enregistré
+    // ⛔ Empêcher la création si le matricule existe déjà
+    if (localStorage.getItem("csver_user_" + matricule)) {
+      alert("❌ Un utilisateur avec ce matricule existe déjà. La création est annulée.");
+      return;
+    }
+
+    // Matricule libre -> on peut créer
+    localStorage.setItem("csver_user_"+matricule, JSON.stringify(payload));
+
+    /* ✅ MODIF MINIMALE : double sécurité cloud */
+    if(window.cloudSetJSON){
+      try { await cloudSetJSON("csver_user_"+matricule, payload); } catch(e){}
+    }
   }
 
-  // Matricule libre -> on peut créer
-  localStorage.setItem("csver_user_" + matricule, JSON.stringify(payload));
-}
-
-
-  alert("? Utilisateur enregistré !");
+  alert("✅ Utilisateur enregistré !");
   cancelForm(); renderTable(document.getElementById("search").value);
 }
 
@@ -1151,11 +1370,18 @@ function editUser(matricule){
   document.getElementById('statutPrincipal').value=u.statut||"SPV"; populateCisPrincipal(u.cis?.primary||"");
   currentMatricule=matricule; editMode=true;
 
-  // ? AJOUT : recharger permis / visite
+  // 🟨 recharger permis / visite
   if(fldPermisCTitulaire){ fldPermisCTitulaire.checked = !!u.permisCTitulaire; }
   if(fldPermisCDate){ fldPermisCDate.value = u.permisCDate || ""; }
   if(fldVisiteMedProchaine){ fldVisiteMedProchaine.value = u.visiteMedProchaine || ""; }
   updatePermisAdminUi();
+
+  // ✅ affichage panneaux MDP en édition
+  if(pwCreatePanel) pwCreatePanel.style.display = "none";
+  if(pwResetPanel)  pwResetPanel.style.display  = "block";
+  if(resetPwCheck){ resetPwCheck.checked=false; }
+  if(resetPwInner){ resetPwInner.style.display="none"; }
+  if(fldResetPw) fldResetPw.value = "";
 
   document.getElementById('permPrimaryGrid').innerHTML = makePermCheckboxes('primary', u.permissions?.primary || defaultPerms());
 
@@ -1186,7 +1412,7 @@ function renderDirectory(filter){
   const mine = myCis();
   const tbody = document.getElementById('dirList');
 
-  // ? si on reçoit un filtre en paramètre, on l'utilise, sinon on lit le champ
+  // ✅ si on reçoit un filtre en paramètre, on l'utilise, sinon on lit le champ
   const q = (typeof filter === "string"
               ? filter
               : (document.getElementById('dirSearch').value || "")
@@ -1203,7 +1429,7 @@ function renderDirectory(filter){
         .toLowerCase()
         .includes(q);
     })
-   .sort((a,b)=>{const A=(a.nom||"").toLowerCase(),B=(b.nom||"").toLowerCase(); const aP=(a.prenom||"").toLowerCase(),bP=(b.prenom||"").toLowerCase(); if(A<B)return-1;if(A>B)return 1;return aP.localeCompare(bP);})
+   .sort((a,b)=>{const A=(a.nom||"").toLowerCase(),B=(b.nom||"").toLowerCase(); const aP=(a.prenom||"").toLowerCase(),bP=(b.prenom||"").toLowerCase(); if(A<B)return-1;if(A>B) return 1;return aP.localeCompare(bP);})
    .forEach(u=>{
      let actionHTML='';
      if(isSuperAdmin()){
@@ -1238,7 +1464,7 @@ function renderDirectory(filter){
            const perms = defaultPerms(); perms.agent = true;
            const upd=assignSecondary(base, mine, statut, perms);
            localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(upd));
-           alert("? Rattaché à votre CIS.");
+           alert("✅ Rattaché à votre CIS.");
            closeDirectory();
            renderTable(document.getElementById("search").value);
          });
@@ -1254,18 +1480,16 @@ document.getElementById("dirSearch").addEventListener("input", e => {
   renderDirectory(e.target.value);
 });
 
-window.addEventListener("DOMContentLoaded", () => {
+/* ✅ MODIF MINIMALE : on sync cloud AVANT le guard admin (PC neuf) */
+window.addEventListener("DOMContentLoaded", async () => {
   try {
-    adminPermissionGuard();   // ICI la vraie sécurité
+    try { await syncAccueilFromCloud(); } catch(e){ console.warn("Firestore indisponible (non bloquant):", e); }
+
+    adminPermissionGuard();   // sécurité après sync
+    setupPwButtons();
 
     populateCisPrincipal("");
     renderTable();
-
-    Promise.resolve()
-      .then(() => syncAccueilFromCloud())
-      .catch(err => {
-        console.warn("Firestore indisponible (non bloquant):", err);
-      });
 
     if (fldPermisCTitulaire) {
       fldPermisCTitulaire.addEventListener("change", updatePermisAdminUi);
@@ -1275,10 +1499,6 @@ window.addEventListener("DOMContentLoaded", () => {
     console.error("Erreur init admin:", e);
   }
 });
-
-
-
-
 
 /* Permissions intelligentes */
 function splitId(id){
@@ -1295,7 +1515,7 @@ function applyAgentDefaults(prefix, grid){
   setBox(prefix, 'habillement',true, grid);
 }
 
-// ? SOG ne fait plus rien automatiquement
+// ✅ SOG ne fait plus rien automatiquement
 function applySogDefaults(prefix, grid){
   // Désactivé : cocher SOG n'agit plus sur les autres cases
 }
@@ -1342,7 +1562,7 @@ function adminPermissionGuard() {
     return;
   }
 
-  //  AUTORISÉ → on affiche
+  // ✅ AUTORISÉ → on affiche
   document.documentElement.style.visibility = "visible";
   document.body.style.visibility = "visible";
 }
