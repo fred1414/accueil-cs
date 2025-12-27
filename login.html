@@ -1,1574 +1,469 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
-<title>Administration -- CS VER</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<title>Connexion — CISMIC</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-  *{box-sizing:border-box;font-family:'Inter',sans-serif;margin:0;padding:0}
-  body{background:#f5f5f5;padding:30px;color:#222;}
-  h1{text-align:center;margin-bottom:20px;color:#d32f2f;position:relative;}
-  .container{max-width:1100px;margin:auto;background:#fff;border-radius:12px;padding:25px 30px;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
-  .top-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
-  .right-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .search-box input{padding:8px 12px;border:1px solid #ccc;border-radius:6px;width:280px;font-size:15px;}
-  table{width:100%;border-collapse:collapse;margin-top:15px;}
-  th,td{border:1px solid #ddd;padding:10px;text-align:left;vertical-align:top;}
-  th{background:#004aad;color:#fff;}
-  tr:nth-child(even){background:#f9f9f9;}
-  tr:hover{background:#e3f2fd;}
-  button{padding:8px 14px;margin:4px;border:none;border-radius:6px;cursor:pointer;font-weight:600;}
-  .btn-primary{background:#004aad;color:#fff;}
-  .btn-edit{background:#ff9800;color:#fff;}
-  .btn-delete{background:#d32f2f;color:#fff;}
-  .btn-close{background:#6c757d;color:#fff;}
-  .btn-ghost{background:#eef2ff;color:#233;}
-  .form-box{margin-top:30px;background:#fafafa;border:1px solid #ddd;border-radius:8px;padding:20px;}
-  .inline-box{margin-top:12px;background:#f7f9ff;border:1px solid #cfd7ff;border-radius:8px;padding:12px;}
-  label{font-weight:600;margin-top:8px;display:block;}
-  input,select{width:100%;padding:8px;margin-top:4px;margin-bottom:10px;border-radius:6px;border:1px solid #ccc;}
-  footer{text-align:center;margin-top:20px;color:#888;}
-  .back-btn{position:absolute;top:20px;right:30px;background:#d32f2f;color:#fff;border:none;border-radius:30px;padding:8px 18px;font-weight:600;cursor:pointer;transition:background .2s;}
-  .back-btn:hover{background:#b71c1c;}
-  .hint{font-size:12px;color:#666;margin-top:-6px;margin-bottom:8px}
-  .cis-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media (max-width:700px){.cis-wrap{grid-template-columns:1fr}}
+  * { box-sizing:border-box; font-family:'Inter',sans-serif; margin:0; padding:0; }
+  body {
+    background: linear-gradient(135deg,#004aad,#d32f2f);
+    display:flex; justify-content:center; align-items:center;
+    height:100vh; color:#fff;
+  }
+  .login-box {
+    background:#ffffffee; color:#222;
+    border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.3);
+    padding:40px 50px; width:100%; max-width:420px; text-align:center;
+  }
+  .login-box img { height:100px; margin-bottom:15px; }
+  .login-box h2 { font-size:24px; color:#004aad; margin-bottom:20px; font-weight:700; }
+  .login-box input, select {
+    width:100%; padding:12px; margin:8px 0;
+    border:1px solid #ccc; border-radius:8px; font-size:15px;
+  }
+  .login-box button {
+    width:100%; padding:12px; background:#d32f2f;
+    color:#fff; border:none; border-radius:8px; font-size:16px;
+    font-weight:600; cursor:pointer; transition:background .2s;
+  }
+  .login-box button:hover { background:#b71c1c; }
+  .muted { font-size:13px; color:#555; margin-top:10px; }
+  .field-label { text-align:left; font-size:14px; font-weight:600; color:#004aad; margin-top:4px; }
+  .muted a { color:#004aad; text-decoration:underline; cursor:pointer; }
+
+  /* --- Modale Mentions légales --- */
+  .modal-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 9999;
+  }
   .modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.45);
-  display:none;
-  align-items:flex-start;      /* au lieu de center */
-  justify-content:center;
-  padding:20px;
-  overflow:auto;              /* ✅ important : la modale peut scroller si nécessaire */
-  z-index:9999;
-}
-
-.modal .panel{
-  background:#fff;
-  border-radius:12px;
-  max-width:1100px;
-  width:100%;
-  padding:18px 20px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.25);
-  max-height:calc(100vh - 40px); /* ✅ limite la hauteur */
-  overflow-y:auto;               /* ✅ contenu scrollable */
-}
-
-  .modal h3{margin-bottom:8px;color:#004aad}
-  .modal .topline{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between;margin-bottom:8px}
-  .modal .search{flex:1;min-width:260px}
-  .modal .muted{font-size:12px;color:#666}
-  .perm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:6px}
-  .perm-grid label{display:flex;gap:8px;align-items:center;font-weight:500;margin:0}
-  .perm-title{font-weight:700;margin:8px 0 6px;color:#004aad}
-  select:disabled, input:disabled { background:#eee !important; color:#666 !important; cursor:not-allowed; }
-
-  /* --- Répertoire des agents: mise en page plus propre --- */
-  #dirModal table{ table-layout: fixed; }
-  #dirModal th, #dirModal td{ word-wrap: break-word; vertical-align: top; }
-  #dirModal th:nth-child(1), #dirModal td:nth-child(1){ width: 110px; }
-  #dirModal th:nth-child(2), #dirModal td:nth-child(2){ width: 150px; }
-  #dirModal th:nth-child(3), #dirModal td:nth-child(3){ width: 150px; }
-  #dirModal th:nth-child(4), #dirModal td:nth-child(4){ width: 170px; }
-  #dirModal th:nth-child(5), #dirModal td:nth-child(5){ width: 420px; }
-
-  .dir-card{
-    background:#f9fbff;
-    border:1px solid #dfe6ff;
-    border-radius:10px;
-    padding:10px;
-    box-shadow:0 2px 6px rgba(0,0,0,.05);
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    color: #222;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    padding: 18px 18px 14px;
+    text-align: left;
   }
-  .dir-line{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
-  .perm-grid.perm-grid-sm{ grid-template-columns: repeat(2, minmax(140px,1fr)); gap:6px; }
-  .dir-card label{ font-weight:500; }
-
-  /* ===== AJOUTS pour le séparateur & le sous-titre des droits accès ===== */
-  .perm-grid .fullrow { grid-column: 1 / -1; }
-  .perm-divider { border-top: 1px dashed #cfd7ff; height: 0; margin: 8px 0; }
-  .perm-subtitle { font-weight: 700; color: #233; margin: 2px 0 6px; }
-
-  /* ===== AJOUTS : champs mot de passe provisoire ===== */
-  .pw-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
-  .pw-row input{margin-bottom:0}
-  .pw-mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;letter-spacing:.3px}
-  @media (max-width:700px){ .pw-row{grid-template-columns:1fr} }
-
-/* ===========================
-   📱 Version mobile (<= 768px)
-   =========================== */
-@media (max-width: 768px) {
-
-  body{
-    padding: 12px;
-  }
-
-  h1{
-    font-size: 20px;
-    margin-bottom: 12px;
-    padding: 0 8px;
-  }
-
-  .back-btn{
-    top: 10px;
-    right: 10px;
-    padding: 6px 14px;
-    font-size: 13px;
-  }
-
-  .container{
-    padding: 14px 10px;
-    border-radius: 10px;
-    overflow-x: auto; /* pour que le gros tableau puisse scroller horizontalement */
-  }
-
-  /* Barre du haut : passe en colonne */
-  .top-bar{
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .top-bar h2{
+  .modal h3{
+    margin: 0 0 10px 0;
+    color:#004aad;
     font-size: 18px;
   }
-
-  .right-actions{
-    width: 100%;
-    justify-content: flex-start;
-    gap: 6px;
-  }
-
-  .search-box{
-    flex: 1;
-  }
-
-  .search-box input{
-    width: 100%;
+  .modal p{
+    margin: 10px 0;
     font-size: 14px;
+    line-height: 1.45;
+    white-space: pre-line;
   }
-
-  .right-actions .btn-primary,
-  .right-actions .btn-ghost{
-    flex: 0 0 auto;
-    padding: 8px 10px;
-    font-size: 13px;
+  .modal .actions{
+    display:flex;
+    justify-content: flex-end;
+    margin-top: 12px;
   }
-
-  /* Tableau principal : scroll horizontal si nécessaire */
-  #userTable{
-    min-width: 700px;
-    font-size: 13px;
+  .modal .close-btn{
+    padding: 10px 14px;
+    border: none;
+    border-radius: 8px;
+    background: #004aad;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
   }
-  #userTable th,
-  #userTable td{
-    padding: 8px;
+  .modal .close-btn:hover{
+    filter: brightness(.92);
   }
-
-  /* Formulaire plus compact */
-  .form-box{
-    margin-top: 18px;
-    padding: 14px 12px;
-  }
-
-  label{
-    font-size: 14px;
-  }
-
-  input,
-  select{
-    font-size: 14px;
-  }
-
-  /* Les blocs CIS passent en 1 colonne */
-  .cis-wrap{
-    grid-template-columns: 1fr;
-  }
-
-  /* Boutons Enregistrer / Annuler sur toute la largeur */
-  #userForm > div:last-child{
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  #userForm > div:last-child button{
-    width: 100%;
-  }
-
-  /* Modales (répertoire...) : plein écran avec scroll interne */
-  .modal{
-    padding: 10px;
-  }
-
-  .modal .panel{
-    max-width: 100%;
-    max-height: 90vh;
-    padding: 12px 10px;
-    overflow-y: auto;
-  }
-
-  .modal .topline{
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .modal .search{
-    width: 100%;
-  }
-
-  #dirModal table{
-    font-size: 13px;
-  }
-}
 </style>
-  
-<script>
-(function adminGuardEarly(){
-  const raw = localStorage.getItem("csver_session");
-  if(!raw){
-    location.replace("login.html");
-    return;
-  }
-})();
-</script>
-
 </head>
 <body>
-<button class="back-btn" onclick="window.location.href='index.html'">⬅ Retour</button>
 
-<h1>Gestion des utilisateurs -- CISMIC</h1>
+<div class="login-box">
+  <img src="https://i.postimg.cc/LsB40JQq/logo-cismic.png" alt="Logo SDIS 30">
+  <h2>Connexion — CISMIC</h2>
 
-<div class="container">
-  <div class="top-bar">
-    <h2>Liste des utilisateurs</h2>
-    <div class="right-actions">
-      <div class="search-box">🔎 <input type="text" id="search" placeholder="Rechercher (matricule, nom, prénom, statut ou CIS)..."></div>
-      <button id="dirBtn" class="btn-ghost" style="display:none" onclick="openDirectory()">📋 Répertoire agents</button>
-      <button class="btn-primary" onclick="showForm()">➕ Nouvel utilisateur</button>
-    </div>
+  <input id="matricule" type="text" placeholder="Matricule" autocomplete="username">
+  
+  <!-- CIS à choisir si l'utilisateur en a plusieurs -->
+  <div id="cis-container" style="display:none;">
+    <div class="field-label">CIS</div>
+    <select id="cisSelect"></select>
   </div>
 
-  <table id="userTable">
-    <thead>
-      <tr>
-        <th>Matricule</th>
-        <th>Nom</th>
-        <th>Prénom</th>
-        <th>Statut (CIS principal)</th>
-        <th>Affectations CIS</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="userList"></tbody>
-  </table>
+  <input id="password" type="password" placeholder="Mot de passe" autocomplete="current-password">
+  <button id="loginBtn" onclick="login()">Se connecter</button>
+  <p class="muted">Mot de passe provisoire : <code>temp&lt;matricule&gt;</code></p>
+  <p class="muted"><a onclick="forgotWithQuestion(event)">Mot de passe oublié ? Répondre à ma question</a></p>
+  <p class="muted"><strong>© 2025 CISMIC — Marque déposée</strong></p>
+  <p class="muted"><strong>Tous droits réservés</strong></p>
+  <p class="muted"><a href="#" onclick="openMentions(event)">Mentions légales</a></p>
+</div>
 
-  <!-- Formulaire -->
-  <div id="userForm" class="form-box" style="display:none">
-    <h3 id="formTitle">Créer un utilisateur</h3>
+<!-- Modale Mentions légales -->
+<div id="mentionsModal" class="modal-overlay" onclick="closeMentions()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>Mentions légales</h3>
+    <p>
+CISMIC est une marque déposée auprès de l’INPI.
 
-    <label>Matricule :</label>
-    <input type="text" id="matricule">
-    <div id="lockIdentHint" class="hint" style="display:none">Identité verrouillée en mode Administrateur du CIS.</div>
+L’ensemble du site (structure, textes, codes sources, graphismes, logos)
+est protégé par le droit d’auteur.
+Toute reproduction, représentation, modification ou adaptation,
+totale ou partielle, sans autorisation écrite préalable,
+est strictement interdite.
 
-    <label>Nom :</label>
-    <input type="text" id="nom">
-
-    <label>Prénom :</label>
-    <input type="text" id="prenom">
-
-    <!-- ✅ AJOUT : Mot de passe provisoire (création) -->
-    <div id="pwCreatePanel" class="inline-box" style="display:none">
-      <div style="font-weight:700;margin-bottom:6px">Mot de passe provisoire</div>
-      <label style="margin-top:0">Mot de passe provisoire (à transmettre à l'agent) :</label>
-      <div class="pw-row">
-        <input type="text" id="tempPassword" class="pw-mono" placeholder="Clique sur Générer (recommandé) ou saisis un mot de passe">
-        <button type="button" class="btn-ghost" id="btnGenPw">🎲 Générer</button>
-        <button type="button" class="btn-primary" id="btnCopyPw">📋 Copier</button>
-      </div>
-      <div class="hint" id="pwCreateHint">
-        Le mot de passe n'est <strong>jamais</strong> stocké en clair : seul un <strong>hachage</strong> est enregistré.
-        Pense à le <strong>copier</strong> et à le transmettre à l'agent.
-      </div>
-    </div>
-
-    <!-- ✅ AJOUT : Réinitialisation MDP (édition) -->
-    <div id="pwResetPanel" class="inline-box" style="display:none">
-      <div style="font-weight:700;margin-bottom:6px">Réinitialiser le mot de passe</div>
-      <label style="margin-top:0;">
-        <input type="checkbox" id="resetPwCheck" style="width:auto;margin-right:6px;">
-        Générer / définir un nouveau mot de passe provisoire
-      </label>
-      <div id="resetPwInner" style="display:none">
-        <div class="pw-row" style="margin-top:8px">
-          <input type="text" id="resetPassword" class="pw-mono" placeholder="Clique sur Générer ou saisis un nouveau mot de passe">
-          <button type="button" class="btn-ghost" id="btnGenResetPw">🎲 Générer</button>
-          <button type="button" class="btn-primary" id="btnCopyResetPw">📋 Copier</button>
-        </div>
-        <div class="hint">Si tu coches, le mot de passe sera remplacé à l'enregistrement.</div>
-      </div>
-    </div>
-    <!-- ✅ FIN AJOUT -->
-
-    <div class="cis-wrap">
-      <div>
-        <label>Statut (CIS principal) :</label>
-        <select id="statutPrincipal">
-          <option value="SPP">SPP</option>
-          <option value="SPV">SPV</option>
-          <option value="PATS">PATS</option>
-        </select>
-        <div id="lockRoleHint" class="hint" style="display:none">Modification du statut verrouillée (hors agents de votre CIS).</div>
-      </div>
-      <div>
-        <label>CIS principal (choix unique) :</label>
-        <select id="cisPrincipal"></select>
-        <div id="lockCisHint" class="hint" style="display:none">Modification du CIS principal verrouillée (utilisez "Mutation").</div>
-      </div>
-    </div>
-
-    <!-- 🟨 Suivi médical & permis -->
-    <div id="medPanel" class="inline-box">
-      <div style="font-weight:700;margin-bottom:6px">Suivi médical & permis</div>
-      <div class="cis-wrap">
-        <div>
-          <label style="margin-top:0;">
-            <input type="checkbox" id="permisCTitulaire" style="width:auto;margin-right:6px;">
-            Titulaire du Permis C (poids lourd)
-          </label>
-        </div>
-        <div>
-          <label>Permis C - valide jusqu'au :</label>
-          <input type="date" id="permisCDate">
-        </div>
-      </div>
-      <div class="cis-wrap">
-        <div>
-          <label>Dernière visite médicale :</label>
-          <input type="date" id="visiteMedProchaine">
-        </div>
-      </div>
-      <div class="hint">
-        La case <strong>Titulaire du Permis C</strong> active la gestion de la date de validité.
-        Ces informations sont également visibles dans la page <strong>Mes infos</strong> de l'agent.
-      </div>
-    </div>
-
-    <!-- 🟦 Accès menus (CIS principal) -->
-    <div id="permPanel" class="inline-box">
-      <div class="perm-title">Accès menus (CIS principal)</div>
-      <div class="perm-grid" id="permPrimaryGrid"></div>
-      <div class="hint" id="permPrimaryHint">Si <strong>SOG</strong> est coché -> accès à <em>tous</em> les menus sauf « Administrateur » + boutons véhicules visibles.<br>Si <strong>seul</strong> « Agent du centre » est coché -> visibles : Agent du centre, Formation, FDF, Habillement et boutons véhicules cachés.</div>
-    </div>
-
-    <!-- 🟩 Mon CIS (secondaire) -->
-    <div id="myCisPanel" class="inline-box" style="display:none">
-      <div style="font-weight:700;margin-bottom:6px">Mon CIS (secondaire) -- droits & statut</div>
-      <div id="myCisContent"></div>
-    </div>
-
-    <!-- 🟥 Mutation -->
-    <div id="mutatePanel" class="inline-box" style="display:none">
-      <div style="font-weight:600;margin-bottom:6px">Mutation de l'agent</div>
-      <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
-        <select id="mutateCisSelect"></select>
-        <button type="button" class="btn-primary" id="mutateBtn">Muter cet agent</button>
-      </div>
-      <div class="hint">La mutation définit un <strong>nouveau CIS principal</strong> et retire l'agent de votre CIS (même en secondaire). Il disparaîtra de votre liste.</div>
-    </div>
-
-    <!-- 🟪 Super Admin : gestion des secondaires -->
-    <div id="allSecPanel" class="inline-box" style="display:none">
-      <div style="font-weight:700;margin-bottom:6px">Affectations secondaires (toutes)</div>
-      <div id="allSecRows"></div>
-      <button class="btn-ghost" id="allSecAddBtn" type="button">➕ Ajouter un CIS secondaire</button>
-      <div class="hint">En tant que Super Admin (1414), tu peux ajouter/modifier/supprimer toutes les affectations secondaires <em>et</em> leurs droits.</div>
-    </div>
-
-    <div style="margin-top:14px">
-      <button class="btn-primary" onclick="saveUser()">✅ Enregistrer</button>
-      <button class="btn-close" onclick="cancelForm()">❌ Annuler</button>
+Toute utilisation non autorisée pourra faire l’objet de poursuites.
+    </p>
+    <div class="actions">
+      <button class="close-btn" type="button" onclick="closeMentions()">Fermer</button>
     </div>
   </div>
 </div>
 
-<footer>© CISMIC -- Administration 2025</footer>
-
-<!-- Modal Répertoire (optionnel) -->
-<div id="dirModal" class="modal" aria-hidden="true">
-  <div class="panel">
-    <div class="topline">
-      <h3>Répertoire des agents</h3>
-      <button class="btn-close" onclick="closeDirectory()">Fermer</button>
-    </div>
-    <div class="topline">
-      <input id="dirSearch" class="search" type="text" placeholder="Rechercher (matricule, nom, prénom, CIS)...">
-      <div class="muted">Affectez un agent existant à votre CIS (en <strong>secondaire</strong>) avec un statut ; vous réglerez ses droits ensuite dans la fiche.</div>
-    </div>
-    <table style="width:100%;border-collapse:collapse">
-      <thead>
-        <tr>
-          <th style="background:#eef">Matricule</th>
-          <th style="background:#eef">Nom</th>
-          <th style="background:#eef">Prénom</th>
-          <th style="background:#eef">CIS principal</th>
-          <th style="background:#eef">Actions</th>
-        </tr>
-      </thead>
-      <tbody id="dirList"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- 🔥 Firebase + Firestore + stockage partagé -->
+<!-- 🔌 Firebase + Firestore + cloud-storage -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-<!-- <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script> -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script src="cloud-storage.js"></script>
-  
 
 <script>
+const INDEX_PATH = "index.html";
 
-/* ===================================================
-   🔥 Intégration Firestore pour les utilisateurs
-   =================================================== */
-
-const cisListe = [
-  "Aigoual","Alès","Bagnols sur Cèze","Barjac","Beaucaire","Bessèges","CODIS","Fournès",
-  "Génolhac","La Grand Combe","Le Vigan","Lédignan","Les Angles","Marguerittes",
-  "Méjannes le Clap","Nîmes","Nîmes Saint-Césaire","Pharmacie","Pont Saint Esprit","Roquemaure",
-  "Saint Ambroix","Saint Géniès de Malgoire","Saint Gilles","Saint Hippolyte du Fort",
-  "Saint Jean du Gard","Sommières","SSSM","Sumène","Terre de Camargue","Uzès","Vauvert",
-  "Vergèze","Villeneuve les Avignon"
-];
-
-function getSession(){ try { return JSON.parse(localStorage.getItem("csver_session")||"null"); } catch { return null; } }
-function normalizeRole(r){
-  if(!r) return "";
-  const x = String(r).trim().toLowerCase();
-  if(["admin","administrator","administrateur","adm"].includes(x)) return "admin";
-  if(["superadmin","super admin","root"].includes(x)) return "superadmin";
-  return x;
-}
-
-function myCis(){
-  const c = getSession()?.cis;
-  const first = Array.isArray(c) ? (c[0] || "") : (c || "");
-  return first || "";
-}
-
-function sessionAgent(){
-  const s = getSession();
-  if(!s || !s.matricule) return null;
-  const raw = localStorage.getItem("csver_user_" + s.matricule);
-  if(!raw) return null;
-  try { return normalizeUser(JSON.parse(raw)); } catch { return null; }
-}
-
-function isSuperAdmin(){
-  const s=getSession();
-  return !!(s && (String(s.matricule)==='1414' || normalizeRole(s?.role)==='superadmin'));
-}
-function isProtectedUser(matriculeOrUser){
-  const m = (typeof matriculeOrUser === "string")
-    ? matriculeOrUser
-    : (matriculeOrUser && matriculeOrUser.matricule);
-  return String(m) === "1414";
-}
-
-function isSessionOwner(matricule){
-  const s = getSession();
-  return s && String(s.matricule) === String(matricule);
-}
-
-function isAdminRole(){
-  if(isSuperAdmin()) return true;
-  const s=getSession();
-  if(normalizeRole(s?.role)==='admin') return true;
-
-  const u = sessionAgent();
-  const mine = myCis();
-  if(!u || !mine) return false;
-
-  const isPrimarySame  = normCis(u.cis?.primary||"") === normCis(mine);
-  const adminPrimary   = !!(u.permissions?.primary?.admin);
-  const adminSecondary = !!(u.permissions?.secondaries?.[mine]?.admin);
-
-  return (isPrimarySame && adminPrimary) || adminSecondary;
-}
-
-function isCmd(){ return isAdminRole() || isSuperAdmin(); }
-
-function normCis(x){
-  if(!x) return "";
-  return String(x).replace(/^CIS\s*/i,"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
-}
-
-function getUsers(){
-  const users=[];
-  for(let i=0;i<localStorage.length;i++){
-    const key=localStorage.key(i);
-    if(key.startsWith("csver_user_")){
-      try{ users.push(JSON.parse(localStorage.getItem(key))); }catch{}
-    }
-  }
-  return users;
-}
-
-function normalizeUser(u){
-  const copy=JSON.parse(JSON.stringify(u||{}));
-
-  if(Array.isArray(copy.cis)){
-    const primary=copy.cis[0]||"";
-    const rest=(copy.cis.slice(1)||[]).map(c=>({cis:c,statut:copy.statut||"SPV"}));
-    copy.cis={primary,secondaries:rest};
-  }else if(typeof copy.cis==="string"){
-    copy.cis={primary:copy.cis,secondaries:[]};
-  }else{
-    copy.cis=copy.cis||{primary:"",secondaries:[]};
-  }
-
-  if(!copy.statut){ copy.statut="SPV"; }
-
-  if(copy.role && !copy.statut){
-    const r=String(copy.role).toLowerCase();
-    copy.statut = (r.includes('spp')?'SPP': (r.includes('pats')?'PATS':'SPV'));
-    delete copy.role;
-  }
-
-  if(copy.cis?.secondaries){
-    const seen=new Set();
-    copy.cis.secondaries=copy.cis.secondaries.filter(s=>{
-      if(!s||!s.cis) return false;
-      const k=normCis(s.cis);
-      if(seen.has(k)||k===normCis(copy.cis.primary||"")) return false;
-      s.statut = s.statut || "SPV";
-      return seen.add(k), true;
-    });
-  }
-
-  const defaultP = defaultPerms();
-  copy.permissions = copy.permissions || { primary: defaultP, secondaries: {} };
-  copy.permissions.primary = Object.assign({}, defaultP, copy.permissions.primary||{});
-  copy.permissions.secondaries = copy.permissions.secondaries || {};
-
-  const sec = {};
-  Object.keys(copy.permissions.secondaries).forEach(k=>{
-    const v = copy.permissions.secondaries[k]||{};
-    sec[k] = Object.assign({}, defaultP, v);
-  });
-  copy.permissions.secondaries = sec;
-
-  return copy;
-}
-
-/* Helpers affectations */
-function userHasCis(u,cisName){
-  const k=normCis(cisName||"");
-  if(!k) return false;
-  if(normCis(u.cis?.primary||"")===k) return true;
-  return (u.cis?.secondaries||[]).some(s=>normCis(s.cis||"")===k);
-}
-function secondaryIndex(u,cisName){
-  const k=normCis(cisName||"");
-  return (u.cis?.secondaries||[]).findIndex(s=>normCis(s.cis||"")===k);
-}
-function assignSecondary(u,cisName,statutForThisCis, perms){
-  const nu=normalizeUser(u);
-  if(normCis(nu.cis?.primary||"")===normCis(cisName||"")) return nu;
-  const idx=secondaryIndex(nu,cisName);
-  if(idx>=0){ nu.cis.secondaries[idx].statut=statutForThisCis||nu.cis.secondaries[idx].statut||"SPV"; }
-  else{ nu.cis.secondaries.push({cis:cisName,statut:statutForThisCis||"SPV"}); }
-  nu.permissions.secondaries[cisName] = Object.assign({}, defaultPerms(), perms||nu.permissions.secondaries[cisName]||{});
-  return nu;
-}
-function updateSecondaryStatut(u,cisName,newStatut){
-  const nu=normalizeUser(u);
-  const idx=secondaryIndex(nu,cisName);
-  if(idx>=0) nu.cis.secondaries[idx].statut=newStatut||"SPV";
-  return nu;
-}
-function removeSecondary(u,cisName){
-  const nu=normalizeUser(u);
-  const k=normCis(cisName||"");
-  nu.cis.secondaries=(nu.cis.secondaries||[]).filter(s=>normCis(s.cis||"")!==k);
-  const newSecPerms={};
-  Object.keys(nu.permissions.secondaries||{}).forEach(name=>{
-    if(normCis(name)!==k) newSecPerms[name]=nu.permissions.secondaries[name];
-  });
-  nu.permissions.secondaries=newSecPerms;
-  return nu;
-}
-
-/* Permissions helpers */
-const PERM_KEYS = ["agent","sog","formation","fdf","pharma","habillement","gestion_habillement","gestion_stages","mnr","véhicules","patrimoine","magasin","saisie_fma","admin"];
-function defaultPerms(){
-  const o={}; PERM_KEYS.forEach(k=>o[k]=false); return o;
-}
-
-function makePermCheckboxes(prefix, obj){
-  const LABELS = {
-    agent:"Agent du centre", sog:"SOG", formation:"Formation", fdf:"FDF", pharma:"Pharmacie",
-    habillement:"Habillement", gestion_habillement:"Gestion habillement", gestion_stages:"Gestion stages",
-    mnr:"MNR", véhicules:"Véhicules", patrimoine:"Patrimoine", magasin:"Magasin",
-    saisie_fma:"Saisie FMA", admin:"Administrateur"
-  };
-  const box = (k) => {
-    const id = `${prefix}_${k}`;
-    const checked = obj && obj[k] ? "checked" : "";
-    const label = LABELS[k] || k;
-    return `<label><input type="checkbox" id="${id}" ${checked}> ${label}</label>`;
-  };
-  const BOTTOM = new Set(["saisie_fma","gestion_habillement","gestion_stages","véhicules"]);
-  const top = PERM_KEYS.filter(k => !BOTTOM.has(k)).map(box).join("");
-  const bottom =
-    `<div class="fullrow perm-divider"></div>
-     <div class="fullrow perm-subtitle">Droits accès</div>
-     ${["saisie_fma","gestion_habillement","gestion_stages","véhicules"].map(box).join("")}`;
-  return top + bottom;
-}
-
-function readPermsFromForm(prefix){
-  const o={}; PERM_KEYS.forEach(k=>{ o[k] = !!document.getElementById(`${prefix}_${k}`)?.checked; });
-  return o;
-}
-function writePermsToForm(prefix, obj){
-  PERM_KEYS.forEach(k=>{
-    const el = document.getElementById(`${prefix}_${k}`);
-    if(el) el.checked = !!(obj && obj[k]);
-  });
-}
-
-/* Permissions helpers */
-function setPrimaryPermsDisabled(flag){
-  const grid = document.getElementById('permPrimaryGrid');
-  if(!grid) return;
-
-  grid.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
-    cb.disabled = !!flag;
-  });
-
-  const hint = document.getElementById('permPrimaryHint');
-  if(!hint) return;
-
-  if(flag){
-    hint.innerHTML = `Gestion des accès du <strong>CIS principal</strong> : <strong>réservée</strong> au Super Admin (1414) ou à l'<strong>Administrateur</strong> du CIS (si l'agent est de son CIS).`;
-  }else{
-    hint.innerHTML = `Si <strong>SOG</strong> est coché -> accès à <em>tous</em> les menus sauf « Administrateur » + boutons véhicules visibles.<br>
-    Si <strong>seul</strong> « Agent du centre » est coché -> visibles : Agent du centre, Formation, FDF, Habillement et boutons véhicules cachés.`;
-  }
-}
-
-/* ===========================
-   ✅ AJOUT : Gestion MDP provisoire (hash + UI)
-   =========================== */
-const pwCreatePanel = document.getElementById('pwCreatePanel');
-const pwResetPanel  = document.getElementById('pwResetPanel');
-const fldTempPw     = document.getElementById('tempPassword');
-const btnGenPw      = document.getElementById('btnGenPw');
-const btnCopyPw     = document.getElementById('btnCopyPw');
-
-const resetPwCheck  = document.getElementById('resetPwCheck');
-const resetPwInner  = document.getElementById('resetPwInner');
-const fldResetPw    = document.getElementById('resetPassword');
-const btnGenResetPw = document.getElementById('btnGenResetPw');
-const btnCopyResetPw= document.getElementById('btnCopyResetPw');
-
-function randomPassword(len=12){
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#-_$";
-  const arr = new Uint32Array(len);
-  crypto.getRandomValues(arr);
-  let out = "";
-  for(let i=0;i<len;i++){
-    out += alphabet[arr[i] % alphabet.length];
-  }
-  return out;
-}
-function b64(bytes){
-  let bin = "";
-  bytes.forEach(b=>bin += String.fromCharCode(b));
-  return btoa(bin);
-}
-async function pbkdf2Hash(password, saltBytes, iters=150000){
+/* --------- util SHA-256 (MDP principal, pour rester compatible) --------- */
+async function hash(text){
   const enc = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(password),
-    "PBKDF2",
-    false,
-    ["deriveBits"]
-  );
-  const bits = await crypto.subtle.deriveBits(
-    { name:"PBKDF2", salt:saltBytes, iterations:iters, hash:"SHA-256" },
-    keyMaterial,
-    256
-  );
-  return new Uint8Array(bits);
-}
-async function hashPasswordToRecord(password){
-  const salt = new Uint8Array(16);
-  crypto.getRandomValues(salt);
-  const iters = 150000;
-  const hashBytes = await pbkdf2Hash(password, salt, iters);
-  return {
-    kdf: "pbkdf2",
-    iters,
-    salt: b64(salt),
-    hash: b64(hashBytes),
-  };
-}
-async function copyToClipboard(text){
-  try{
-    await navigator.clipboard.writeText(text);
-    return true;
-  }catch{
-    // fallback
-    const ta=document.createElement('textarea');
-    ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px';
-    document.body.appendChild(ta);
-    ta.focus(); ta.select();
-    let ok=false;
-    try{ ok=document.execCommand('copy'); }catch{}
-    document.body.removeChild(ta);
-    return ok;
-  }
+  const data = enc.encode(text);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 
-function setupPwButtons(){
-  if(btnGenPw){
-    btnGenPw.onclick = ()=>{ fldTempPw.value = randomPassword(12); };
-  }
-  if(btnCopyPw){
-    btnCopyPw.onclick = async ()=>{
-      const v=(fldTempPw.value||"").trim();
-      if(!v){ alert("Aucun mot de passe à copier."); return; }
-      const ok = await copyToClipboard(v);
-      alert(ok ? "✅ Mot de passe copié." : "⚠️ Copie impossible (bloquée). Sélectionne puis copie manuellement.");
-    };
-  }
-
-  if(resetPwCheck){
-    resetPwCheck.onchange = ()=>{
-      resetPwInner.style.display = resetPwCheck.checked ? "block" : "none";
-      if(!resetPwCheck.checked && fldResetPw) fldResetPw.value = "";
-    };
-  }
-  if(btnGenResetPw){
-    btnGenResetPw.onclick = ()=>{ fldResetPw.value = randomPassword(12); };
-  }
-  if(btnCopyResetPw){
-    btnCopyResetPw.onclick = async ()=>{
-      const v=(fldResetPw.value||"").trim();
-      if(!v){ alert("Aucun mot de passe à copier."); return; }
-      const ok = await copyToClipboard(v);
-      alert(ok ? "✅ Mot de passe copié." : "⚠️ Copie impossible (bloquée). Sélectionne puis copie manuellement.");
-    };
-  }
+/* --------- util PBKDF2 (question secrète) --------- */
+async function pbkdf2Hash(secret, saltHex, iterations=100000){
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(secret), {name:"PBKDF2"}, false, ["deriveBits"]);
+  const salt = new Uint8Array(saltHex.match(/.{1,2}/g).map(h=>parseInt(h,16)));
+  const bits = await crypto.subtle.deriveBits({name:"PBKDF2", hash:"SHA-256", salt, iterations}, keyMaterial, 256);
+  return Array.from(new Uint8Array(bits)).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
-/* ===========================
-   ✅ FIN AJOUT
-   =========================== */
+function genSalt(n=16){ const b=new Uint8Array(n); crypto.getRandomValues(b); return Array.from(b).map(x=>x.toString(16).padStart(2,"0")).join(""); }
 
-/* Rendu du tableau */
-function renderTable(filter=""){
-  const mine=myCis();
-
-  const hasCis = !!mine;
-  const canOpenDirectory = (isAdminRole() || isSuperAdmin()) && hasCis;
-  document.getElementById("dirBtn").style.display = canOpenDirectory ? "inline-block" : "none";
-
-  const tbody=document.getElementById("userList"); tbody.innerHTML="";
-  let users=getUsers().map(normalizeUser);
-
-  if(!isSuperAdmin() && mine){
-    users = users.filter(u => userHasCis(u, mine));
-  }
-
-  const q=(filter||"").toLowerCase();
-  users
-    .filter(u=>{
-      const cisNames=[u.cis?.primary||""].concat((u.cis?.secondaries||[]).map(s=>s.cis));
-      const statNames=[u.statut||"SPV"].concat((u.cis?.secondaries||[]).map(s=>s.statut||"SPV"));
-      return [u.matricule||"",u.nom||"",u.prenom||"",...cisNames,...statNames].join(" ").toLowerCase().includes(q);
-    })
-    .sort((a,b)=>{
-      const A=(a.nom||"").toLowerCase(),B=(b.nom||"").toLowerCase();
-      const aP=(a.prenom||"").toLowerCase(),bP=(b.prenom||"").toLowerCase();
-      if(A<B) return -1; if(A>B) return 1; return aP.localeCompare(bP);
-    })
-    .forEach(u=>{
-      const tr=document.createElement("tr");
-      const sec=(u.cis?.secondaries||[]).map(s=>`${s.cis} (${s.statut||"-"})`).join(", ")||"-";
-
-      const isPrimaryMine = normCis(u.cis?.primary||"") === normCis(mine||"");
-      const protectedUser = isProtectedUser(u.matricule);
-      const ownerSession = isSessionOwner(u.matricule);
-
-      const canDelete = (!protectedUser || ownerSession) &&
-        (isSuperAdmin() || (!isCmd()) || (isCmd() && isPrimaryMine));
-
-      let actionsHTML = "";
-      if (!protectedUser || ownerSession) {
-        actionsHTML += `<button class="btn-edit" onclick="editUser('${u.matricule}')">✏️</button>`;
-        if (canDelete) {
-          actionsHTML += ` <button class="btn-delete" onclick="deleteUser('${u.matricule}')">🗑️</button>`;
-        }
-      }
-
-      tr.innerHTML=`
-        <td>${u.matricule}</td>
-        <td>${u.nom||"-"}</td>
-        <td>${u.prenom||"-"}</td>
-        <td>${u.statut||"-"}</td>
-        <td>
-          <div><strong>Principal :</strong> ${u.cis?.primary||"-"}</div>
-          <div><strong>Secondaires :</strong> ${sec}</div>
-        </td>
-        <td>${actionsHTML}</td>
-      `;
-
-      tbody.appendChild(tr);
-    });
-}
-
-/* suppression utilisateur */
-function deleteUser(matricule){
-  if (isProtectedUser(matricule) && !isSessionOwner(matricule)) {
-    alert("Vous n'êtes pas autorisé à supprimer ce compte protégé.");
-    return;
-  }
-  const raw = localStorage.getItem("csver_user_" + matricule);
-  if(!raw){ alert("Utilisateur introuvable."); return; }
-
-  const u = normalizeUser(JSON.parse(raw));
-  const mine = myCis();
-  const iCmd = isCmd();
-  const isPrimaryMine = normCis(u.cis?.primary||"") === normCis(mine||"");
-
-  const allowed = isSuperAdmin() || (!iCmd) || (iCmd && isPrimaryMine);
-  if(!allowed){
-    alert("Vous n'êtes pas autorisé à supprimer cet utilisateur.");
-    return;
-  }
-
-  const label = `${u.prenom||''} ${u.nom||''}`.trim() || 'cet utilisateur';
-  if(!confirm(`Supprimer définitivement ${label} (${u.matricule}) ?`)) return;
-
-  localStorage.removeItem("csver_user_" + matricule);
-
-  if(editMode && currentMatricule === matricule){
-    cancelForm();
-  }
-
-  alert("✅ Utilisateur supprimé.");
-  renderTable(document.getElementById("search").value);
-}
-
-/* Formulaire */
-let editMode=false, currentMatricule=null, editingOriginal=null;
-
-const cisPrincipalSel=document.getElementById('cisPrincipal');
-const statutPrincipalSel=document.getElementById('statutPrincipal');
-const lockRoleHint=document.getElementById('lockRoleHint');
-const lockCisHint=document.getElementById('lockCisHint');
-const lockIdentHint=document.getElementById('lockIdentHint');
-const fldMat=document.getElementById('matricule');
-const fldNom=document.getElementById('nom');
-const fldPre=document.getElementById('prenom');
-
-// 🟨 AJOUT : références aux champs permis / visite
-const fldPermisCTitulaire=document.getElementById('permisCTitulaire');
-const fldPermisCDate=document.getElementById('permisCDate');
-const fldVisiteMedProchaine=document.getElementById('visiteMedProchaine');
-
-const mutatePanel=document.getElementById('mutatePanel');
-const mutateSel=document.getElementById('mutateCisSelect');
-const mutateBtn=document.getElementById('mutateBtn');
-
-function populateCisPrincipal(selected=""){
-  cisPrincipalSel.innerHTML='<option value="">-- Sélectionner --</option>'+cisListe.map(c=>`<option value="${c}">${c}</option>`).join("");
-  cisPrincipalSel.value=selected||"";
-}
-function populateCisSelect(sel, exclude=""){
-  const exLC=(exclude||"").toLowerCase();
-  sel.innerHTML='<option value="">-- Choisir un CIS --</option>'+cisListe
-    .filter(c=>c.toLowerCase()!==exLC)
-    .map(c=>`<option value="${c}">${c}</option>`).join('');
-}
-
-/* 🟨 AJOUT : logique d'activation de la date permis C */
-function updatePermisAdminUi(){
-  if(!fldPermisCTitulaire || !fldPermisCDate) return;
-  const titulaire = !!fldPermisCTitulaire.checked;
-  fldPermisCDate.disabled = !titulaire;
-}
-
-function applyLocks(edit){
-  if(isSuperAdmin()){
-    statutPrincipalSel.disabled=false; cisPrincipalSel.disabled=false;
-    fldMat.disabled=false; fldNom.disabled=false; fldPre.disabled=false;
-    lockRoleHint.style.display='none'; lockCisHint.style.display='none'; lockIdentHint.style.display='none';
-    setPrimaryPermsDisabled(false);
-    return;
-  }
-  const lockBase=isCmd() && edit;
-  const canEditIfMine = lockBase && editingOriginal && (normCis(editingOriginal.cis?.primary||"")===normCis(myCis()||""));
-
-  statutPrincipalSel.disabled = lockBase ? !canEditIfMine : false;
-  cisPrincipalSel.disabled = lockBase;
-  fldMat.disabled=lockBase; fldNom.disabled=lockBase; fldPre.disabled=lockBase;
-
-  lockRoleHint.style.display = (lockBase && !canEditIfMine) ? 'block' : 'none';
-  lockCisHint.style.display  = lockBase ? 'block' : 'none';
-  lockIdentHint.style.display= lockBase ? 'block' : 'none';
-
-  const agentPrimary = (editingOriginal && editingOriginal.cis && editingOriginal.cis.primary) ? editingOriginal.cis.primary : '';
-  const canEditPrimaryPerms =
-    isSuperAdmin() || (
-      isAdminRole() && (
-        !edit || normCis(agentPrimary) === normCis(myCis())
-      )
-    );
-  setPrimaryPermsDisabled(!canEditPrimaryPerms);
-}
-
-/* 🟩 Mon CIS (secondaire) */
-function refreshMyCisPanel(){
-  const panel=document.getElementById('myCisPanel');
-  const content=document.getElementById('myCisContent');
-  if(isSuperAdmin()){ panel.style.display='none'; content.innerHTML=''; return; }
-  if(!isCmd() || !editMode || !editingOriginal){ panel.style.display='none'; content.innerHTML=''; return; }
-
-  const mine=myCis();
-  const u=normalizeUser(editingOriginal);
-  const isPrimaryMine=normCis(u.cis?.primary||"")===normCis(mine||"");
-  const idx=secondaryIndex(u,mine);
-  panel.style.display='block';
-
-  if(isPrimaryMine){
-    content.innerHTML=`<div class="hint">Cet agent a <strong>${mine}</strong> en <strong>principal</strong>. Gérez ses droits principaux ci-dessus.</div>`;
-    return;
-  }
-
-  if(idx>=0){
-    const currentStatut=u.cis.secondaries[idx]?.statut || 'SPV';
-    const secPerms = (u.permissions?.secondaries||{})[mine] || defaultPerms();
-    content.innerHTML=`
-      <div class="cis-wrap">
-        <div>
-          <label>Statut sur ${mine} (secondaire) :</label>
-          <select id="myCisStatutSelect">
-            <option value="SPP">SPP</option><option value="SPV">SPV</option><option value="PATS">PATS</option>
-          </select>
-        </div>
-      </div>
-      <div class="perm-title">Droits sur ${mine}</div>
-      <div class="perm-grid" id="myCisPermGrid">${makePermCheckboxes('mycis', secPerms)}</div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
-        <button class="btn-primary" id="btnMyCisSave">✅ Enregistrer</button>
-        <button class="btn-delete" id="btnMyCisRemove">Retirer de mon CIS</button>
-      </div>
-      <div class="hint">Vous modifiez le <strong>rattachement secondaire</strong> à ${mine} (statut et droits).</div>
-    `;
-    document.getElementById('myCisStatutSelect').value=currentStatut;
-    document.getElementById('btnMyCisSave').onclick=()=>{
-      const newStatut=document.getElementById('myCisStatutSelect').value;
-      const newPerms=readPermsFromForm('mycis');
-      const raw=localStorage.getItem("csver_user_"+u.matricule); if(!raw){alert("Utilisateur introuvable.");return;}
-      let upd=updateSecondaryStatut(JSON.parse(raw), mine, newStatut);
-      upd=assignSecondary(upd, mine, newStatut, newPerms);
-      localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(upd));
-      alert("✅ Rôle secondaire & droits mis à jour.");
-      cancelForm();
-      renderTable(document.getElementById("search").value);
-    };
-    document.getElementById('btnMyCisRemove').onclick=()=>{
-      if(!confirm(`Retirer cet agent de ${mine} ?`)) return;
-      const raw=localStorage.getItem("csver_user_"+u.matricule); if(!raw){alert("Utilisateur introuvable.");return;}
-      const upd=removeSecondary(JSON.parse(raw), mine);
-      localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(upd));
-      alert("✅ Rattachement secondaire supprimé.");
-      cancelForm();
-      renderTable(document.getElementById("search").value);
-    };
-  }else{
-    const defPerms = defaultPerms(); defPerms.agent = true;
-    content.innerHTML=`
-      <label>Affecter cet agent à mon CIS (${mine}) :</label>
-      <div class="cis-wrap">
-        <div>
-          <label>Statut à attribuer :</label>
-          <select id="myCisStatutAttach">
-            <option value="SPP">SPP</option><option value="SPV" selected>SPV</option><option value="PATS">PATS</option>
-          </select>
-        </div>
-      </div>
-      <div class="perm-title">Droits initiaux</div>
-      <div class="perm-grid" id="myCisPermAttach">${makePermCheckboxes('mycis_new', defPerms)}</div>
-      <button class="btn-primary" id="btnMyCisAttach">Affecter à mon CIS</button>
-      <div class="hint">L'agent sera ajouté en secondaire sur ${mine} avec le statut choisi et les droits cochés.</div>
-    `;
-    document.getElementById('mycis_new_agent').checked = true;
-    document.getElementById('btnMyCisAttach').onclick=()=>{
-      const statut=document.getElementById('myCisStatutAttach').value;
-      const perms=readPermsFromForm('mycis_new');
-      const raw=localStorage.getItem("csver_user_"+u.matricule); if(!raw){alert("Utilisateur introuvable.");return;}
-      const upd=assignSecondary(JSON.parse(raw), mine, statut, perms);
-      localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(upd));
-      alert("✅ Rattaché à votre CIS avec droits.");
-      cancelForm();
-      renderTable(document.getElementById("search").value);
-    };
+/* --------- liste de questions secrètes --------- */
+const SECRET_QUESTIONS = [
+  "Quel est le nom de votre premier animal de compagnie ?",
+  "Dans quelle ville êtes-vous né(e) ?",
+  "Quel était le nom de votre école primaire ?",
+  "Quel est votre film préféré ?",
+  "Quel est le prénom de votre meilleur ami d’enfance ?",
+  "Quel est votre plat préféré ?",
+  "Autre : je saisis ma propre question"
+];
+function selectSecretQuestion(){
+  const menu = SECRET_QUESTIONS.map((q,i)=>`${i+1}. ${q}`).join("\n");
+  while(true){
+    const ans = prompt("Choisissez une question (entrez le numéro) :\n\n"+menu);
+    if(ans===null) return null;
+    const idx = parseInt(ans,10);
+    if(!Number.isInteger(idx) || idx<1 || idx>SECRET_QUESTIONS.length){ alert("Numéro invalide."); continue; }
+    const picked = SECRET_QUESTIONS[idx-1];
+    if(picked.startsWith("Autre")){
+      let custom = "";
+      do{
+        custom = prompt("Saisissez VOTRE question (au moins 10 caractères) :") || "";
+        if(custom===null) return null;
+      }while(custom.trim().length<10);
+      return custom.trim();
+    }
+    return picked;
   }
 }
 
-/* 🟥 Mutation */
-function refreshMutatePanel(){
-  if(isSuperAdmin()){ mutatePanel.style.display='none'; return; }
-  if(!isAdminRole() || !editMode || !editingOriginal){ mutatePanel.style.display='none'; return; }
-
-  const mine=myCis();
-  const u=normalizeUser(editingOriginal);
-  const isPrimaryMine=normCis(u.cis?.primary||"")===normCis(mine||"");
-
-  if(!isPrimaryMine){ mutatePanel.style.display='none'; return; }
-
-  populateCisSelect(mutateSel, u.cis.primary);
-  mutatePanel.style.display='block';
-
-  mutateBtn.onclick=()=>{
-    const newCis=mutateSel.value;
-    if(!newCis){ alert("Choisis le nouveau CIS principal."); return; }
-    const raw=localStorage.getItem("csver_user_"+u.matricule);
-    if(!raw){ alert("Utilisateur introuvable."); return; }
-    const data=normalizeUser(JSON.parse(raw));
-
-    const oldMine = mine;
-    data.cis.primary = newCis;
-    data.cis.secondaries = (data.cis.secondaries||[])
-      .filter(s => normCis(s.cis||"") !== normCis(oldMine||""));
-
-    localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(data));
-    alert(`✅ Agent muté vers ${newCis}. Il est retiré de ${oldMine}.`);
-    cancelForm();
-    renderTable(document.getElementById("search").value);
-  };
+/* ===================== AJOUT : Politique MDP ===================== */
+function checkPasswordPolicy(pwd){
+  const errors = [];
+  if (!pwd || pwd.length < 10) errors.push("au moins 10 caractères");
+  if (!/[A-Z]/.test(pwd)) errors.push("au moins 1 majuscule");
+  // caractère spécial = non lettre / non chiffre / non espace
+  if (!/[^A-Za-z0-9\s]/.test(pwd)) errors.push("au moins 1 caractère spécial (ex: ! ? @ #)");
+  return errors;
 }
 
-/* 🟪 Panneau Super Admin : toutes les affectations secondaires */
-function refreshAllSecPanel(){
-  const panel=document.getElementById('allSecPanel');
-  const rows=document.getElementById('allSecRows');
-  const addBtn=document.getElementById('allSecAddBtn');
-  if(!isSuperAdmin() || !editingOriginal){ panel.style.display='none'; rows.innerHTML=''; return; }
-  panel.style.display='block';
+async function promptNewPassword(){
+  while(true){
+    const newPwd = prompt("Nouveau mot de passe (10 caractères min, 1 majuscule, 1 caractère spécial) :");
+    if(newPwd === null) return null;
 
-  function makeRow(obj={}, idx=null){
-    const wrap=document.createElement('div');
-    wrap.style.display='grid';
-    wrap.style.gridTemplateColumns='1fr 160px';
-    wrap.style.gap='8px';
-    wrap.style.alignItems='start';
-    wrap.style.margin='8px 0';
+    const confirmPwd = prompt("Confirmez le mot de passe :");
+    if(confirmPwd === null) return null;
 
-    const left=document.createElement('div');
-    const right=document.createElement('div');
-
-    const selCis=document.createElement('select');
-    populateCisSelect(selCis, editingOriginal?.cis?.primary || "");
-    selCis.value=obj.cis||'';
-
-    const selStatut=document.createElement('select');
-    selStatut.innerHTML='<option value="SPP">SPP</option><option value="SPV">SPV</option><option value="PATS">PATS</option>';
-    selStatut.value=(obj.statut||'SPV');
-
-    const grid=document.createElement('div');
-    grid.className='perm-grid';
-    const perms = (editingOriginal.permissions?.secondaries||{})[obj.cis||''] || defaultPerms();
-    grid.innerHTML = makePermCheckboxes('sec_'+Math.random().toString(36).slice(2), perms);
-
-    left.innerHTML = '<label>CIS secondaire :</label>';
-    left.appendChild(selCis);
-    const lab=document.createElement('label'); lab.textContent='Statut :'; left.appendChild(lab);
-    left.appendChild(selStatut);
-    const t=document.createElement('div'); t.className='perm-title'; t.textContent='Droits :'; left.appendChild(t);
-    left.appendChild(grid);
-
-    const del=document.createElement('button');
-    del.className='btn-delete';
-    del.textContent='Supprimer';
-    del.type='button';
-    del.onclick=()=>{ wrap.remove(); };
-
-    right.appendChild(del);
-
-    wrap.appendChild(left); wrap.appendChild(right);
-    rows.appendChild(wrap);
-
-    wrap._cisSel = selCis;
-    wrap._statSel = selStatut;
-    wrap._grid = grid;
-  }
-
-  rows.innerHTML='';
-  const u=normalizeUser(editingOriginal);
-  (u.cis?.secondaries||[]).forEach(s=>makeRow(s));
-  addBtn.onclick=()=>makeRow();
-}
-
-/* Affichages / locks / panneaux */
-function showForm(edit=false){
-  document.getElementById("userForm").style.display="block";
-  document.getElementById("formTitle").textContent=edit?"Modifier un utilisateur":"Créer un utilisateur";
-  applyLocks(edit);
-
-  /* ✅ AJOUT : panneaux MDP selon mode */
-  if(pwCreatePanel) pwCreatePanel.style.display = edit ? "none" : "block";
-  if(pwResetPanel)  pwResetPanel.style.display  = edit ? "block" : "none";
-  if(!edit){
-    if(fldTempPw) fldTempPw.value = "";
-  }else{
-    if(resetPwCheck){ resetPwCheck.checked=false; }
-    if(resetPwInner){ resetPwInner.style.display="none"; }
-    if(fldResetPw) fldResetPw.value = "";
-  }
-  /* ✅ FIN AJOUT */
-
-  if(!edit){
-    const defaultCis = isAdminRole() ? myCis() : "";
-    populateCisPrincipal(defaultCis);
-    statutPrincipalSel.value='SPV';
-    fldMat.value=""; fldNom.value=""; fldPre.value="";
-
-    // reset champs permis & visite
-    if(fldPermisCTitulaire){ fldPermisCTitulaire.checked=false; }
-    if(fldPermisCDate){ fldPermisCDate.value=""; }
-    if(fldVisiteMedProchaine){ fldVisiteMedProchaine.value=""; }
-    updatePermisAdminUi();
-
-    if (isAdminRole() && !isSuperAdmin()){
-      cisPrincipalSel.disabled = true;
-      lockCisHint.style.display = 'block';
-      lockCisHint.textContent = "En création, votre CIS est imposé comme principal.";
-    } else {
-      cisPrincipalSel.disabled = false;
-      lockCisHint.style.display = 'none';
+    if(newPwd !== confirmPwd){
+      alert("Les mots de passe ne correspondent pas.");
+      continue;
     }
 
-    document.getElementById('permPrimaryGrid').innerHTML = makePermCheckboxes('primary', defaultPerms());
-    document.getElementById('primary_agent').checked = (isAdminRole() || isSuperAdmin());
-    setPrimaryPermsDisabled(!(isSuperAdmin() || isAdminRole()));
+    const errs = checkPasswordPolicy(newPwd);
+    if(errs.length){
+      alert("Mot de passe invalide :\n- " + errs.join("\n- "));
+      continue;
+    }
 
-    document.getElementById('myCisPanel').style.display='none';
-    mutatePanel.style.display='none';
-    refreshAllSecPanel();
-  }else{
-    refreshMyCisPanel();
-    refreshMutatePanel();
-    refreshAllSecPanel();
+    return newPwd;
   }
 }
+/* ================================================================ */
 
-function cancelForm(){
-  document.getElementById("userForm").style.display="none";
-  fldMat.value=""; fldNom.value=""; fldPre.value="";
-  if(fldPermisCTitulaire){ fldPermisCTitulaire.checked=false; }
-  if(fldPermisCDate){ fldPermisCDate.value=""; }
-  if(fldVisiteMedProchaine){ fldVisiteMedProchaine.value=""; }
-  updatePermisAdminUi();
-
-  /* ✅ AJOUT : reset champs MDP */
-  if(fldTempPw) fldTempPw.value = "";
-  if(resetPwCheck) resetPwCheck.checked = false;
-  if(resetPwInner) resetPwInner.style.display = "none";
-  if(fldResetPw) fldResetPw.value = "";
-  /* ✅ FIN AJOUT */
-
-  populateCisPrincipal("");
-  document.getElementById('permPrimaryGrid').innerHTML = "";
-  document.getElementById('allSecRows').innerHTML='';
-  mutatePanel.style.display='none';
-  editMode=false; currentMatricule=null; editingOriginal=null;
-}
-
-function validateUserPayload(p){
-  if(!p.matricule || !p.nom || !p.prenom) return "Veuillez remplir matricule, nom, prénom.";
-  if(!p.cis.primary) return "Merci de sélectionner un CIS principal.";
-  const set=new Set([normCis(p.cis.primary||'')]);
-  for(const s of (p.cis.secondaries||[])){
-    if(!s.cis) return "Un CIS secondaire est vide. Supprimez la ligne ou choisissez un CIS.";
-    const k=normCis(s.cis);
-    if(set.has(k)) return "Un CIS est sélectionné en double (principal/secondaire).";
-    set.add(k);
+/* --------- compat & normalisation du schéma utilisateur --------- */
+function normalizeUser(uRaw){
+  const u = JSON.parse(JSON.stringify(uRaw||{}));
+  if (Array.isArray(u.cis)) {
+    const primary = u.cis[0] || "";
+    const rest = (u.cis.slice(1)||[]).map(c=>({ cis:c, role: u.role || "agent" }));
+    u.cis = { primary, secondaries: rest };
+    u.role = u.role || "agent";
+  } else if (typeof u.cis === "string") {
+    u.cis = { primary: u.cis, secondaries: [] };
+    u.role = u.role || "agent";
+  } else {
+    u.cis = u.cis || { primary:"", secondaries:[] };
+    u.role = u.role || "agent";
   }
-  return null;
+  const seen = new Set();
+  const primLC = (u.cis.primary||"").toLowerCase();
+  u.cis.secondaries = (u.cis.secondaries||[]).filter(s=>{
+    if(!s || !s.cis) return false;
+    const k=s.cis.toLowerCase();
+    if(k===primLC || seen.has(k)) return false;
+    seen.add(k); return true;
+  });
+  return u;
 }
 
-async function saveUser(){
-  let matricule=fldMat.value.trim(), nom=fldNom.value.trim(), prenom=fldPre.value.trim();
-  let statut=statutPrincipalSel.value, cisPrimary=cisPrincipalSel.value;
+/* --------- Accès utilisateur via Firestore --------- */
+async function loadUser(matricule){
+  const key = "csver_user_" + matricule;
 
-  if (!editMode && isProtectedUser(matricule) && !isSessionOwner(matricule)) {
-    alert("Le matricule 1414 est réservé au super administrateur.");
+  // 1) Cloud d'abord
+  const cloudUser = await cloudGetJSON(key, null);
+  if (cloudUser) {
+    localStorage.setItem(key, JSON.stringify(cloudUser)); // cache local
+    return cloudUser;
+  }
+
+  // 2) Fallback ancien système (uniquement local)
+  const data = localStorage.getItem(key);
+  return data ? JSON.parse(data) : null;
+}
+
+async function saveUser(matricule, userObj){
+  const key = "csver_user_" + matricule;
+  localStorage.setItem(key, JSON.stringify(userObj));   // cache local
+  await cloudSetJSON(key, userObj);                    // sauvegarde cloud
+}
+
+/* ---------- pré-remplir la liste des CIS ---------- */
+document.getElementById("matricule").addEventListener("blur", preloadCis);
+document.getElementById("matricule").addEventListener("input", (e)=>{
+  if(!e.target.value.trim()){
+    document.getElementById("cis-container").style.display="none";
+    const sel = document.getElementById("cisSelect");
+    sel.innerHTML="";
+    sel.disabled = false;
+  }
+});
+
+function preloadCis(){
+  const matricule = document.getElementById("matricule").value.trim();
+  const cisWrap = document.getElementById("cis-container");
+  const sel = document.getElementById("cisSelect");
+
+  if(!matricule){
+    cisWrap.style.display = "none";
+    sel.innerHTML = "";
+    sel.disabled = false;
     return;
   }
 
-  if(isAdminRole() && editMode && editingOriginal && !isSuperAdmin()){
-    matricule=editingOriginal.matricule;
-    nom=editingOriginal.nom; prenom=editingOriginal.prenom;
-    const isMine=normCis(editingOriginal.cis?.primary||"")===normCis(myCis()||"");
-    if(!isMine){ statut=editingOriginal.statut; }
-    cisPrimary=editingOriginal.cis?.primary||cisPrimary;
-  }
-
-  const primaryPerms = readPermsFromForm('primary');
-
-  // 🟨 lecture des champs permis / visite
-  const permisCTitulaire = fldPermisCTitulaire ? !!fldPermisCTitulaire.checked : false;
-  let permisCDate = fldPermisCDate ? (fldPermisCDate.value || "") : "";
-  const visiteMedProchaine = fldVisiteMedProchaine ? (fldVisiteMedProchaine.value || "") : "";
-
-  if(!permisCTitulaire){
-    permisCDate = "";
-  }
-
-  let secondaries=[];
-  let secPerms = {};
-  if(isSuperAdmin()){
-    const rows=[...document.getElementById('allSecRows').children];
-    for(const r of rows){
-      const cis=r._cisSel.value;
-      const st = r._statSel.value;
-      if(!cis) continue;
-      secondaries.push({cis, statut:st});
-      const cb = r._grid.querySelectorAll('input[type="checkbox"]');
-      const o = defaultPerms();
-      cb.forEach(x=>{
-        const label = x.parentElement && x.parentElement.textContent ? x.parentElement.textContent.trim() : "";
-        const mapR = {"Agent du centre":"agent","SOG":"sog","Formation":"formation","FDF":"fdf","Pharmacie":"pharma",
-          "Habillement":"habillement","Gestion habillement":"gestion_habillement","Gestion stages":"gestion_stages",
-          "MNR":"mnr","Véhicules":"véhicules","Patrimoine":"patrimoine","Magasin":"magasin",
-          "Saisie FMA":"saisie_fma","Administrateur":"admin"};
-        const key = mapR[label] || "";
-        if(key) o[key]=x.checked;
-      });
-      secPerms[cis]=o;
-    }
-  }else if(editMode){
-    const norm=normalizeUser(editingOriginal||{});
-    secondaries=norm.cis?.secondaries||[];
-    secPerms = norm.permissions?.secondaries || {};
-  }
-
-  const payload={
-    matricule,
-    nom,
-    prenom,
-    statut,
-    cis:{primary:cisPrimary,secondaries},
-    permissions:{ primary: primaryPerms, secondaries: secPerms },
-    // 🟨 champs persos
-    permisCTitulaire,
-    permisCDate,
-    visiteMedProchaine
-  };
-
-  // ✅ mot de passe provisoire obligatoire en création / optionnel en reset
-  try{
-    if(!editMode){
-      const pw = (fldTempPw?.value || "").trim();
-      if(!pw){
-        alert("Merci de générer ou saisir un mot de passe provisoire.");
-        return;
-      }
-      if(pw.length < 8){
-        alert("Mot de passe trop court (minimum 8 caractères).");
-        return;
-      }
-      const rec = await hashPasswordToRecord(pw);
-      payload.kdf = rec.kdf;
-      payload.iters = rec.iters;
-      payload.salt = rec.salt;
-      payload.hash = rec.hash;
-    }else{
-      if(resetPwCheck?.checked){
-        const pw2 = (fldResetPw?.value || "").trim();
-        if(!pw2){
-          alert("Tu as coché la réinitialisation : saisis ou génère le nouveau mot de passe.");
-          return;
-        }
-        if(pw2.length < 8){
-          alert("Mot de passe trop court (minimum 8 caractères).");
-          return;
-        }
-        const rec2 = await hashPasswordToRecord(pw2);
-        payload.kdf = rec2.kdf;
-        payload.iters = rec2.iters;
-        payload.salt = rec2.salt;
-        payload.hash = rec2.hash;
-      }
-    }
-  }catch(e){
-    console.error("Erreur hash MDP:", e);
-    alert("Erreur lors de la génération du mot de passe (navigateur ?).");
+  const data = localStorage.getItem("csver_user_"+matricule);
+  if(!data){
+    cisWrap.style.display = "none";
+    sel.innerHTML = "";
+    sel.disabled = false;
     return;
   }
-  // ✅ FIN AJOUT
 
-  const err=validateUserPayload(payload); if(err){ alert(err); return; }
+  const user = normalizeUser(JSON.parse(data));
 
-  if(editMode){
-    const existing=JSON.parse(localStorage.getItem("csver_user_"+currentMatricule)||"null");
-    // ⬇️ on garde l'ancien mot de passe si pas de reset
-    if(!(resetPwCheck?.checked)){
-      ["hash","salt","iters","kdf"].forEach(k=>{ if(existing?.[k]!=null) payload[k]=existing[k]; });
-    }
-    // ⬇️ tes champs existants
-    ["secret_question"].forEach(k=>{ if(existing?.[k]!=null) payload[k]=existing[k]; });
+  const entries = [];
+  if (user.cis.primary) entries.push({ cis: user.cis.primary, role: user.role, kind: "principal" });
+  (user.cis.secondaries||[]).forEach(s=> entries.push({ cis: s.cis, role: s.role || "agent", kind: "secondaire" }));
 
-    if(currentMatricule!==matricule){ localStorage.removeItem("csver_user_"+currentMatricule); }
-    localStorage.setItem("csver_user_"+matricule, JSON.stringify(payload));
+  if(entries.length === 0){
+    cisWrap.style.display = "none";
+    sel.innerHTML = "";
+    sel.disabled = false;
+    return;
+  }
 
-    /* ✅ MODIF MINIMALE : double sécurité cloud */
-    if(window.cloudSetJSON){
-      try { await cloudSetJSON("csver_user_"+matricule, payload); } catch(e){}
-    }
-  }else{
-    // ⛔ Empêcher la création si le matricule existe déjà
-    if (localStorage.getItem("csver_user_" + matricule)) {
-      alert("❌ Un utilisateur avec ce matricule existe déjà. La création est annulée.");
+  sel.innerHTML = "";
+  entries.forEach(e=>{
+    const opt = document.createElement("option");
+    opt.value = e.cis;
+    opt.textContent = e.kind === "principal" ? `${e.cis} (principal)` : `${e.cis} (secondaire)`;
+    opt.dataset.role = e.role;
+    opt.dataset.kind = e.kind;
+    sel.appendChild(opt);
+  });
+
+  sel.disabled = (entries.length === 1);
+  cisWrap.style.display = "block";
+}
+
+/* ----------------------- login ----------------------- */
+async function login(){
+  const matricule = document.getElementById("matricule").value.trim();
+  const password = document.getElementById("password").value.trim();
+  if(!matricule || !password){
+    alert("Merci de remplir les champs matricule et mot de passe.");
+    return;
+  }
+
+  const userData = await loadUser(matricule);
+  if(!userData){
+    alert("Matricule inconnu.");
+    return;
+  }
+
+  let user = normalizeUser(userData);
+
+  // Première connexion : mot de passe provisoire -> définir MDP + question secrète
+  if(!user.hash){
+    const temp = "temp"+matricule;
+    if(password!==temp){
+      alert("Mot de passe provisoire incorrect.");
       return;
     }
 
-    // Matricule libre -> on peut créer
-    localStorage.setItem("csver_user_"+matricule, JSON.stringify(payload));
+    const newPwd = await promptNewPassword();
+    if(newPwd === null) return;
 
-    /* ✅ MODIF MINIMALE : double sécurité cloud */
-    if(window.cloudSetJSON){
-      try { await cloudSetJSON("csver_user_"+matricule, payload); } catch(e){}
+    const q = selectSecretQuestion();
+    if(!q) return;
+    const a = prompt("Réponse (respectez majuscules/espaces — vide accepté) :");
+    if(a===null) return;
+
+    const saltQ = genSalt();
+    const hashQ = await pbkdf2Hash(a, saltQ, 100000);
+
+    user.secret_question = { q, hash: hashQ, salt: saltQ, iters: 100000 };
+    user.hash = await hash(newPwd);
+
+    await saveUser(matricule, user);
+    alert("Mot de passe et question secrète enregistrés. Connecte-toi maintenant.");
+    return;
+  }
+
+  const hashed = await hash(password);
+  if(hashed!==user.hash){
+    alert("Mot de passe incorrect.");
+    return;
+  }
+
+  const entries = [];
+  if (user.cis.primary) entries.push({ cis:user.cis.primary, role:user.role, kind:"principal" });
+  (user.cis.secondaries||[]).forEach(s=> entries.push({ cis:s.cis, role:s.role||"agent", kind:"secondaire" }));
+
+  if(entries.length === 0){
+    alert("Aucun CIS associé à ce compte. Contacte un administrateur.");
+    return;
+  }
+
+  const sel = document.getElementById("cisSelect");
+  let chosen = entries[0];
+  if(entries.length > 1){
+    if(!sel || sel.options.length === 0){
+      alert("Merci de choisir ton CIS.");
+      preloadCis();
+      return;
     }
+    const cVal = sel.value;
+    const opt = sel.selectedOptions[0];
+    chosen = {
+      cis: cVal,
+      role: opt?.dataset?.role || "agent",
+      kind: opt?.dataset?.kind || "principal"
+    };
   }
 
-  alert("✅ Utilisateur enregistré !");
-  cancelForm(); renderTable(document.getElementById("search").value);
+  localStorage.setItem("csver_session", JSON.stringify({
+    matricule: user.matricule,
+    prenom: user.prenom || "",
+    nom: user.nom || "",
+    cis: chosen.cis,
+    role: chosen.role,
+    cis_kind: chosen.kind,
+    cis_all: user.cis
+  }));
+
+  const displayName = (user.prenom ? user.prenom+" " : "") + (user.nom || user.matricule);
+  alert(`Bienvenue ${displayName} (${chosen.role}) — CIS : ${chosen.cis}`);
+  window.location.href = INDEX_PATH;
 }
 
-function editUser(matricule){
-  if (isProtectedUser(matricule) && !isSessionOwner(matricule)) {
-    alert("Vous n'êtes pas autorisé à modifier ce compte protégé.");
-    return;
-  }
-  const raw=localStorage.getItem("csver_user_"+matricule);
-  if(!raw){ alert("Utilisateur introuvable."); return; }
-  const u=normalizeUser(JSON.parse(raw));
-  editingOriginal=JSON.parse(JSON.stringify(u));
+/* ---- Mot de passe oublié : répondre à la question ---- */
+async function forgotWithQuestion(ev){
+  ev && ev.preventDefault();
 
-  fldMat.value=u.matricule; fldNom.value=u.nom||""; fldPre.value=u.prenom||"";
-  document.getElementById('statutPrincipal').value=u.statut||"SPV"; populateCisPrincipal(u.cis?.primary||"");
-  currentMatricule=matricule; editMode=true;
+  const matricule = prompt("Votre matricule :");
+  if(!matricule) return;
 
-  // 🟨 recharger permis / visite
-  if(fldPermisCTitulaire){ fldPermisCTitulaire.checked = !!u.permisCTitulaire; }
-  if(fldPermisCDate){ fldPermisCDate.value = u.permisCDate || ""; }
-  if(fldVisiteMedProchaine){ fldVisiteMedProchaine.value = u.visiteMedProchaine || ""; }
-  updatePermisAdminUi();
-
-  // ✅ affichage panneaux MDP en édition
-  if(pwCreatePanel) pwCreatePanel.style.display = "none";
-  if(pwResetPanel)  pwResetPanel.style.display  = "block";
-  if(resetPwCheck){ resetPwCheck.checked=false; }
-  if(resetPwInner){ resetPwInner.style.display="none"; }
-  if(fldResetPw) fldResetPw.value = "";
-
-  document.getElementById('permPrimaryGrid').innerHTML = makePermCheckboxes('primary', u.permissions?.primary || defaultPerms());
-
-  (function(){
-    const agentPrimary = (u && u.cis && u.cis.primary) ? u.cis.primary : '';
-    const canEditPrimaryPerms =
-      isSuperAdmin()
-      || (isAdminRole() && normCis(agentPrimary) === normCis(myCis()));
-    setPrimaryPermsDisabled(!canEditPrimaryPerms);
-  })();
-
-  applyLocks(true);
-  document.getElementById("userForm").style.display="block";
-  refreshMyCisPanel();
-  refreshMutatePanel();
-  refreshAllSecPanel();
-}
-
-/* Répertoire (inchangé) */
-function openDirectory(){ const m=document.getElementById('dirModal'); m.style.display='flex'; document.getElementById('dirSearch').value=''; renderDirectory(); }
-function closeDirectory(){ document.getElementById('dirModal').style.display='none'; }
-function renderDirectory(filter){
-  if(!(isAdminRole() || isSuperAdmin())){
-    alert("Seuls les administrateurs du CIS peuvent affecter depuis le répertoire.");
+  const userData = await loadUser(matricule);
+  if(!userData){
+    alert("Matricule inconnu.");
     return;
   }
 
-  const mine = myCis();
-  const tbody = document.getElementById('dirList');
+  let user = normalizeUser(userData);
+  if(!user.secret_question || !user.secret_question.q){
+    alert("Aucune question secrète définie pour ce compte.");
+    return;
+  }
 
-  // ✅ si on reçoit un filtre en paramètre, on l'utilise, sinon on lit le champ
-  const q = (typeof filter === "string"
-              ? filter
-              : (document.getElementById('dirSearch').value || "")
-            ).toLowerCase();
+  alert("Question secrète :\n\n" + user.secret_question.q);
+  const ans = prompt("Votre réponse (retapez exactement votre phrase — vide accepté) :");
+  if(ans === null) return;
 
-  tbody.innerHTML = "";
-  const all = getUsers().map(normalizeUser);
+  const h = await pbkdf2Hash(ans, user.secret_question.salt, user.secret_question.iters || 100000);
+  if(h !== user.secret_question.hash){
+    alert("Réponse incorrecte.");
+    return;
+  }
 
-  all
-    .filter(u=>{
-      const cisNames=[u.cis?.primary||""].concat((u.cis?.secondaries||[]).map(s=>s.cis));
-      return [u.matricule||"",u.nom||"",u.prenom||"",...cisNames]
-        .join(" ")
-        .toLowerCase()
-        .includes(q);
-    })
-   .sort((a,b)=>{const A=(a.nom||"").toLowerCase(),B=(b.nom||"").toLowerCase(); const aP=(a.prenom||"").toLowerCase(),bP=(b.prenom||"").toLowerCase(); if(A<B)return-1;if(A>B) return 1;return aP.localeCompare(bP);})
-   .forEach(u=>{
-     let actionHTML='';
-     if(isSuperAdmin()){
-       actionHTML='<span class="muted">Utilise le formulaire pour gérer toutes les affectations & droits.</span>';
-     }else{
-       const isPrimaryMine=normCis(u.cis?.primary||"")===normCis(mine||"");
-       const alreadySecondary=secondaryIndex(u,mine)>=0;
-       if(isPrimaryMine){ actionHTML='<span class="muted">Principal de mon CIS -- gérable dans le formulaire.</span>'; }
-       else if(alreadySecondary){ actionHTML='<span class="muted">Déjà rattaché à mon CIS -- gère-le dans le formulaire.</span>'; }
-       else{
-         actionHTML=`
-           <div class="dir-card">
-             <div class="dir-line">
-               <select data-statut><option value="SPP">SPP</option><option value="SPV" selected>SPV</option><option value="PATS">PATS</option></select>
-               <button class="btn-primary" data-affecter>Affecter à mon CIS</button>
-             </div>
-             <div class="hint">Les droits seront configurés ensuite dans la fiche utilisateur.</div>
-           </div>`;
-       }
-     }
-     const tr=document.createElement('tr');
-     tr.innerHTML=`<td>${u.matricule}</td><td>${u.nom||"-"}</td><td>${u.prenom||"-"}</td><td>${u.cis?.primary||"-"}</td><td>${actionHTML}</td>`;
-     if(!isSuperAdmin()){
-       const isPrimaryMine=normCis(u.cis?.primary||"")===normCis(mine||"");
-       const alreadySecondary=secondaryIndex(u,mine)>=0;
-       if(!isPrimaryMine && !alreadySecondary){
-         const statutSel=tr.querySelector('select[data-statut]'); const btn=tr.querySelector('[data-affecter]');
-         btn.addEventListener('click',()=>{
-           const statut=statutSel.value;
-           const raw=localStorage.getItem("csver_user_"+u.matricule); if(!raw){alert("Utilisateur introuvable.");return;}
-           const base = JSON.parse(raw);
-           const perms = defaultPerms(); perms.agent = true;
-           const upd=assignSecondary(base, mine, statut, perms);
-           localStorage.setItem("csver_user_"+u.matricule, JSON.stringify(upd));
-           alert("✅ Rattaché à votre CIS.");
-           closeDirectory();
-           renderTable(document.getElementById("search").value);
-         });
-       }
-     }
-     tbody.appendChild(tr);
-   });
+  const p1 = await promptNewPassword();
+  if(p1 === null) return;
+  user.hash = await hash(p1);
+
+  await saveUser(matricule, user);
+  alert("Mot de passe réinitialisé. Vous pouvez vous connecter.");
 }
 
-/* Réactivité */
-document.getElementById("search").addEventListener("input",e=>renderTable(e.target.value));
-document.getElementById("dirSearch").addEventListener("input", e => {
-  renderDirectory(e.target.value);
+/* --- Mentions légales (modale) --- */
+function openMentions(ev){
+  ev && ev.preventDefault();
+  document.getElementById("mentionsModal").style.display = "flex";
+}
+function closeMentions(){
+  document.getElementById("mentionsModal").style.display = "none";
+}
+document.addEventListener("keydown", (e)=>{
+  if(e.key === "Escape") closeMentions();
 });
-
-/* ✅ MODIF MINIMALE : on sync cloud AVANT le guard admin (PC neuf) */
-window.addEventListener("DOMContentLoaded", async () => {
-  try {
-    try { await syncAccueilFromCloud(); } catch(e){ console.warn("Firestore indisponible (non bloquant):", e); }
-
-    adminPermissionGuard();   // sécurité après sync
-    setupPwButtons();
-
-    populateCisPrincipal("");
-    renderTable();
-
-    if (fldPermisCTitulaire) {
-      fldPermisCTitulaire.addEventListener("change", updatePermisAdminUi);
-      updatePermisAdminUi();
-    }
-  } catch (e) {
-    console.error("Erreur init admin:", e);
-  }
-});
-
-/* Permissions intelligentes */
-function splitId(id){
-  const p = id.lastIndexOf('_');
-  return { prefix: id.slice(0,p), key: id.slice(p+1) };
-}
-function setBox(prefix, key, value, grid){
-  const el = grid.querySelector(`#${CSS.escape(prefix + '_' + key)}`);
-  if (el && !el.disabled) el.checked = !!value;
-}
-function applyAgentDefaults(prefix, grid){
-  setBox(prefix, 'formation', true, grid);
-  setBox(prefix, 'fdf',        true, grid);
-  setBox(prefix, 'habillement',true, grid);
-}
-
-// ✅ SOG ne fait plus rien automatiquement
-function applySogDefaults(prefix, grid){
-  // Désactivé : cocher SOG n'agit plus sur les autres cases
-}
-
-document.addEventListener('change', function(e){
-  const t = e.target;
-  if(!(t instanceof HTMLInputElement)) return;
-  if(t.type !== 'checkbox') return;
-  if(!t.id || !t.closest('.perm-grid')) return;
-
-  const grid = t.closest('.perm-grid');
-  const { prefix, key } = splitId(t.id);
-  if(!t.checked) return;
-
-  if(key === 'agent'){
-    applyAgentDefaults(prefix, grid);
-  }else if(key === 'sog'){
-    applySogDefaults(prefix, grid);
-  }
-});
-
-function adminPermissionGuard() {
-  const session = getSession();
-  if (!session || !session.matricule) {
-    location.replace("login.html");
-    return;
-  }
-
-  // récupération du user réel
-  const rawUser = localStorage.getItem("csver_user_" + session.matricule);
-  if (!rawUser) {
-    location.replace("index.html");
-    return;
-  }
-
-  const user = normalizeUser(JSON.parse(rawUser));
-
-  const isAdmin =
-    user.permissions?.primary?.admin === true ||
-    isSuperAdmin();
-
-  if (!isAdmin) {
-    location.replace("index.html");
-    return;
-  }
-
-  // ✅ AUTORISÉ → on affiche
-  document.documentElement.style.visibility = "visible";
-  document.body.style.visibility = "visible";
-}
-
 </script>
-
 </body>
-
 </html>
