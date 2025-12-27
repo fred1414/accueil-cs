@@ -288,26 +288,33 @@ function normalizeUser(uRaw){
 }
 
 /* ===================== Cloud load/save ===================== */
+/* ✅ MODIF #1 : loadUser ne touche plus au localStorage (cache mémoire) */
+const MEM_USER_CACHE = new Map();
 async function loadUser(matricule){
   const key = "csver_user_" + matricule;
 
+  if (MEM_USER_CACHE.has(key)) return MEM_USER_CACHE.get(key);
+
   const cloudUser = await cloudGetJSON(key, null);
   if (cloudUser) {
-    localStorage.setItem(key, JSON.stringify(cloudUser));
+    MEM_USER_CACHE.set(key, cloudUser);
     return cloudUser;
   }
-
-  const data = localStorage.getItem(key);
-  return data ? JSON.parse(data) : null;
+  return null;
 }
+
+/* saveUserCloud inchangé (utilisé pour first login / reset mdp). 
+   Il continue à écrire en localStorage + cloud, c’est OK car ça ne se déclenche pas à la saisie matricule. */
 async function saveUserCloud(matricule, userObj){
   const key = "csver_user_" + matricule;
   localStorage.setItem(key, JSON.stringify(userObj));
   await cloudSetJSON(key, userObj);
 }
 
-/* ===================== CIS preload ===================== */
-document.getElementById("matricule").addEventListener("blur", preloadCis);
+/* ===================== CIS (plus de preload au blur) ===================== */
+/* ✅ MODIF #2 : on ne précharge plus rien au blur du matricule */
+// document.getElementById("matricule").addEventListener("blur", preloadCis);
+
 document.getElementById("matricule").addEventListener("input", (e)=>{
   if(!e.target.value.trim()){
     document.getElementById("cis-container").style.display="none";
@@ -317,6 +324,21 @@ document.getElementById("matricule").addEventListener("input", (e)=>{
   }
 });
 
+/* ✅ MODIF #3 : étape CIS après mot de passe OK */
+let CIS_STEP = false;
+let CIS_USER = null;
+
+function resetCisStep(){
+  CIS_STEP = false;
+  CIS_USER = null;
+  document.getElementById("cis-container").style.display="none";
+  const sel = document.getElementById("cisSelect");
+  sel.innerHTML="";
+  sel.disabled = false;
+}
+document.getElementById("matricule").addEventListener("input", resetCisStep);
+document.getElementById("password").addEventListener("input", resetCisStep);
+
 function roleForCis(user, cis, kind){
   if(kind === "principal"){
     return user.permissions?.primary?.admin ? "admin" : "agent";
@@ -324,6 +346,7 @@ function roleForCis(user, cis, kind){
   return user.permissions?.secondaries?.[cis]?.admin ? "admin" : "agent";
 }
 
+/* (On garde preloadCis au cas où tu l’utilises ailleurs, mais il n’est plus appelé automatiquement.) */
 async function preloadCis(){
   const matricule = document.getElementById("matricule").value.trim();
   const cisWrap = document.getElementById("cis-container");
@@ -430,6 +453,33 @@ async function login(){
     return;
   }
 
+  /* ✅ MODIF #4 : si on est déjà à l’étape CIS, on finalise sans recharger user */
+  if (CIS_STEP && CIS_USER){
+    const sel = document.getElementById("cisSelect");
+    const opt = sel.selectedOptions[0];
+
+    const chosen = {
+      cis: sel.value,
+      role: opt?.dataset?.role || "agent",
+      kind: opt?.dataset?.kind || "principal"
+    };
+
+    localStorage.setItem("csver_session", JSON.stringify({
+      matricule: CIS_USER.matricule,
+      prenom: CIS_USER.prenom || "",
+      nom: CIS_USER.nom || "",
+      cis: chosen.cis,
+      role: chosen.role,
+      cis_kind: chosen.kind,
+      cis_all: CIS_USER.cis
+    }));
+
+    const displayName = (CIS_USER.prenom ? CIS_USER.prenom+" " : "") + (CIS_USER.nom || CIS_USER.matricule);
+    alert(`Bienvenue ${displayName} (${chosen.role}) — CIS : ${chosen.cis}`);
+    window.location.href = INDEX_PATH;
+    return;
+  }
+
   const userData = await loadUser(matricule);
   if(!userData){
     alert("Matricule inconnu.");
@@ -454,6 +504,7 @@ async function login(){
     return;
   }
 
+  // ✅ MODIF #5 : on construit la liste CIS maintenant (après mdp OK), puis on affiche le select
   const entries = [];
   if (user.cis.primary){
     entries.push({ cis:user.cis.primary, kind:"principal", role: roleForCis(user, user.cis.primary, "principal") });
@@ -467,36 +518,51 @@ async function login(){
     return;
   }
 
+  const cisWrap = document.getElementById("cis-container");
   const sel = document.getElementById("cisSelect");
-  let chosen = entries[0];
 
-  if(entries.length > 1){
-    if(!sel || sel.options.length === 0){
-      alert("Merci de choisir ton CIS.");
-      await preloadCis();
-      return;
-    }
-    const opt = sel.selectedOptions[0];
-    chosen = {
+  sel.innerHTML = "";
+  entries.forEach(e=>{
+    const opt = document.createElement("option");
+    opt.value = e.cis;
+    opt.textContent = e.kind === "principal" ? `${e.cis} (principal)` : `${e.cis} (secondaire)`;
+    opt.dataset.role = e.role;
+    opt.dataset.kind = e.kind;
+    sel.appendChild(opt);
+  });
+
+  sel.disabled = (entries.length === 1);
+  cisWrap.style.display = "block";
+
+  // Si un seul CIS, on finalise immédiatement
+  if(entries.length === 1){
+    const opt = sel.options[0];
+    const chosen = {
       cis: sel.value,
       role: opt?.dataset?.role || "agent",
       kind: opt?.dataset?.kind || "principal"
     };
+
+    localStorage.setItem("csver_session", JSON.stringify({
+      matricule: user.matricule,
+      prenom: user.prenom || "",
+      nom: user.nom || "",
+      cis: chosen.cis,
+      role: chosen.role,
+      cis_kind: chosen.kind,
+      cis_all: user.cis
+    }));
+
+    const displayName = (user.prenom ? user.prenom+" " : "") + (user.nom || user.matricule);
+    alert(`Bienvenue ${displayName} (${chosen.role}) — CIS : ${chosen.cis}`);
+    window.location.href = INDEX_PATH;
+    return;
   }
 
-  localStorage.setItem("csver_session", JSON.stringify({
-    matricule: user.matricule,
-    prenom: user.prenom || "",
-    nom: user.nom || "",
-    cis: chosen.cis,
-    role: chosen.role,
-    cis_kind: chosen.kind,
-    cis_all: user.cis
-  }));
-
-  const displayName = (user.prenom ? user.prenom+" " : "") + (user.nom || user.matricule);
-  alert(`Bienvenue ${displayName} (${chosen.role}) — CIS : ${chosen.cis}`);
-  window.location.href = INDEX_PATH;
+  // Sinon, on attend que l'utilisateur choisisse et reclique
+  CIS_STEP = true;
+  CIS_USER = user;
+  alert("Mot de passe OK ✅. Choisissez votre CIS puis cliquez à nouveau sur « Se connecter ».");
 }
 
 /* ===================== Mot de passe oublié (PBKDF2 aussi) ===================== */
@@ -553,6 +619,11 @@ function closeMentions(){
 document.addEventListener("keydown", (e)=>{
   if(e.key === "Escape") closeMentions();
 });
+
+/* ✅ Optionnel : nettoyage des anciens profils visibles dans F12 (une fois) */
+Object.keys(localStorage)
+  .filter(k => k.startsWith("csver_user_"))
+  .forEach(k => localStorage.removeItem(k));
 </script>
 </body>
 </html>
