@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
 <title>Connexion — CISMIC</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
@@ -33,6 +33,56 @@
   .muted { font-size:13px; color:#555; margin-top:10px; }
   .field-label { text-align:left; font-size:14px; font-weight:600; color:#004aad; margin-top:4px; }
   .muted a { color:#004aad; text-decoration:underline; cursor:pointer; }
+
+  /* --- Modale Mentions légales --- */
+  .modal-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 9999;
+  }
+  .modal{
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    color: #222;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    padding: 18px 18px 14px;
+    text-align: left;
+  }
+  .modal h3{
+    margin: 0 0 10px 0;
+    color:#004aad;
+    font-size: 18px;
+  }
+  .modal p{
+    margin: 10px 0;
+    font-size: 14px;
+    line-height: 1.45;
+    white-space: pre-line;
+  }
+  .modal .actions{
+    display:flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+  }
+  .modal .close-btn{
+    padding: 10px 14px;
+    border: none;
+    border-radius: 8px;
+    background: #004aad;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .modal .close-btn:hover{
+    filter: brightness(.92);
+  }
 </style>
 </head>
 <body>
@@ -55,12 +105,30 @@
   <p class="muted"><a onclick="forgotWithQuestion(event)">Mot de passe oublié ? Répondre à ma question</a></p>
   <p class="muted"><strong>© 2025 CISMIC — Marque déposée</strong></p>
   <p class="muted"><strong>Tous droits réservés</strong></p>
-  
-
-
+  <p class="muted"><a href="#" onclick="openMentions(event)">Mentions légales</a></p>
 </div>
 
-  
+<!-- Modale Mentions légales -->
+<div id="mentionsModal" class="modal-overlay" onclick="closeMentions()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>Mentions légales</h3>
+    <p>
+CISMIC est une marque déposée auprès de l’INPI.
+
+L’ensemble du site (structure, textes, codes sources, graphismes, logos)
+est protégé par le droit d’auteur.
+Toute reproduction, représentation, modification ou adaptation,
+totale ou partielle, sans autorisation écrite préalable,
+est strictement interdite.
+
+Toute utilisation non autorisée pourra faire l’objet de poursuites.
+    </p>
+    <div class="actions">
+      <button class="close-btn" type="button" onclick="closeMentions()">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <!-- 🔌 Firebase + Firestore + cloud-storage -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
@@ -282,10 +350,8 @@ async function login(){
       return;
     }
 
-    /* ======= MODIF NECESSAIRE : nouveau MDP avec règles ======= */
     const newPwd = await promptNewPassword();
     if(newPwd === null) return;
-    /* ========================================================= */
 
     const q = selectSecretQuestion();
     if(!q) return;
@@ -303,7 +369,6 @@ async function login(){
     return;
   }
 
-  // Connexion classique
   const hashed = await hash(password);
   if(hashed!==user.hash){
     alert("Mot de passe incorrect.");
@@ -380,19 +445,25 @@ async function forgotWithQuestion(ev){
     return;
   }
 
-  /* ======= MODIF NECESSAIRE : nouveau MDP avec règles ======= */
   const p1 = await promptNewPassword();
   if(p1 === null) return;
   user.hash = await hash(p1);
-  /* ========================================================= */
 
   await saveUser(matricule, user);
   alert("Mot de passe réinitialisé. Vous pouvez vous connecter.");
 }
+
+/* --- Mentions légales (modale) --- */
+function openMentions(ev){
+  ev && ev.preventDefault();
+  document.getElementById("mentionsModal").style.display = "flex";
+}
+function closeMentions(){
+  document.getElementById("mentionsModal").style.display = "none";
+}
+document.addEventListener("keydown", (e)=>{
+  if(e.key === "Escape") closeMentions();
+});
 </script>
 </body>
 </html>
-
-
-
-
