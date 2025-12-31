@@ -441,26 +441,52 @@
 
 <!-- Modal Agent -->
 <div class="overlay" id="agentOverlay" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true" style="max-width: 980px;">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width: 1100px;">
     <header>
       <div class="mh">
         <div>
-          <h2 id="agentTitle">FMA — Agent</h2>
+          <h2 id="agentTitle">Mes FMA</h2>
           <div class="sub" id="agentSub">—</div>
         </div>
         <button class="close" id="closeAgent">✖</button>
       </div>
     </header>
     <div class="body">
-      <div class="table-wrap">
+      <div style="padding:12px 16px 0;">
+        <div class="muted" id="agentCount" style="font-weight:700;">—</div>
+      </div>
+
+      <!-- Synthèse par thème -->
+      <div class="table-wrap" style="padding: 6px 0 0;">
         <table class="mini-table" style="min-width: 880px;">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>CIS</th>
+              <th colspan="3">🎯 Synthèse par thème</th>
+            </tr>
+            <tr>
               <th>Thème</th>
+              <th>Temps réalisé</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody id="syntheseTbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Détails -->
+      <div style="padding:12px 16px 0;">
+        <div style="font-weight:900;">📋 Mes FMA réalisées</div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="mini-table" style="min-width: 980px;">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Heures</th>
+              <th>Thème</th>
+              <th>Rôle</th>
               <th>Formateur</th>
-              <th>Durée</th>
               <th>Participants</th>
               <th>Web@ct</th>
             </tr>
@@ -468,7 +494,8 @@
           <tbody id="agentTbody"></tbody>
         </table>
       </div>
-      <div class="note">Correspondance : on rapproche le nom de l'agent avec les participants et le champ formateur (ordre Nom/Prénom ou Prénom/Nom).</div>
+
+      <div class="note">Correspondance : nom agent ⇄ participants + champ formateur (Nom/Prénom ou Prénom/Nom).</div>
     </div>
   </div>
 </div>
@@ -502,6 +529,37 @@ function hoursFromMin(min){
   const r = m%60;
   return (r===0) ? `${h}h` : `${h}h${String(r).padStart(2,'0')}`;
 }
+
+/* ✅ AJOUT: HH:MM pour la synthèse */
+function hhmmFromMin(min){
+  const m = Math.max(0, Number(min||0));
+  const hh = Math.floor(m/60);
+  const mm = m % 60;
+  return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+}
+
+/* ✅ AJOUT: plage horaire si dispo */
+function fmtTimeRange(r){
+  const start = safeStr(r.heureDebut || r.debut || r.start || "").trim();
+  const end   = safeStr(r.heureFin   || r.fin   || r.end   || "").trim();
+  if(start && end) return `${start}–${end}`;
+  return "—";
+}
+
+/* ✅ AJOUT: catalogue thèmes (auto) */
+function buildThemeCatalog(allFmas, agentMatches){
+  const set = new Set();
+  for(const r of (allFmas||[])){
+    const t = safeStr(r.theme||"").trim();
+    if(t) set.add(t);
+  }
+  for(const r of (agentMatches||[])){
+    const t = safeStr(r.theme||"").trim();
+    if(t) set.add(t);
+  }
+  return [...set].sort((a,b)=>a.localeCompare(b,'fr'));
+}
+
 function withinLast12Months(dateIso){
   if(!dateIso) return false;
   const d = new Date(dateIso + "T00:00:00");
@@ -904,14 +962,16 @@ function renderCisBilan(cis){
   }).join('') : `<tr><td colspan="4" class="muted">Aucune FMA trouvée.</td></tr>`;
 }
 
-/* ========================= Agent modal ========================= */
+/* ========================= Agent modal (NOUVEAU RENDU) ========================= */
 function openAgentModal({name, matricule, cis}){
   const title = document.getElementById('agentTitle');
   const sub = document.getElementById('agentSub');
-  title.textContent = `FMA — ${name || matricule || 'Agent'}`;
-  sub.textContent = `CIS : ${cis}`;
-
+  const countEl = document.getElementById('agentCount');
+  const synthT = document.getElementById('syntheseTbody');
   const tbody = document.getElementById('agentTbody');
+
+  title.textContent = `Mes FMA — ${name || matricule || 'Agent'}`;
+  sub.textContent = `CIS : ${cis}`;
 
   const keySet = new Set(nameKeys(name));
 
@@ -925,6 +985,37 @@ function openAgentModal({name, matricule, cis}){
     })
     .sort((a,b)=> safeStr(b.date).localeCompare(safeStr(a.date)));
 
+  countEl.textContent = `${name || matricule || 'Agent'} — ${matches.length} FMA trouvée(s)`;
+
+  // Synthèse par thème
+  const minutesByTheme = new Map();
+  for(const r of matches){
+    const th = safeStr(r.theme || '—').trim() || '—';
+    minutesByTheme.set(th, (minutesByTheme.get(th) || 0) + Number(r.dureeMin || 0));
+  }
+
+  const catalog = buildThemeCatalog(STATE.fmas, matches);
+
+  if(catalog.length === 0){
+    synthT.innerHTML = `<tr><td colspan="3" class="muted">Aucun thème trouvé.</td></tr>`;
+  } else {
+    synthT.innerHTML = catalog.map(th=>{
+      const min = minutesByTheme.get(th) || 0;
+      const ok = min > 0;
+      const pill = ok
+        ? `<span class="pill good"><span class="dot"></span>OK</span>`
+        : `<span class="pill warn"><span class="dot"></span>À faire</span>`;
+      return `
+        <tr>
+          <td>${escapeHtml(th)}</td>
+          <td>${ok ? escapeHtml(hhmmFromMin(min)) : ''}</td>
+          <td>${pill}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Détails
   if(matches.length===0){
     tbody.innerHTML = `<tr><td colspan="7" class="muted">Aucune FMA trouvée pour cet agent.</td></tr>`;
     openOverlay('agentOverlay');
@@ -932,15 +1023,26 @@ function openAgentModal({name, matricule, cis}){
   }
 
   tbody.innerHTML = matches.map(r=>{
+    const isFormateur = nameKeys(r.formateur || "").some(k => keySet.has(k));
+    let role = isFormateur ? "Formateur" : "Participant";
+
+    if(!isFormateur && Array.isArray(r.participants)){
+      const pObj = r.participants.find(p => nameKeys(p.name || "").some(k => keySet.has(k)));
+      if(pObj && pObj.role) role = `Participant (${pObj.role})`;
+    }
+
     const done = (r.webact && r.webact.done) ? `✅ ${escapeHtml(r.webact.by||'')}` : '⏳ En attente';
     const participants = (r.participants||[]).map(p=>`${p.name} (${p.role||'?'})`).join(', ');
+    const timeRange = fmtTimeRange(r);
+    const dur = hhmmFromMin(r.dureeMin || 0);
+
     return `
       <tr>
         <td>${fmtDateFR(r.date)}</td>
-        <td>${escapeHtml(stripCisPrefix(r.cis||''))}</td>
+        <td>${escapeHtml(timeRange)}<div class="muted" style="font-size:12px;">${escapeHtml(dur)}</div></td>
         <td>${escapeHtml(r.theme||'—')}</td>
+        <td>${escapeHtml(role)}</td>
         <td>${escapeHtml(r.formateur||'—')}</td>
-        <td>${escapeHtml(hoursFromMin(r.dureeMin||0))}</td>
         <td title="${escapeHtml(participants)}">${escapeHtml(participants.length>90 ? participants.slice(0,90)+'…' : participants)}</td>
         <td>${done}</td>
       </tr>
