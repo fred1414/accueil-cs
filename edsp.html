@@ -143,7 +143,7 @@
 
     .table-wrap{ overflow:auto; }
     table{ width:100%; border-collapse: collapse; min-width: 880px; }
-    th, td{ padding: 12px 12px; border-bottom: 1px solid var(--border); text-align:left; font-size: 14px; }
+    th, td{ padding: 12px 12px; border-bottom: 1px solid var(--border); text-align:left; font-size: 14px; vertical-align: top; }
     th{ position: sticky; top: 0; background:#fff; z-index: 1; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
     tr:hover td{ background: #f8fafc; }
     .row-click{ cursor:pointer; }
@@ -270,6 +270,11 @@
     .loading{ display:flex; align-items:center; gap:10px; padding: 12px 16px; color: var(--muted); }
     .spinner{ width: 16px; height: 16px; border-radius: 999px; border: 2px solid #ddd; border-top-color: var(--blue); animation: spin 1s linear infinite; }
     @keyframes spin{ to{ transform: rotate(360deg); } }
+
+    /* ✅ Matrice: colonnes/ligne sticky */
+    .sticky-col-1{ position: sticky; left:0; background:#fff; z-index:2; }
+    .sticky-col-2{ position: sticky; left:220px; background:#fff; z-index:2; }
+    .sticky-col-3{ position: sticky; left:340px; background:#fff; z-index:2; }
   </style>
 </head>
 
@@ -365,7 +370,7 @@
         <button class="tab" data-tab="panelBilan">📊 Bilan FMA</button>
       </div>
 
-      <!-- ✅ MODIF : on enlève Permis C + Visite médicale -->
+      <!-- Personnel -->
       <div class="panel active" id="panelStaff">
         <div class="loading" id="staffLoading" style="display:none;"><div class="spinner"></div><div>Chargement…</div></div>
         <div class="table-wrap">
@@ -385,8 +390,27 @@
         </div>
       </div>
 
+      <!-- Bilan -->
       <div class="panel" id="panelBilan">
         <div class="panel grid2">
+
+          <!-- ✅ NOUVEAU : matrice Agents × Thèmes -->
+          <section class="card" style="box-shadow:none; grid-column: 1 / -1;">
+            <div class="card-head">
+              <div>
+                <div class="title">Bilan complet — Agents × Thèmes (12 mois glissants)</div>
+                <div class="hint">Chaque cellule = heures cumulées (participant + formateur)</div>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="mini-table" style="min-width: 980px;">
+                <thead id="matrixThead"></thead>
+                <tbody id="matrixTbody"></tbody>
+              </table>
+            </div>
+            <div class="note">Astuce : ce tableau inclut tous les agents du CIS, même sans FMA.</div>
+          </section>
+
           <section class="card" style="box-shadow:none;">
             <div class="card-head">
               <div>
@@ -527,6 +551,7 @@ function hhmmFromMin(min){
   const mm = m % 60;
   return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
 }
+function hhmm(min){ return hhmmFromMin(min); }
 
 function fmtTimeRange(r){
   const start = safeStr(r.heureDebut || r.debut || r.start || "").trim();
@@ -583,6 +608,11 @@ function nameKeys(s){
   const direct = clean;
   const reversed = parts.slice().reverse().join(' ');
   return [...new Set([direct, reversed])];
+}
+
+/* ✅ helper map add */
+function sumMapAdd(map, key, add){
+  map.set(key, (map.get(key) || 0) + (Number(add)||0));
 }
 
 function normalizeUser(uRaw){
@@ -891,7 +921,126 @@ function renderCisStaff(cis){
   loading.style.display = 'none';
 }
 
+/* ✅ NOUVEAU: Matrice Agents × Thèmes */
+function renderCisMatrix(cis){
+  const thead = document.getElementById('matrixThead');
+  const tbody = document.getElementById('matrixTbody');
+  if(!thead || !tbody) return;
+
+  const ck = centerKey(cis);
+
+  const agents = STATE.users
+    .filter(u=>{
+      const p = centerKey(u.cis?.primary);
+      const sec = (u.cis?.secondaries||[]).some(s=>centerKey(s.cis)===ck);
+      return p===ck || sec;
+    })
+    .map(u=>{
+      const full = `${safeStr(u.prenom)} ${safeStr(u.nom)}`.trim();
+      return {
+        matricule: safeStr(u.matricule||''),
+        nom: safeStr(u.nom||''),
+        prenom: safeStr(u.prenom||''),
+        statut: safeStr(u.statut||''),
+        full,
+        keys: nameKeys(full)
+      };
+    })
+    .sort((a,b)=>(a.nom.localeCompare(b.nom,'fr')) || a.prenom.localeCompare(b.prenom,'fr'));
+
+  const fmas = STATE.fmas
+    .filter(r => centerKey(r.cis) === ck)
+    .filter(r => withinLast12Months(r.date));
+
+  const themesSet = new Set();
+  for(const r of fmas){
+    const th = safeStr(r.theme||'').trim();
+    if(th) themesSet.add(th);
+  }
+  const themes = [...themesSet].sort((a,b)=>a.localeCompare(b,'fr'));
+
+  if(themes.length === 0){
+    thead.innerHTML = `
+      <tr>
+        <th class="sticky-col-1" style="min-width:220px">Agent</th>
+        <th class="sticky-col-2" style="min-width:120px">Matricule</th>
+        <th class="sticky-col-3" style="min-width:100px">Statut</th>
+        <th style="min-width:120px">Total</th>
+      </tr>
+    `;
+    tbody.innerHTML = agents.length
+      ? agents.map(a=>`
+          <tr>
+            <td class="sticky-col-1"><b>${escapeHtml(a.full || '—')}</b></td>
+            <td class="sticky-col-2">${escapeHtml(a.matricule)}</td>
+            <td class="sticky-col-3">${escapeHtml(a.statut)}</td>
+            <td class="muted">—</td>
+          </tr>
+        `).join('')
+      : `<tr><td colspan="4" class="muted">Aucun agent trouvé pour ce CIS.</td></tr>`;
+    return;
+  }
+
+  const agentIndexByKey = new Map();
+  agents.forEach((a, idx)=>{
+    for(const k of a.keys){
+      if(k && !agentIndexByKey.has(k)) agentIndexByKey.set(k, idx);
+    }
+  });
+
+  const minutesByAgentTheme = Array.from({length: agents.length}, ()=> new Map());
+  const totalByAgent = new Array(agents.length).fill(0);
+
+  function addForName(name, theme, min){
+    for(const k of nameKeys(name)){
+      const idx = agentIndexByKey.get(k);
+      if(idx == null) continue;
+      sumMapAdd(minutesByAgentTheme[idx], theme, min);
+      totalByAgent[idx] += Number(min||0);
+      return;
+    }
+  }
+
+  for(const r of fmas){
+    const theme = safeStr(r.theme||'').trim() || '—';
+    const min = Number(r.dureeMin||0);
+
+    for(const p of (r.participants||[])){
+      addForName(p?.name || '', theme, min);
+    }
+    addForName(r.formateur || '', theme, min);
+  }
+
+  thead.innerHTML = `
+    <tr>
+      <th class="sticky-col-1" style="min-width:220px">Agent</th>
+      <th class="sticky-col-2" style="min-width:120px">Matricule</th>
+      <th class="sticky-col-3" style="min-width:100px">Statut</th>
+      ${themes.map(t=>`<th style="min-width:160px">${escapeHtml(t)}</th>`).join('')}
+      <th style="min-width:120px">Total</th>
+    </tr>
+  `;
+
+  tbody.innerHTML = agents.length ? agents.map((a, idx)=>{
+    const rowMap = minutesByAgentTheme[idx];
+    return `
+      <tr>
+        <td class="sticky-col-1"><b>${escapeHtml(a.full || '—')}</b></td>
+        <td class="sticky-col-2">${escapeHtml(a.matricule)}</td>
+        <td class="sticky-col-3">${escapeHtml(a.statut)}</td>
+        ${themes.map(t=>{
+          const m = rowMap.get(t) || 0;
+          return `<td>${m>0 ? `<b>${hhmm(m)}</b>` : ''}</td>`;
+        }).join('')}
+        <td>${totalByAgent[idx]>0 ? `<b>${hhmm(totalByAgent[idx])}</b>` : ''}</td>
+      </tr>
+    `;
+  }).join('') : `<tr><td colspan="${themes.length+4}" class="muted">Aucun agent trouvé pour ce CIS.</td></tr>`;
+}
+
 function renderCisBilan(cis){
+  renderCisMatrix(cis); // ✅ appel matrice
+
   const bilanT = document.getElementById('bilanTbody');
   const recentT = document.getElementById('recentTbody');
   const ck = centerKey(cis);
@@ -944,7 +1093,7 @@ function renderCisBilan(cis){
   }).join('') : `<tr><td colspan="4" class="muted">Aucune FMA trouvée.</td></tr>`;
 }
 
-/* Agent modal */
+/* Agent modal (rendu propre) */
 function openAgentModal({name, matricule, cis}){
   const title = document.getElementById('agentTitle');
   const sub = document.getElementById('agentSub');
