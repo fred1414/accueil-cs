@@ -468,7 +468,7 @@
           <tbody id="agentTbody"></tbody>
         </table>
       </div>
-      <div class="note">Correspondance : on rapproche le nom de l'agent avec les participants et le champ formateur (comparaison insensible à la casse).</div>
+      <div class="note">Correspondance : on rapproche le nom de l'agent avec les participants et le champ formateur (ordre Nom/Prénom ou Prénom/Nom).</div>
     </div>
   </div>
 </div>
@@ -492,7 +492,6 @@ function norm(s){ return safeStr(s).trim().toLowerCase(); }
 
 function fmtDateFR(iso){
   if(!iso) return "—";
-  // iso attendu YYYY-MM-DD
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
   if(!m) return iso;
   return `${m[3]}/${m[2]}/${m[1]}`;
@@ -513,7 +512,7 @@ function withinLast12Months(dateIso){
   return d >= past && d <= now;
 }
 
-/* ✅ AJOUT : normalisation CIS (fusionne "CIS Vergèze" et "Vergèze") */
+/* ✅ normalisation CIS (fusionne "CIS Vergèze" et "Vergèze") */
 function stripCisPrefix(s){
   return safeStr(s).trim().replace(/^cis\s+/i, '').replace(/\s+/g, ' ').trim();
 }
@@ -522,9 +521,26 @@ function centerKey(s){
   return t.normalize('NFD').replace(/\p{Diacritic}/gu,'');
 }
 
+/* ✅ FIX NOMS : gère "DUPONT Jean" et "Jean Dupont" */
+function normalizeNameBase(s){
+  const t = norm(s).replace(/\s+/g,' ').trim();
+  if(!t) return '';
+  return t.normalize('NFD').replace(/\p{Diacritic}/gu,'');
+}
+function nameKeys(s){
+  const base = normalizeNameBase(s);
+  if(!base) return [];
+  const clean = base.replace(/,/g, ' ').replace(/\s+/g,' ').trim();
+  if(!clean) return [];
+  const parts = clean.split(' ').filter(Boolean);
+  if(parts.length < 2) return [clean];
+  const direct = clean;
+  const reversed = parts.slice().reverse().join(' ');
+  return [...new Set([direct, reversed])];
+}
+
 function normalizeUser(uRaw){
   const u = JSON.parse(JSON.stringify(uRaw||{}));
-  // ancien schéma: cis: "xxx" ou cis: ["a","b"]
   if (Array.isArray(u.cis)) {
     const primary = u.cis[0] || "";
     const rest = (u.cis.slice(1)||[]).map(c=>({ cis:c, statut: u.statut || "SPV" }));
@@ -555,7 +571,6 @@ function getAllFma(){
   return Array.isArray(arr) ? arr : [];
 }
 
-/* ✅ MODIF : comparaison via centerKey() */
 function calcCenterStats(center, users, fmas){
   const ck = centerKey(center);
 
@@ -576,7 +591,6 @@ function calcCenterStats(center, users, fmas){
   }, "");
 
   const indicator = (()=> {
-    // très simple : rouge si beaucoup en attente, orange si quelques, vert si ok
     if(pending >= 10) return {cls:"bad", label:"Alerte"};
     if(pending >= 3) return {cls:"warn", label:"À surveiller"};
     return {cls:"good", label:"OK"};
@@ -605,6 +619,15 @@ function bySort(sortKey){
 function setText(id, text){
   const el = document.getElementById(id);
   if(el) el.textContent = text;
+}
+
+function escapeHtml(s){
+  return safeStr(s)
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#039;');
 }
 
 /* ========================= State ========================= */
@@ -642,23 +665,19 @@ async function syncAll(){
   }
 }
 
-/* ✅ MODIF : buildCenters fusionne centres par centerKey */
 function buildCenters(users, fmas){
   const map = new Map(); // key -> displayName
-
   function addCenter(raw){
     const display = stripCisPrefix(raw);
     if(!display) return;
     const k = centerKey(display);
     if(!map.has(k)) map.set(k, display);
   }
-
   users.forEach(u=>{
     addCenter(u.cis?.primary);
     (u.cis?.secondaries||[]).forEach(s=> addCenter(s.cis));
   });
   fmas.forEach(r=> addCenter(r.cis));
-
   return [...map.values()].sort((a,b)=>a.localeCompare(b,'fr'));
 }
 
@@ -675,7 +694,6 @@ function renderCenters(){
 
   rows.sort(bySort(sortKey));
 
-  // KPIs
   setText('kpiCenters', String(rows.length));
   setText('kpiStaff', String(rows.reduce((s,r)=>s+r.staffCount,0)));
   setText('kpiFma', String(rows.reduce((s,r)=>s+r.fmaCount,0)));
@@ -705,19 +723,9 @@ function renderCenters(){
     `;
   }).join('');
 
-  // click
   [...tbody.querySelectorAll('tr[data-cis]')].forEach(tr=>{
     tr.addEventListener('click', ()=> openCisModal(tr.getAttribute('data-cis')));
   });
-}
-
-function escapeHtml(s){
-  return safeStr(s)
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;')
-    .replaceAll("'",'&#039;');
 }
 
 /* ========================= CIS Modal ========================= */
@@ -750,7 +758,6 @@ function openCisModal(cis){
   const st = STATE.stats.find(x=>centerKey(x.cis)===centerKey(cis));
   sub.textContent = st ? `Effectif : ${st.staffCount} — FMA : ${st.fmaCount} — En attente : ${st.pendingCount}` : '—';
 
-  // Tabs default
   const firstTab = document.querySelector('#cisOverlay .tab');
   setActiveTab(firstTab);
 
@@ -774,21 +781,22 @@ function renderCisStaff(cis){
     return p===ck || sec;
   }).sort((a,b)=>(safeStr(a.nom).localeCompare(safeStr(b.nom),'fr')) || safeStr(a.prenom).localeCompare(safeStr(b.prenom),'fr'));
 
-  /* ✅ MODIF : index FMA par nom = participants OU formateur */
   const fmas = STATE.fmas;
-  const fmaByNameKey = new Map(); // key -> array (participant + formateur)
+  const fmaByNameKey = new Map(); // key -> array
 
-  function pushByKey(k, r){
-    if(!k) return;
-    if(!fmaByNameKey.has(k)) fmaByNameKey.set(k, []);
-    fmaByNameKey.get(k).push(r);
+  function pushByKeys(keys, r){
+    for(const k of (keys||[])){
+      if(!k) continue;
+      if(!fmaByNameKey.has(k)) fmaByNameKey.set(k, []);
+      fmaByNameKey.get(k).push(r);
+    }
   }
 
   for(const r of fmas){
     for(const p of (r.participants||[])){
-      pushByKey(nameKey(p.name), r);
+      pushByKeys(nameKeys(p.name || ""), r);
     }
-    pushByKey(nameKey(r.formateur || ""), r); // FMA "réalisées"
+    pushByKeys(nameKeys(r.formateur || ""), r);
   }
 
   if(users.length===0){
@@ -799,8 +807,18 @@ function renderCisStaff(cis){
 
   tbody.innerHTML = users.map(u=>{
     const full = `${safeStr(u.prenom)} ${safeStr(u.nom)}`.trim();
-    const k = nameKey(full);
-    const count = k && fmaByNameKey.has(k) ? fmaByNameKey.get(k).length : 0;
+    const keys = nameKeys(full);
+
+    // dédoublonnage des FMA
+    const set = new Set();
+    for(const k of keys){
+      const arr = fmaByNameKey.get(k) || [];
+      for(const r of arr){
+        const uid = `${safeStr(r.date)}|${safeStr(r.cis)}|${safeStr(r.theme)}|${safeStr(r.formateur)}`;
+        set.add(uid);
+      }
+    }
+    const count = set.size;
 
     const permis = u.permisCTitulaire ? `Oui${u.permisCDate ? ' ('+fmtDateFR(u.permisCDate)+')' : ''}` : '—';
     const vm = u.visiteMedProchaine ? fmtDateFR(u.visiteMedProchaine) : '—';
@@ -821,7 +839,6 @@ function renderCisStaff(cis){
     `;
   }).join('');
 
-  // actions
   [...tbody.querySelectorAll('button[data-agent]')].forEach(btn=>{
     btn.addEventListener('click', (e)=>{
       e.stopPropagation();
@@ -834,17 +851,9 @@ function renderCisStaff(cis){
   loading.style.display = 'none';
 }
 
-function nameKey(s){
-  const t = norm(s).replaceAll(/\s+/g,' ').trim();
-  if(!t) return '';
-  // normalisation basique (accents)
-  return t.normalize('NFD').replace(/\p{Diacritic}/gu,'');
-}
-
 function renderCisBilan(cis){
   const bilanT = document.getElementById('bilanTbody');
   const recentT = document.getElementById('recentTbody');
-
   const ck = centerKey(cis);
 
   const fmas = STATE.fmas
@@ -852,7 +861,6 @@ function renderCisBilan(cis){
     .filter(r=> withinLast12Months(r.date))
     .slice();
 
-  // Bilan par thème
   const byTheme = new Map();
   for(const r of fmas){
     const th = safeStr(r.theme||'').trim() || '—';
@@ -877,7 +885,6 @@ function renderCisBilan(cis){
     </tr>
   `).join('') : `<tr><td colspan="4" class="muted">Aucune FMA sur les 12 derniers mois.</td></tr>`;
 
-  // 10 dernières
   const recent = STATE.fmas
     .filter(r=> centerKey(r.cis) === ck)
     .filter(r=>!!r.date)
@@ -906,19 +913,20 @@ function openAgentModal({name, matricule, cis}){
 
   const tbody = document.getElementById('agentTbody');
 
-  const k = nameKey(name);
+  const keySet = new Set(nameKeys(name));
 
-  /* ✅ MODIF : match si participant OU formateur */
   const matches = STATE.fmas
     .filter(r=>{
-      const isParticipant = Array.isArray(r.participants) && r.participants.some(p=> nameKey(p.name)===k);
-      const isFormateur = nameKey(r.formateur || "") === k;
+      const isFormateur = nameKeys(r.formateur || "").some(k => keySet.has(k));
+      const isParticipant = Array.isArray(r.participants) && r.participants.some(p =>
+        nameKeys(p.name || "").some(k => keySet.has(k))
+      );
       return isParticipant || isFormateur;
     })
     .sort((a,b)=> safeStr(b.date).localeCompare(safeStr(a.date)));
 
   if(matches.length===0){
-    tbody.innerHTML = `<tr><td colspan="7" class="muted">Aucune FMA trouvée pour cet agent (participants ou formateur).</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="muted">Aucune FMA trouvée pour cet agent.</td></tr>`;
     openOverlay('agentOverlay');
     return;
   }
