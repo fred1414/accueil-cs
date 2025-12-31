@@ -275,6 +275,15 @@
     .sticky-col-1{ position: sticky; left:0; background:#fff; z-index:2; }
     .sticky-col-2{ position: sticky; left:220px; background:#fff; z-index:2; }
     .sticky-col-3{ position: sticky; left:340px; background:#fff; z-index:2; }
+
+    /* ✅ Scroll vertical dédié à la matrice */
+    .matrix-scroll{
+      max-height: 380px;         /* ajuste si tu veux (ex 420px) */
+      overflow: auto;            /* scroll vertical + horizontal si besoin */
+      border-top: 1px solid var(--border);
+    }
+    /* Pour que le sticky header colle bien dans ce container */
+    .matrix-scroll table thead th{ top: 0; }
   </style>
 </head>
 
@@ -394,7 +403,7 @@
       <div class="panel" id="panelBilan">
         <div class="panel grid2">
 
-          <!-- Matrice Agents × Thèmes -->
+          <!-- ✅ Matrice Agents × Thèmes avec scroll vertical -->
           <section class="card" style="box-shadow:none; grid-column: 1 / -1;">
             <div class="card-head">
               <div>
@@ -402,12 +411,15 @@
                 <div class="hint">Chaque cellule = heures cumulées (participant + formateur)</div>
               </div>
             </div>
-            <div class="table-wrap">
+
+            <!-- CHANGEMENT: wrapper scrollable -->
+            <div class="matrix-scroll">
               <table class="mini-table" style="min-width: 980px;">
                 <thead id="matrixThead"></thead>
                 <tbody id="matrixTbody"></tbody>
               </table>
             </div>
+
             <div class="note">Astuce : ce tableau inclut tous les agents du CIS, même sans FMA.</div>
           </section>
 
@@ -610,7 +622,6 @@ function nameKeys(s){
   return [...new Set([direct, reversed])];
 }
 
-/* helper map add */
 function sumMapAdd(map, key, add){
   map.set(key, (map.get(key) || 0) + (Number(add)||0));
 }
@@ -742,7 +753,7 @@ async function syncAll(){
 }
 
 function buildCenters(users, fmas){
-  const map = new Map(); // key -> displayName
+  const map = new Map();
   function addCenter(raw){
     const display = stripCisPrefix(raw);
     if(!display) return;
@@ -1093,7 +1104,7 @@ function renderCisBilan(cis){
   }).join('') : `<tr><td colspan="4" class="muted">Aucune FMA trouvée.</td></tr>`;
 }
 
-/* ✅ IMPORTANT : synthèse par thème = thèmes DU CIS, pas du département */
+/* Agent modal (thèmes du CIS uniquement) */
 function openAgentModal({name, matricule, cis}){
   const title = document.getElementById('agentTitle');
   const sub = document.getElementById('agentSub');
@@ -1124,7 +1135,6 @@ function openAgentModal({name, matricule, cis}){
     minutesByTheme.set(th, (minutesByTheme.get(th) || 0) + Number(r.dureeMin || 0));
   }
 
-  // ✅ catalogue thèmes basé sur le CIS sélectionné
   const ck = centerKey(cis);
   const cisFmas = STATE.fmas.filter(r => centerKey(r.cis) === ck);
   const catalog = buildThemeCatalog(cisFmas, matches);
