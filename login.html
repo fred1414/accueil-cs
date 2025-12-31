@@ -135,7 +135,9 @@ Toute utilisation non autorisée pourra faire l’objet de poursuites.
 <script src="cloud-storage.js"></script>
 
 <script>
+/* ✅ MODIF MINIMALE : ajout de EDSP_PATH + redirection conditionnelle */
 const INDEX_PATH = "index.html";
+const EDSP_PATH  = "edsp.html";
 
 /* --------- util SHA-256 (MDP principal, pour rester compatible) --------- */
 async function hash(text){
@@ -413,7 +415,10 @@ async function login(){
 
   const displayName = (user.prenom ? user.prenom+" " : "") + (user.nom || user.matricule);
   alert(`Bienvenue ${displayName} (${chosen.role}) — CIS : ${chosen.cis}`);
-  window.location.href = INDEX_PATH;
+
+  /* ✅ MODIF MINIMALE : redirection EDSP si CIS === "EDSP" */
+  const cisUpper = (chosen.cis || "").trim().toUpperCase();
+  window.location.href = (cisUpper === "EDSP") ? EDSP_PATH : INDEX_PATH;
 }
 
 /* ---- Mot de passe oublié : répondre à la question ---- */
