@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <title>Vue EDSP — CISMIC</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+    :root{
+      --blue:#004aad;
+      --red:#d32f2f;
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+      --radius: 16px;
+    }
+
+    *{ box-sizing:border-box; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+    body{ margin:0; background:var(--bg); color:var(--text); }
+    header{
+      background: linear-gradient(135deg, var(--blue), var(--red));
+      color:#fff;
+      padding: 18px 18px 16px;
+      position: sticky;
+      top:0;
+      z-index: 10;
+      box-shadow: 0 8px 22px rgba(0,0,0,.12);
+    }
+    .topbar{
+      max-width: 1200px;
+      margin: 0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .brand img{ height:48px; width:auto; border-radius: 10px; background:#fff; padding:4px; }
+    .brand .titles{ min-width:0; }
+    .brand h1{ margin:0; font-size: 18px; font-weight: 800; letter-spacing:.2px; }
+    .brand .sub{ margin-top:2px; font-size: 13px; opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    .actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+    .chip{
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.25);
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      max-width: 520px;
+    }
+    .btn{
+      border:none;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 700;
+      cursor:pointer;
+      color:#fff;
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.25);
+    }
+    .btn:hover{ filter: brightness(.95); }
+    .btn.secondary{
+      background:#fff;
+      color: var(--blue);
+      border: 1px solid rgba(255,255,255,.55);
+    }
+
+    main{ max-width: 1200px; margin: 18px auto; padding: 0 18px 40px; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card-head{
+      padding: 14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-head .title{ font-weight: 800; }
+    .card-head .hint{ color:var(--muted); font-size: 13px; }
+
+    .toolbar{
+      padding: 12px 16px;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+      background: #fafafa;
+    }
+    .toolbar input, .toolbar select{
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline:none;
+      background:#fff;
+    }
+    .toolbar input{ min-width: 240px; flex: 1; }
+    .kpis{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      margin-left:auto;
+    }
+    .kpi{
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 10px;
+      background:#fff;
+      font-size: 13px;
+      color: var(--muted);
+      display:flex;
+      gap: 8px;
+      align-items: baseline;
+    }
+    .kpi b{ color: var(--text); font-size: 15px; }
+
+    .table-wrap{ overflow:auto; }
+    table{ width:100%; border-collapse: collapse; min-width: 880px; }
+    th, td{ padding: 12px 12px; border-bottom: 1px solid var(--border); text-align:left; font-size: 14px; }
+    th{ position: sticky; top: 0; background:#fff; z-index: 1; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    tr:hover td{ background: #f8fafc; }
+    .row-click{ cursor:pointer; }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text);
+      background:#fff;
+      white-space: nowrap;
+    }
+    .dot{
+      width: 10px; height: 10px; border-radius: 999px;
+      background: var(--blue);
+    }
+    .pill.warn .dot{ background: #f59e0b; }
+    .pill.bad  .dot{ background: var(--red); }
+    .pill.good .dot{ background: #10b981; }
+
+    .muted{ color: var(--muted); }
+
+    /* Modal */
+    .overlay{
+      position: fixed; inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      z-index: 9999;
+    }
+    .modal{
+      width: 100%;
+      max-width: 1100px;
+      background:#fff;
+      border-radius: 18px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .modal header{
+      position: static;
+      background: #fff;
+      color: var(--text);
+      box-shadow:none;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+    }
+    .modal header .mh{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
+    }
+    .modal header h2{ margin:0; font-size: 18px; font-weight: 900; }
+    .modal header .sub{ margin-top:4px; color: var(--muted); font-size: 13px; }
+    .modal header .close{
+      border: 1px solid var(--border);
+      background:#fff;
+      border-radius: 12px;
+      padding: 8px 10px;
+      cursor:pointer;
+      font-weight: 800;
+    }
+    .modal header .close:hover{ background:#f3f4f6; }
+    .modal .body{ padding: 0; }
+    .tabs{
+      display:flex;
+      gap: 8px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background:#fafafa;
+      overflow:auto;
+    }
+    .tab{
+      border: 1px solid var(--border);
+      background:#fff;
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-weight: 800;
+      cursor:pointer;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+    .tab.active{
+      border-color: rgba(0,74,173,.35);
+      box-shadow: 0 10px 24px rgba(0,74,173,.10);
+    }
+    .panel{ padding: 14px 16px 18px; display:none; }
+    .panel.active{ display:block; }
+    .panel .grid2{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 12px;
+    }
+    @media (max-width: 980px){
+      table{ min-width: 760px; }
+      .panel .grid2{ grid-template-columns: 1fr; }
+    }
+
+    .mini-table{ min-width: 720px; }
+    .btn-sm{
+      border: 1px solid var(--border);
+      background:#fff;
+      border-radius: 12px;
+      padding: 8px 10px;
+      cursor:pointer;
+      font-weight: 800;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .btn-sm:hover{ background:#f3f4f6; }
+    .btn-sm.primary{ border-color: rgba(0,74,173,.35); color: var(--blue); }
+    .note{ padding: 12px 16px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--border); background:#fafafa; }
+    .loading{ display:flex; align-items:center; gap:10px; padding: 12px 16px; color: var(--muted); }
+    .spinner{ width: 16px; height: 16px; border-radius: 999px; border: 2px solid #ddd; border-top-color: var(--blue); animation: spin 1s linear infinite; }
+    @keyframes spin{ to{ transform: rotate(360deg); } }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="topbar">
+    <div class="brand">
+      <img src="https://i.postimg.cc/LsB40JQq/logo-cismic.png" alt="Logo CISMIC">
+      <div class="titles">
+        <h1>Vue EDSP — Département</h1>
+        <div class="sub" id="whoami">Chargement…</div>
+      </div>
+    </div>
+    <div class="actions">
+      <div class="chip" title="Données synchronisées depuis Firestore (si disponible).">
+        <span>☁️</span>
+        <span id="syncState">Sync…</span>
+      </div>
+      <button class="btn secondary" id="btnRefresh">Rafraîchir</button>
+      <button class="btn" id="btnBack">Retour accueil</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <div class="title">Centres (CIS) utilisant CISMIC</div>
+          <div class="hint">Clique sur un CIS pour voir le personnel, les FMA et le bilan du centre.</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <input id="q" type="search" placeholder="Rechercher un CIS (ex: Nîmes, Alès…)" />
+        <select id="sort">
+          <option value="name">Tri : CIS</option>
+          <option value="staff_desc">Tri : effectif ↓</option>
+          <option value="fma_desc">Tri : nb FMA ↓</option>
+          <option value="pending_desc">Tri : FMA en attente ↓</option>
+          <option value="last_desc">Tri : dernière FMA ↓</option>
+        </select>
+        <div class="kpis">
+          <div class="kpi"><span>Centres</span> <b id="kpiCenters">0</b></div>
+          <div class="kpi"><span>Agents</span> <b id="kpiStaff">0</b></div>
+          <div class="kpi"><span>FMA</span> <b id="kpiFma">0</b></div>
+          <div class="kpi"><span>En attente</span> <b id="kpiPending">0</b></div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="min-width:240px">CIS</th>
+              <th>Effectif</th>
+              <th>FMA</th>
+              <th>FMA en attente</th>
+              <th>Dernière FMA</th>
+              <th>Indicateur</th>
+            </tr>
+          </thead>
+          <tbody id="centersTbody">
+            <tr><td colspan="6" class="muted">Aucune donnée…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        Astuce : cette page lit <code>fma_data_v2</code> + tous les <code>csver_user_*</code> synchronisés dans le navigateur.
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- Modal CIS -->
+<div class="overlay" id="cisOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true">
+    <header>
+      <div class="mh">
+        <div>
+          <h2 id="cisTitle">CIS</h2>
+          <div class="sub" id="cisSub">—</div>
+        </div>
+        <button class="close" id="closeCis">✖</button>
+      </div>
+    </header>
+
+    <div class="body">
+      <div class="tabs">
+        <button class="tab active" data-tab="panelStaff">👥 Personnel</button>
+        <button class="tab" data-tab="panelBilan">📊 Bilan FMA</button>
+      </div>
+
+      <div class="panel active" id="panelStaff">
+        <div class="loading" id="staffLoading" style="display:none;"><div class="spinner"></div><div>Chargement…</div></div>
+        <div class="table-wrap">
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th>Matricule</th>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Statut</th>
+                <th>Permis C</th>
+                <th>Visite médicale</th>
+                <th>FMA (participations)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="staffTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel" id="panelBilan">
+        <div class="panel grid2">
+          <section class="card" style="box-shadow:none;">
+            <div class="card-head">
+              <div>
+                <div class="title">Bilan par thème (12 mois glissants)</div>
+                <div class="hint">Comptage + durée totale (heures)</div>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="mini-table">
+                <thead>
+                  <tr>
+                    <th>Thème</th>
+                    <th>Nb FMA</th>
+                    <th>Durée totale</th>
+                    <th>Dernière date</th>
+                  </tr>
+                </thead>
+                <tbody id="bilanTbody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card" style="box-shadow:none;">
+            <div class="card-head">
+              <div>
+                <div class="title">Dernières FMA</div>
+                <div class="hint">Les 10 plus récentes</div>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="mini-table" style="min-width:540px;">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Thème</th>
+                    <th>Formateur</th>
+                    <th>Web@ct</th>
+                  </tr>
+                </thead>
+                <tbody id="recentTbody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="note" id="cisFooter">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Agent -->
+<div class="overlay" id="agentOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width: 980px;">
+    <header>
+      <div class="mh">
+        <div>
+          <h2 id="agentTitle">FMA — Agent</h2>
+          <div class="sub" id="agentSub">—</div>
+        </div>
+        <button class="close" id="closeAgent">✖</button>
+      </div>
+    </header>
+    <div class="body">
+      <div class="table-wrap">
+        <table class="mini-table" style="min-width: 880px;">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>CIS</th>
+              <th>Thème</th>
+              <th>Formateur</th>
+              <th>Durée</th>
+              <th>Participants</th>
+              <th>Web@ct</th>
+            </tr>
+          </thead>
+          <tbody id="agentTbody"></tbody>
+        </table>
+      </div>
+      <div class="note">Correspondance : on rapproche le nom de l'agent avec les participants de la FMA (comparaison insensible à la casse).</div>
+    </div>
+  </div>
+</div>
+
+<!-- 🔌 Firebase + Firestore + cloud-storage -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="cloud-storage.js"></script>
+
+<script>
+/* ========================= Helpers ========================= */
+const K_SESSION = "csver_session";
+const K_FMA = "fma_data_v2";
+
+function readJson(key, fallback){
+  try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+  catch(e){ return fallback; }
+}
+function safeStr(v){ return (v==null?"":String(v)); }
+function norm(s){ return safeStr(s).trim().toLowerCase(); }
+function fmtDateFR(iso){
+  if(!iso) return "—";
+  // iso attendu YYYY-MM-DD
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if(!m) return iso;
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
+function hoursFromMin(min){
+  const m = Number(min||0);
+  const h = Math.floor(m/60);
+  const r = m%60;
+  return (r===0) ? `${h}h` : `${h}h${String(r).padStart(2,'0')}`;
+}
+function withinLast12Months(dateIso){
+  if(!dateIso) return false;
+  const d = new Date(dateIso + "T00:00:00");
+  if(Number.isNaN(d.getTime())) return false;
+  const now = new Date();
+  const past = new Date(now);
+  past.setMonth(past.getMonth() - 12);
+  return d >= past && d <= now;
+}
+
+function normalizeUser(uRaw){
+  const u = JSON.parse(JSON.stringify(uRaw||{}));
+  // ancien schéma: cis: "xxx" ou cis: ["a","b"]
+  if (Array.isArray(u.cis)) {
+    const primary = u.cis[0] || "";
+    const rest = (u.cis.slice(1)||[]).map(c=>({ cis:c, statut: u.statut || "SPV" }));
+    u.cis = { primary, secondaries: rest };
+  } else if (typeof u.cis === "string") {
+    u.cis = { primary: u.cis, secondaries: [] };
+  } else {
+    u.cis = u.cis || { primary:"", secondaries:[] };
+  }
+  u.cis.secondaries = (u.cis.secondaries||[]).map(s=> ({cis:s.cis||"", statut:s.statut||s.role||""}) );
+  return u;
+}
+
+function getAllUsers(){
+  const users = [];
+  for(let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    if(!k || !k.startsWith("csver_user_")) continue;
+    const u = readJson(k, null);
+    if(!u) continue;
+    users.push(normalizeUser(u));
+  }
+  return users;
+}
+
+function getAllFma(){
+  const arr = readJson(K_FMA, []);
+  return Array.isArray(arr) ? arr : [];
+}
+
+function calcCenterStats(center, users, fmas){
+  const staff = users.filter(u=>{
+    const primary = norm(u.cis?.primary);
+    const sec = (u.cis?.secondaries||[]).some(s=>norm(s.cis)===norm(center));
+    return primary===norm(center) || sec;
+  });
+
+  const fmaC = fmas.filter(r=> norm(r.cis)===norm(center));
+  const pending = fmaC.filter(r=> !(r.webact && r.webact.done)).length;
+
+  const last = fmaC.reduce((acc,r)=> {
+    const d = safeStr(r.date);
+    if(!d) return acc;
+    if(!acc) return d;
+    return (d > acc) ? d : acc;
+  }, "");
+
+  const indicator = (()=> {
+    // très simple : rouge si beaucoup en attente, orange si quelques, vert si ok
+    if(pending >= 10) return {cls:"bad", label:"Alerte"};
+    if(pending >= 3) return {cls:"warn", label:"À surveiller"};
+    return {cls:"good", label:"OK"};
+  })();
+
+  return {
+    cis: center,
+    staffCount: staff.length,
+    fmaCount: fmaC.length,
+    pendingCount: pending,
+    lastDate: last,
+    indicator
+  };
+}
+
+function bySort(sortKey){
+  return (a,b)=>{
+    if(sortKey==="staff_desc") return (b.staffCount-a.staffCount) || a.cis.localeCompare(b.cis,'fr');
+    if(sortKey==="fma_desc") return (b.fmaCount-a.fmaCount) || a.cis.localeCompare(b.cis,'fr');
+    if(sortKey==="pending_desc") return (b.pendingCount-a.pendingCount) || a.cis.localeCompare(b.cis,'fr');
+    if(sortKey==="last_desc") return (safeStr(b.lastDate).localeCompare(safeStr(a.lastDate))) || a.cis.localeCompare(b.cis,'fr');
+    return a.cis.localeCompare(b.cis,'fr');
+  };
+}
+
+function setText(id, text){
+  const el = document.getElementById(id);
+  if(el) el.textContent = text;
+}
+
+/* ========================= State ========================= */
+let STATE = {
+  session: null,
+  users: [],
+  fmas: [],
+  centers: [],
+  stats: []
+};
+
+function requireSession(){
+  const s = readJson(K_SESSION, null);
+  if(!s || !s.matricule){
+    alert("Vous devez être connecté.");
+    window.location.href = "login.html";
+    return null;
+  }
+  return s;
+}
+
+async function syncAll(){
+  const syncEl = document.getElementById("syncState");
+  try{
+    if (typeof syncAccueilFromCloud === "function") {
+      syncEl.textContent = "Synchronisation…";
+      await syncAccueilFromCloud();
+      syncEl.textContent = "Sync OK";
+    } else {
+      syncEl.textContent = "Mode local";
+    }
+  }catch(e){
+    console.warn(e);
+    syncEl.textContent = "Sync partielle";
+  }
+}
+
+function buildCenters(users, fmas){
+  const set = new Set();
+  users.forEach(u=>{
+    const p = safeStr(u.cis?.primary).trim();
+    if(p) set.add(p);
+    (u.cis?.secondaries||[]).forEach(s=>{
+      const c = safeStr(s.cis).trim();
+      if(c) set.add(c);
+    });
+  });
+  fmas.forEach(r=>{
+    const c = safeStr(r.cis).trim();
+    if(c) set.add(c);
+  });
+  return [...set].sort((a,b)=>a.localeCompare(b,'fr'));
+}
+
+function renderCenters(){
+  const tbody = document.getElementById("centersTbody");
+  const q = norm(document.getElementById('q').value);
+  const sortKey = document.getElementById('sort').value;
+
+  let rows = STATE.stats.slice();
+
+  if(q){
+    rows = rows.filter(r=> norm(r.cis).includes(q));
+  }
+
+  rows.sort(bySort(sortKey));
+
+  // KPIs
+  setText('kpiCenters', String(rows.length));
+  setText('kpiStaff', String(rows.reduce((s,r)=>s+r.staffCount,0)));
+  setText('kpiFma', String(rows.reduce((s,r)=>s+r.fmaCount,0)));
+  setText('kpiPending', String(rows.reduce((s,r)=>s+r.pendingCount,0)));
+
+  if(rows.length===0){
+    tbody.innerHTML = `<tr><td colspan="6" class="muted">Aucun centre ne correspond à votre recherche.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r=>{
+    const last = r.lastDate ? fmtDateFR(r.lastDate) : "—";
+    const pillCls = r.indicator.cls;
+    return `
+      <tr class="row-click" data-cis="${escapeHtml(r.cis)}">
+        <td>
+          <div class="badge">
+            <span class="pill"><span class="dot"></span><b>${escapeHtml(r.cis)}</b></span>
+          </div>
+        </td>
+        <td>${r.staffCount}</td>
+        <td>${r.fmaCount}</td>
+        <td>${r.pendingCount}</td>
+        <td>${last}</td>
+        <td><span class="pill ${pillCls}"><span class="dot"></span>${escapeHtml(r.indicator.label)}</span></td>
+      </tr>
+    `;
+  }).join('');
+
+  // click
+  [...tbody.querySelectorAll('tr[data-cis]')].forEach(tr=>{
+    tr.addEventListener('click', ()=> openCisModal(tr.getAttribute('data-cis')));
+  });
+}
+
+function escapeHtml(s){
+  return safeStr(s)
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#039;');
+}
+
+/* ========================= CIS Modal ========================= */
+function openOverlay(id){
+  const ov = document.getElementById(id);
+  ov.style.display = 'flex';
+  ov.setAttribute('aria-hidden','false');
+}
+function closeOverlay(id){
+  const ov = document.getElementById(id);
+  ov.style.display = 'none';
+  ov.setAttribute('aria-hidden','true');
+}
+
+function setActiveTab(tabBtn){
+  const tabs = [...document.querySelectorAll('#cisOverlay .tab')];
+  tabs.forEach(b=>b.classList.toggle('active', b===tabBtn));
+  const target = tabBtn.getAttribute('data-tab');
+  [...document.querySelectorAll('#cisOverlay .panel')].forEach(p=>{
+    p.classList.toggle('active', p.id===target);
+  });
+}
+
+function openCisModal(cis){
+  const title = document.getElementById('cisTitle');
+  const sub = document.getElementById('cisSub');
+  const footer = document.getElementById('cisFooter');
+
+  title.textContent = cis;
+  const st = STATE.stats.find(x=>norm(x.cis)===norm(cis));
+  sub.textContent = st ? `Effectif : ${st.staffCount} — FMA : ${st.fmaCount} — En attente : ${st.pendingCount}` : '—';
+
+  // Tabs default
+  const firstTab = document.querySelector('#cisOverlay .tab');
+  setActiveTab(firstTab);
+
+  renderCisStaff(cis);
+  renderCisBilan(cis);
+
+  footer.textContent = 'Conseil : cliquez sur “Voir FMA” pour consulter l’historique d’un agent.';
+  openOverlay('cisOverlay');
+}
+
+function renderCisStaff(cis){
+  const tbody = document.getElementById('staffTbody');
+  const loading = document.getElementById('staffLoading');
+  loading.style.display = 'flex';
+
+  const users = STATE.users.filter(u=>{
+    const primary = norm(u.cis?.primary);
+    const sec = (u.cis?.secondaries||[]).some(s=>norm(s.cis)===norm(cis));
+    return primary===norm(cis) || sec;
+  }).sort((a,b)=>(safeStr(a.nom).localeCompare(safeStr(b.nom),'fr')) || safeStr(a.prenom).localeCompare(safeStr(b.prenom),'fr'));
+
+  // index participations by agent name
+  const fmas = STATE.fmas;
+  const fmaByNameKey = new Map(); // key -> array
+  for(const r of fmas){
+    for(const p of (r.participants||[])){
+      const k = nameKey(p.name);
+      if(!k) continue;
+      if(!fmaByNameKey.has(k)) fmaByNameKey.set(k, []);
+      fmaByNameKey.get(k).push(r);
+    }
+  }
+
+  if(users.length===0){
+    tbody.innerHTML = `<tr><td colspan="8" class="muted">Aucun personnel trouvé pour ce CIS.</td></tr>`;
+    loading.style.display = 'none';
+    return;
+  }
+
+  tbody.innerHTML = users.map(u=>{
+    const full = `${safeStr(u.prenom)} ${safeStr(u.nom)}`.trim();
+    const k = nameKey(full);
+    const count = k && fmaByNameKey.has(k) ? fmaByNameKey.get(k).length : 0;
+
+    const permis = u.permisCTitulaire ? `Oui${u.permisCDate ? ' ('+fmtDateFR(u.permisCDate)+')' : ''}` : '—';
+    const vm = u.visiteMedProchaine ? fmtDateFR(u.visiteMedProchaine) : '—';
+
+    return `
+      <tr>
+        <td>${escapeHtml(u.matricule||'')}</td>
+        <td>${escapeHtml(u.nom||'')}</td>
+        <td>${escapeHtml(u.prenom||'')}</td>
+        <td>${escapeHtml(u.statut||'')}</td>
+        <td>${escapeHtml(permis)}</td>
+        <td>${escapeHtml(vm)}</td>
+        <td><b>${count}</b></td>
+        <td>
+          <button class="btn-sm primary" data-agent="${escapeHtml(u.matricule||'')}" data-name="${escapeHtml(full)}" data-cis="${escapeHtml(cis)}">Voir FMA</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // actions
+  [...tbody.querySelectorAll('button[data-agent]')].forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const name = btn.getAttribute('data-name');
+      const mat = btn.getAttribute('data-agent');
+      openAgentModal({ name, matricule: mat, cis });
+    });
+  });
+
+  loading.style.display = 'none';
+}
+
+function nameKey(s){
+  const t = norm(s).replaceAll(/\s+/g,' ').trim();
+  if(!t) return '';
+  // normalisation basique (accents)
+  return t.normalize('NFD').replace(/\p{Diacritic}/gu,'');
+}
+
+function renderCisBilan(cis){
+  const bilanT = document.getElementById('bilanTbody');
+  const recentT = document.getElementById('recentTbody');
+
+  const fmas = STATE.fmas
+    .filter(r=>norm(r.cis)===norm(cis))
+    .filter(r=> withinLast12Months(r.date))
+    .slice();
+
+  // Bilan par thème
+  const byTheme = new Map();
+  for(const r of fmas){
+    const th = safeStr(r.theme||'').trim() || '—';
+    if(!byTheme.has(th)){
+      byTheme.set(th, { theme: th, count:0, min:0, last:"" });
+    }
+    const o = byTheme.get(th);
+    o.count += 1;
+    o.min += Number(r.dureeMin||0);
+    const d = safeStr(r.date||'');
+    if(d && (!o.last || d>o.last)) o.last = d;
+  }
+
+  const rows = [...byTheme.values()].sort((a,b)=> (b.count-a.count) || a.theme.localeCompare(b.theme,'fr'));
+
+  bilanT.innerHTML = rows.length ? rows.map(r=>`
+    <tr>
+      <td>${escapeHtml(r.theme)}</td>
+      <td><b>${r.count}</b></td>
+      <td>${escapeHtml(hoursFromMin(r.min))}</td>
+      <td>${r.last ? fmtDateFR(r.last) : '—'}</td>
+    </tr>
+  `).join('') : `<tr><td colspan="4" class="muted">Aucune FMA sur les 12 derniers mois.</td></tr>`;
+
+  // 10 dernières
+  const recent = STATE.fmas
+    .filter(r=>norm(r.cis)===norm(cis))
+    .filter(r=>!!r.date)
+    .sort((a,b)=> safeStr(b.date).localeCompare(safeStr(a.date)))
+    .slice(0,10);
+
+  recentT.innerHTML = recent.length ? recent.map(r=>{
+    const done = (r.webact && r.webact.done) ? '✅' : '⏳';
+    return `
+      <tr>
+        <td>${fmtDateFR(r.date)}</td>
+        <td>${escapeHtml(r.theme||'—')}</td>
+        <td>${escapeHtml(r.formateur||'—')}</td>
+        <td>${done}</td>
+      </tr>
+    `;
+  }).join('') : `<tr><td colspan="4" class="muted">Aucune FMA trouvée.</td></tr>`;
+}
+
+/* ========================= Agent modal ========================= */
+function openAgentModal({name, matricule, cis}){
+  const title = document.getElementById('agentTitle');
+  const sub = document.getElementById('agentSub');
+  title.textContent = `FMA — ${name || matricule || 'Agent'}`;
+  sub.textContent = `CIS : ${cis}`;
+
+  const tbody = document.getElementById('agentTbody');
+
+  const k = nameKey(name);
+  const matches = STATE.fmas
+    .filter(r=> Array.isArray(r.participants) && r.participants.some(p=> nameKey(p.name)===k))
+    .sort((a,b)=> safeStr(b.date).localeCompare(safeStr(a.date)));
+
+  if(matches.length===0){
+    tbody.innerHTML = `<tr><td colspan="7" class="muted">Aucune FMA trouvée pour cet agent (selon les participants saisis).</td></tr>`;
+    openOverlay('agentOverlay');
+    return;
+  }
+
+  tbody.innerHTML = matches.map(r=>{
+    const done = (r.webact && r.webact.done) ? `✅ ${escapeHtml(r.webact.by||'')}` : '⏳ En attente';
+    const participants = (r.participants||[]).map(p=>`${p.name} (${p.role||'?'})`).join(', ');
+    return `
+      <tr>
+        <td>${fmtDateFR(r.date)}</td>
+        <td>${escapeHtml(r.cis||'')}</td>
+        <td>${escapeHtml(r.theme||'—')}</td>
+        <td>${escapeHtml(r.formateur||'—')}</td>
+        <td>${escapeHtml(hoursFromMin(r.dureeMin||0))}</td>
+        <td title="${escapeHtml(participants)}">${escapeHtml(participants.length>90 ? participants.slice(0,90)+'…' : participants)}</td>
+        <td>${done}</td>
+      </tr>
+    `;
+  }).join('');
+
+  openOverlay('agentOverlay');
+}
+
+/* ========================= Init ========================= */
+async function loadAndRender(){
+  STATE.session = requireSession();
+  if(!STATE.session) return;
+
+  const who = `${STATE.session.prenom||''} ${STATE.session.nom||''}`.trim() || STATE.session.matricule;
+  setText('whoami', `Connecté : ${who} — CIS : ${STATE.session.cis || '—'}`);
+
+  await syncAll();
+
+  STATE.users = getAllUsers();
+  STATE.fmas = getAllFma();
+
+  STATE.centers = buildCenters(STATE.users, STATE.fmas);
+  STATE.stats = STATE.centers.map(c=> calcCenterStats(c, STATE.users, STATE.fmas));
+
+  renderCenters();
+}
+
+document.getElementById('btnRefresh').addEventListener('click', loadAndRender);
+document.getElementById('btnBack').addEventListener('click', ()=> window.location.href = 'index.html');
+
+document.getElementById('q').addEventListener('input', renderCenters);
+document.getElementById('sort').addEventListener('change', renderCenters);
+
+// CIS modal controls
+document.getElementById('closeCis').addEventListener('click', ()=> closeOverlay('cisOverlay'));
+document.getElementById('cisOverlay').addEventListener('click', (e)=>{ if(e.target.id==='cisOverlay') closeOverlay('cisOverlay'); });
+
+document.querySelectorAll('#cisOverlay .tab').forEach(btn=>{
+  btn.addEventListener('click', ()=> setActiveTab(btn));
+});
+
+// Agent modal controls
+document.getElementById('closeAgent').addEventListener('click', ()=> closeOverlay('agentOverlay'));
+document.getElementById('agentOverlay').addEventListener('click', (e)=>{ if(e.target.id==='agentOverlay') closeOverlay('agentOverlay'); });
+
+// ESC
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Escape'){
+    closeOverlay('agentOverlay');
+    closeOverlay('cisOverlay');
+  }
+});
+
+window.addEventListener('DOMContentLoaded', loadAndRender);
+</script>
+</body>
+</html>
