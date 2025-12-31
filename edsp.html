@@ -271,7 +271,7 @@
     .spinner{ width: 16px; height: 16px; border-radius: 999px; border: 2px solid #ddd; border-top-color: var(--blue); animation: spin 1s linear infinite; }
     @keyframes spin{ to{ transform: rotate(360deg); } }
 
-    /* ✅ Matrice: colonnes/ligne sticky */
+    /* Matrice sticky */
     .sticky-col-1{ position: sticky; left:0; background:#fff; z-index:2; }
     .sticky-col-2{ position: sticky; left:220px; background:#fff; z-index:2; }
     .sticky-col-3{ position: sticky; left:340px; background:#fff; z-index:2; }
@@ -394,7 +394,7 @@
       <div class="panel" id="panelBilan">
         <div class="panel grid2">
 
-          <!-- ✅ NOUVEAU : matrice Agents × Thèmes -->
+          <!-- Matrice Agents × Thèmes -->
           <section class="card" style="box-shadow:none; grid-column: 1 / -1;">
             <div class="card-head">
               <div>
@@ -610,7 +610,7 @@ function nameKeys(s){
   return [...new Set([direct, reversed])];
 }
 
-/* ✅ helper map add */
+/* helper map add */
 function sumMapAdd(map, key, add){
   map.set(key, (map.get(key) || 0) + (Number(add)||0));
 }
@@ -858,7 +858,7 @@ function renderCisStaff(cis){
   }).sort((a,b)=>(safeStr(a.nom).localeCompare(safeStr(b.nom),'fr')) || safeStr(a.prenom).localeCompare(safeStr(b.prenom),'fr'));
 
   const fmas = STATE.fmas;
-  const fmaByNameKey = new Map(); // key -> array
+  const fmaByNameKey = new Map();
 
   function pushByKeys(keys, r){
     for(const k of (keys||[])){
@@ -921,7 +921,7 @@ function renderCisStaff(cis){
   loading.style.display = 'none';
 }
 
-/* ✅ NOUVEAU: Matrice Agents × Thèmes */
+/* Matrice Agents × Thèmes */
 function renderCisMatrix(cis){
   const thead = document.getElementById('matrixThead');
   const tbody = document.getElementById('matrixTbody');
@@ -1039,7 +1039,7 @@ function renderCisMatrix(cis){
 }
 
 function renderCisBilan(cis){
-  renderCisMatrix(cis); // ✅ appel matrice
+  renderCisMatrix(cis);
 
   const bilanT = document.getElementById('bilanTbody');
   const recentT = document.getElementById('recentTbody');
@@ -1093,7 +1093,7 @@ function renderCisBilan(cis){
   }).join('') : `<tr><td colspan="4" class="muted">Aucune FMA trouvée.</td></tr>`;
 }
 
-/* Agent modal (rendu propre) */
+/* ✅ IMPORTANT : synthèse par thème = thèmes DU CIS, pas du département */
 function openAgentModal({name, matricule, cis}){
   const title = document.getElementById('agentTitle');
   const sub = document.getElementById('agentSub');
@@ -1124,7 +1124,10 @@ function openAgentModal({name, matricule, cis}){
     minutesByTheme.set(th, (minutesByTheme.get(th) || 0) + Number(r.dureeMin || 0));
   }
 
-  const catalog = buildThemeCatalog(STATE.fmas, matches);
+  // ✅ catalogue thèmes basé sur le CIS sélectionné
+  const ck = centerKey(cis);
+  const cisFmas = STATE.fmas.filter(r => centerKey(r.cis) === ck);
+  const catalog = buildThemeCatalog(cisFmas, matches);
 
   synthT.innerHTML = catalog.length ? catalog.map(th=>{
     const min = minutesByTheme.get(th) || 0;
@@ -1139,7 +1142,7 @@ function openAgentModal({name, matricule, cis}){
         <td>${pill}</td>
       </tr>
     `;
-  }).join('') : `<tr><td colspan="3" class="muted">Aucun thème trouvé.</td></tr>`;
+  }).join('') : `<tr><td colspan="3" class="muted">Aucun thème défini pour ce CIS.</td></tr>`;
 
   if(matches.length===0){
     tbody.innerHTML = `<tr><td colspan="7" class="muted">Aucune FMA trouvée pour cet agent.</td></tr>`;
@@ -1177,7 +1180,7 @@ function openAgentModal({name, matricule, cis}){
   openOverlay('agentOverlay');
 }
 
-/* Init */
+/* ========================= Init ========================= */
 async function loadAndRender(){
   STATE.session = requireSession();
   if(!STATE.session) return;
