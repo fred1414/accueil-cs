@@ -377,7 +377,7 @@
                 <th>Statut</th>
                 <th>Permis C</th>
                 <th>Visite médicale</th>
-                <th>FMA (participations)</th>
+                <th>FMA (participations + formateur)</th>
                 <th></th>
               </tr>
             </thead>
@@ -468,7 +468,7 @@
           <tbody id="agentTbody"></tbody>
         </table>
       </div>
-      <div class="note">Correspondance : on rapproche le nom de l'agent avec les participants de la FMA (comparaison insensible à la casse).</div>
+      <div class="note">Correspondance : on rapproche le nom de l'agent avec les participants et le champ formateur (comparaison insensible à la casse).</div>
     </div>
   </div>
 </div>
@@ -489,6 +489,7 @@ function readJson(key, fallback){
 }
 function safeStr(v){ return (v==null?"":String(v)); }
 function norm(s){ return safeStr(s).trim().toLowerCase(); }
+
 function fmtDateFR(iso){
   if(!iso) return "—";
   // iso attendu YYYY-MM-DD
@@ -510,6 +511,15 @@ function withinLast12Months(dateIso){
   const past = new Date(now);
   past.setMonth(past.getMonth() - 12);
   return d >= past && d <= now;
+}
+
+/* ✅ AJOUT : normalisation CIS (fusionne "CIS Vergèze" et "Vergèze") */
+function stripCisPrefix(s){
+  return safeStr(s).trim().replace(/^cis\s+/i, '').replace(/\s+/g, ' ').trim();
+}
+function centerKey(s){
+  const t = stripCisPrefix(s).toLowerCase();
+  return t.normalize('NFD').replace(/\p{Diacritic}/gu,'');
 }
 
 function normalizeUser(uRaw){
@@ -545,14 +555,17 @@ function getAllFma(){
   return Array.isArray(arr) ? arr : [];
 }
 
+/* ✅ MODIF : comparaison via centerKey() */
 function calcCenterStats(center, users, fmas){
+  const ck = centerKey(center);
+
   const staff = users.filter(u=>{
-    const primary = norm(u.cis?.primary);
-    const sec = (u.cis?.secondaries||[]).some(s=>norm(s.cis)===norm(center));
-    return primary===norm(center) || sec;
+    const p = centerKey(u.cis?.primary);
+    const sec = (u.cis?.secondaries||[]).some(s=> centerKey(s.cis) === ck);
+    return p === ck || sec;
   });
 
-  const fmaC = fmas.filter(r=> norm(r.cis)===norm(center));
+  const fmaC = fmas.filter(r=> centerKey(r.cis) === ck);
   const pending = fmaC.filter(r=> !(r.webact && r.webact.done)).length;
 
   const last = fmaC.reduce((acc,r)=> {
@@ -629,21 +642,24 @@ async function syncAll(){
   }
 }
 
+/* ✅ MODIF : buildCenters fusionne centres par centerKey */
 function buildCenters(users, fmas){
-  const set = new Set();
+  const map = new Map(); // key -> displayName
+
+  function addCenter(raw){
+    const display = stripCisPrefix(raw);
+    if(!display) return;
+    const k = centerKey(display);
+    if(!map.has(k)) map.set(k, display);
+  }
+
   users.forEach(u=>{
-    const p = safeStr(u.cis?.primary).trim();
-    if(p) set.add(p);
-    (u.cis?.secondaries||[]).forEach(s=>{
-      const c = safeStr(s.cis).trim();
-      if(c) set.add(c);
-    });
+    addCenter(u.cis?.primary);
+    (u.cis?.secondaries||[]).forEach(s=> addCenter(s.cis));
   });
-  fmas.forEach(r=>{
-    const c = safeStr(r.cis).trim();
-    if(c) set.add(c);
-  });
-  return [...set].sort((a,b)=>a.localeCompare(b,'fr'));
+  fmas.forEach(r=> addCenter(r.cis));
+
+  return [...map.values()].sort((a,b)=>a.localeCompare(b,'fr'));
 }
 
 function renderCenters(){
@@ -731,7 +747,7 @@ function openCisModal(cis){
   const footer = document.getElementById('cisFooter');
 
   title.textContent = cis;
-  const st = STATE.stats.find(x=>norm(x.cis)===norm(cis));
+  const st = STATE.stats.find(x=>centerKey(x.cis)===centerKey(cis));
   sub.textContent = st ? `Effectif : ${st.staffCount} — FMA : ${st.fmaCount} — En attente : ${st.pendingCount}` : '—';
 
   // Tabs default
@@ -750,22 +766,29 @@ function renderCisStaff(cis){
   const loading = document.getElementById('staffLoading');
   loading.style.display = 'flex';
 
+  const ck = centerKey(cis);
+
   const users = STATE.users.filter(u=>{
-    const primary = norm(u.cis?.primary);
-    const sec = (u.cis?.secondaries||[]).some(s=>norm(s.cis)===norm(cis));
-    return primary===norm(cis) || sec;
+    const p = centerKey(u.cis?.primary);
+    const sec = (u.cis?.secondaries||[]).some(s=>centerKey(s.cis)===ck);
+    return p===ck || sec;
   }).sort((a,b)=>(safeStr(a.nom).localeCompare(safeStr(b.nom),'fr')) || safeStr(a.prenom).localeCompare(safeStr(b.prenom),'fr'));
 
-  // index participations by agent name
+  /* ✅ MODIF : index FMA par nom = participants OU formateur */
   const fmas = STATE.fmas;
-  const fmaByNameKey = new Map(); // key -> array
+  const fmaByNameKey = new Map(); // key -> array (participant + formateur)
+
+  function pushByKey(k, r){
+    if(!k) return;
+    if(!fmaByNameKey.has(k)) fmaByNameKey.set(k, []);
+    fmaByNameKey.get(k).push(r);
+  }
+
   for(const r of fmas){
     for(const p of (r.participants||[])){
-      const k = nameKey(p.name);
-      if(!k) continue;
-      if(!fmaByNameKey.has(k)) fmaByNameKey.set(k, []);
-      fmaByNameKey.get(k).push(r);
+      pushByKey(nameKey(p.name), r);
     }
+    pushByKey(nameKey(r.formateur || ""), r); // FMA "réalisées"
   }
 
   if(users.length===0){
@@ -822,8 +845,10 @@ function renderCisBilan(cis){
   const bilanT = document.getElementById('bilanTbody');
   const recentT = document.getElementById('recentTbody');
 
+  const ck = centerKey(cis);
+
   const fmas = STATE.fmas
-    .filter(r=>norm(r.cis)===norm(cis))
+    .filter(r=> centerKey(r.cis) === ck)
     .filter(r=> withinLast12Months(r.date))
     .slice();
 
@@ -854,7 +879,7 @@ function renderCisBilan(cis){
 
   // 10 dernières
   const recent = STATE.fmas
-    .filter(r=>norm(r.cis)===norm(cis))
+    .filter(r=> centerKey(r.cis) === ck)
     .filter(r=>!!r.date)
     .sort((a,b)=> safeStr(b.date).localeCompare(safeStr(a.date)))
     .slice(0,10);
@@ -882,12 +907,18 @@ function openAgentModal({name, matricule, cis}){
   const tbody = document.getElementById('agentTbody');
 
   const k = nameKey(name);
+
+  /* ✅ MODIF : match si participant OU formateur */
   const matches = STATE.fmas
-    .filter(r=> Array.isArray(r.participants) && r.participants.some(p=> nameKey(p.name)===k))
+    .filter(r=>{
+      const isParticipant = Array.isArray(r.participants) && r.participants.some(p=> nameKey(p.name)===k);
+      const isFormateur = nameKey(r.formateur || "") === k;
+      return isParticipant || isFormateur;
+    })
     .sort((a,b)=> safeStr(b.date).localeCompare(safeStr(a.date)));
 
   if(matches.length===0){
-    tbody.innerHTML = `<tr><td colspan="7" class="muted">Aucune FMA trouvée pour cet agent (selon les participants saisis).</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="muted">Aucune FMA trouvée pour cet agent (participants ou formateur).</td></tr>`;
     openOverlay('agentOverlay');
     return;
   }
@@ -898,7 +929,7 @@ function openAgentModal({name, matricule, cis}){
     return `
       <tr>
         <td>${fmtDateFR(r.date)}</td>
-        <td>${escapeHtml(r.cis||'')}</td>
+        <td>${escapeHtml(stripCisPrefix(r.cis||''))}</td>
         <td>${escapeHtml(r.theme||'—')}</td>
         <td>${escapeHtml(r.formateur||'—')}</td>
         <td>${escapeHtml(hoursFromMin(r.dureeMin||0))}</td>
