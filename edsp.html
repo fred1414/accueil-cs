@@ -365,18 +365,17 @@
         <button class="tab" data-tab="panelBilan">📊 Bilan FMA</button>
       </div>
 
+      <!-- ✅ MODIF : on enlève Permis C + Visite médicale -->
       <div class="panel active" id="panelStaff">
         <div class="loading" id="staffLoading" style="display:none;"><div class="spinner"></div><div>Chargement…</div></div>
         <div class="table-wrap">
-          <table class="mini-table">
+          <table class="mini-table" style="min-width: 820px;">
             <thead>
               <tr>
                 <th>Matricule</th>
                 <th>Nom</th>
                 <th>Prénom</th>
                 <th>Statut</th>
-                <th>Permis C</th>
-                <th>Visite médicale</th>
                 <th>FMA (participations + formateur)</th>
                 <th></th>
               </tr>
@@ -456,7 +455,6 @@
         <div class="muted" id="agentCount" style="font-weight:700;">—</div>
       </div>
 
-      <!-- Synthèse par thème -->
       <div class="table-wrap" style="padding: 6px 0 0;">
         <table class="mini-table" style="min-width: 880px;">
           <thead>
@@ -473,7 +471,6 @@
         </table>
       </div>
 
-      <!-- Détails -->
       <div style="padding:12px 16px 0;">
         <div style="font-weight:900;">📋 Mes FMA réalisées</div>
       </div>
@@ -523,14 +520,7 @@ function fmtDateFR(iso){
   if(!m) return iso;
   return `${m[3]}/${m[2]}/${m[1]}`;
 }
-function hoursFromMin(min){
-  const m = Number(min||0);
-  const h = Math.floor(m/60);
-  const r = m%60;
-  return (r===0) ? `${h}h` : `${h}h${String(r).padStart(2,'0')}`;
-}
 
-/* ✅ AJOUT: HH:MM pour la synthèse */
 function hhmmFromMin(min){
   const m = Math.max(0, Number(min||0));
   const hh = Math.floor(m/60);
@@ -538,7 +528,6 @@ function hhmmFromMin(min){
   return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
 }
 
-/* ✅ AJOUT: plage horaire si dispo */
 function fmtTimeRange(r){
   const start = safeStr(r.heureDebut || r.debut || r.start || "").trim();
   const end   = safeStr(r.heureFin   || r.fin   || r.end   || "").trim();
@@ -546,7 +535,6 @@ function fmtTimeRange(r){
   return "—";
 }
 
-/* ✅ AJOUT: catalogue thèmes (auto) */
 function buildThemeCatalog(allFmas, agentMatches){
   const set = new Set();
   for(const r of (allFmas||[])){
@@ -570,7 +558,7 @@ function withinLast12Months(dateIso){
   return d >= past && d <= now;
 }
 
-/* ✅ normalisation CIS (fusionne "CIS Vergèze" et "Vergèze") */
+/* CIS normalisation */
 function stripCisPrefix(s){
   return safeStr(s).trim().replace(/^cis\s+/i, '').replace(/\s+/g, ' ').trim();
 }
@@ -579,7 +567,7 @@ function centerKey(s){
   return t.normalize('NFD').replace(/\p{Diacritic}/gu,'');
 }
 
-/* ✅ FIX NOMS : gère "DUPONT Jean" et "Jean Dupont" */
+/* Noms normalisation */
 function normalizeNameBase(s){
   const t = norm(s).replace(/\s+/g,' ').trim();
   if(!t) return '';
@@ -858,7 +846,7 @@ function renderCisStaff(cis){
   }
 
   if(users.length===0){
-    tbody.innerHTML = `<tr><td colspan="8" class="muted">Aucun personnel trouvé pour ce CIS.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="muted">Aucun personnel trouvé pour ce CIS.</td></tr>`;
     loading.style.display = 'none';
     return;
   }
@@ -867,7 +855,6 @@ function renderCisStaff(cis){
     const full = `${safeStr(u.prenom)} ${safeStr(u.nom)}`.trim();
     const keys = nameKeys(full);
 
-    // dédoublonnage des FMA
     const set = new Set();
     for(const k of keys){
       const arr = fmaByNameKey.get(k) || [];
@@ -878,17 +865,12 @@ function renderCisStaff(cis){
     }
     const count = set.size;
 
-    const permis = u.permisCTitulaire ? `Oui${u.permisCDate ? ' ('+fmtDateFR(u.permisCDate)+')' : ''}` : '—';
-    const vm = u.visiteMedProchaine ? fmtDateFR(u.visiteMedProchaine) : '—';
-
     return `
       <tr>
         <td>${escapeHtml(u.matricule||'')}</td>
         <td>${escapeHtml(u.nom||'')}</td>
         <td>${escapeHtml(u.prenom||'')}</td>
         <td>${escapeHtml(u.statut||'')}</td>
-        <td>${escapeHtml(permis)}</td>
-        <td>${escapeHtml(vm)}</td>
         <td><b>${count}</b></td>
         <td>
           <button class="btn-sm primary" data-agent="${escapeHtml(u.matricule||'')}" data-name="${escapeHtml(full)}" data-cis="${escapeHtml(cis)}">Voir FMA</button>
@@ -938,7 +920,7 @@ function renderCisBilan(cis){
     <tr>
       <td>${escapeHtml(r.theme)}</td>
       <td><b>${r.count}</b></td>
-      <td>${escapeHtml(hoursFromMin(r.min))}</td>
+      <td>${escapeHtml(hhmmFromMin(r.min))}</td>
       <td>${r.last ? fmtDateFR(r.last) : '—'}</td>
     </tr>
   `).join('') : `<tr><td colspan="4" class="muted">Aucune FMA sur les 12 derniers mois.</td></tr>`;
@@ -962,7 +944,7 @@ function renderCisBilan(cis){
   }).join('') : `<tr><td colspan="4" class="muted">Aucune FMA trouvée.</td></tr>`;
 }
 
-/* ========================= Agent modal (NOUVEAU RENDU) ========================= */
+/* Agent modal */
 function openAgentModal({name, matricule, cis}){
   const title = document.getElementById('agentTitle');
   const sub = document.getElementById('agentSub');
@@ -987,7 +969,6 @@ function openAgentModal({name, matricule, cis}){
 
   countEl.textContent = `${name || matricule || 'Agent'} — ${matches.length} FMA trouvée(s)`;
 
-  // Synthèse par thème
   const minutesByTheme = new Map();
   for(const r of matches){
     const th = safeStr(r.theme || '—').trim() || '—';
@@ -996,26 +977,21 @@ function openAgentModal({name, matricule, cis}){
 
   const catalog = buildThemeCatalog(STATE.fmas, matches);
 
-  if(catalog.length === 0){
-    synthT.innerHTML = `<tr><td colspan="3" class="muted">Aucun thème trouvé.</td></tr>`;
-  } else {
-    synthT.innerHTML = catalog.map(th=>{
-      const min = minutesByTheme.get(th) || 0;
-      const ok = min > 0;
-      const pill = ok
-        ? `<span class="pill good"><span class="dot"></span>OK</span>`
-        : `<span class="pill warn"><span class="dot"></span>À faire</span>`;
-      return `
-        <tr>
-          <td>${escapeHtml(th)}</td>
-          <td>${ok ? escapeHtml(hhmmFromMin(min)) : ''}</td>
-          <td>${pill}</td>
-        </tr>
-      `;
-    }).join('');
-  }
+  synthT.innerHTML = catalog.length ? catalog.map(th=>{
+    const min = minutesByTheme.get(th) || 0;
+    const ok = min > 0;
+    const pill = ok
+      ? `<span class="pill good"><span class="dot"></span>OK</span>`
+      : `<span class="pill warn"><span class="dot"></span>À faire</span>`;
+    return `
+      <tr>
+        <td>${escapeHtml(th)}</td>
+        <td>${ok ? escapeHtml(hhmmFromMin(min)) : ''}</td>
+        <td>${pill}</td>
+      </tr>
+    `;
+  }).join('') : `<tr><td colspan="3" class="muted">Aucun thème trouvé.</td></tr>`;
 
-  // Détails
   if(matches.length===0){
     tbody.innerHTML = `<tr><td colspan="7" class="muted">Aucune FMA trouvée pour cet agent.</td></tr>`;
     openOverlay('agentOverlay');
@@ -1052,7 +1028,7 @@ function openAgentModal({name, matricule, cis}){
   openOverlay('agentOverlay');
 }
 
-/* ========================= Init ========================= */
+/* Init */
 async function loadAndRender(){
   STATE.session = requireSession();
   if(!STATE.session) return;
@@ -1077,7 +1053,6 @@ document.getElementById('btnBack').addEventListener('click', ()=> window.locatio
 document.getElementById('q').addEventListener('input', renderCenters);
 document.getElementById('sort').addEventListener('change', renderCenters);
 
-// CIS modal controls
 document.getElementById('closeCis').addEventListener('click', ()=> closeOverlay('cisOverlay'));
 document.getElementById('cisOverlay').addEventListener('click', (e)=>{ if(e.target.id==='cisOverlay') closeOverlay('cisOverlay'); });
 
@@ -1085,11 +1060,9 @@ document.querySelectorAll('#cisOverlay .tab').forEach(btn=>{
   btn.addEventListener('click', ()=> setActiveTab(btn));
 });
 
-// Agent modal controls
 document.getElementById('closeAgent').addEventListener('click', ()=> closeOverlay('agentOverlay'));
 document.getElementById('agentOverlay').addEventListener('click', (e)=>{ if(e.target.id==='agentOverlay') closeOverlay('agentOverlay'); });
 
-// ESC
 document.addEventListener('keydown', (e)=>{
   if(e.key==='Escape'){
     closeOverlay('agentOverlay');
