@@ -2943,17 +2943,53 @@ renderMateriel(JSON.parse(localStorage.getItem(keyMat)||"[]"));
     `;
   }
   function mf_ctx(){
-    const session = JSON.parse(localStorage.getItem("csver_session")||"null");
-    if(!session) return null;
-    const userDisplay = mf_tidy(((session.prenom||"")+" "+(session.nom||"")).trim() || session.matricule || "Agent");
-    const userKey = mf_key(userDisplay);
-    const fmas = JSON.parse(localStorage.getItem("fma_data_v2")||"[]");
-    let themes = JSON.parse(localStorage.getItem("csver_themes")||"null");
-    if(!themes || !Array.isArray(themes) || !themes.length){
-      themes = ["ARI / Reconnaissance","Échelle à coulisse","Sauvetage / LSPCC","Établissements / Alimentation","Feu de véhicule","Secours routier","Manoeuvre hydraulique"];
-    }
-    return { userDisplay, userKey, fmas, themes };
+  const session = JSON.parse(localStorage.getItem("csver_session")||"null");
+  if(!session) return null;
+
+  // ---- helpers CIS (comme dans fma.html, version light) ----
+  const mf_normCis = (x)=>{
+    if(!x) return "";
+    return String(x).replace(/^CIS\s*/i,"")
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .trim().toLowerCase();
+  };
+
+  const mf_currentCisLabel = ()=>{
+    const raw = session?.cis;
+    let value = "";
+    if(typeof raw === "string") value = raw;
+    else if(Array.isArray(raw)) value = raw[0] || "";
+    else if(raw && typeof raw === "object") value = raw.active || raw.current || raw.primary || "";
+    if(!value) value = "CIS Vergèze";
+    return value.startsWith("CIS") ? value : ("CIS " + value);
+  };
+
+  const mf_activeCisName = ()=> mf_normCis(mf_currentCisLabel());
+
+  // ---- données ----
+  const userDisplay = mf_tidy(((session.prenom||"")+" "+(session.nom||"")).trim() || session.matricule || "Agent");
+  const userKey = mf_key(userDisplay);
+  const fmas = JSON.parse(localStorage.getItem("fma_data_v2")||"[]");
+
+  // ✅ Thèmes par CIS
+  const themesKey = "csver_themes_" + mf_activeCisName();
+  let themes = null;
+
+  try{ themes = JSON.parse(localStorage.getItem(themesKey) || "null"); }catch(_){ themes = null; }
+
+  // 🔁 fallback rétro-compat : ancienne clé globale (si jamais)
+  if(!themes || !Array.isArray(themes) || !themes.length){
+    try{ themes = JSON.parse(localStorage.getItem("csver_themes") || "null"); }catch(_){ themes = null; }
   }
+
+  // 🧯 fallback ultime
+  if(!themes || !Array.isArray(themes) || !themes.length){
+    themes = ["ARI / Reconnaissance","Échelle à coulisse","Sauvetage / LSPCC","Établissements / Alimentation","Feu de véhicule","Secours routier","Manoeuvre hydraulique"];
+  }
+
+  return { userDisplay, userKey, fmas, themes };
+}
+
 
   function mf_filterMine(ctx){
     const me = ctx.userKey;
