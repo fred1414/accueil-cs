@@ -501,6 +501,18 @@ function getSession(){
   try{ return JSON.parse(localStorage.getItem("csver_session")||"null"); }
   catch{ return null; }
 }
+
+function requireSessionOrRedirect(){
+  const s = getSession();
+  if(!s){
+    alert("Session expirée.");
+    try{ window.location.href = "login.html"; }catch(_){}
+    return null;
+  }
+  return s;
+}
+
+  
 function normalizeRole(r){
   if(!r) return "";
   const x = String(r).trim().toLowerCase();
@@ -1213,6 +1225,10 @@ agentCheckInput.addEventListener("change", checkAgent);
 
 /* ================== INIT ================== */
 window.addEventListener("DOMContentLoaded", async ()=>{
+  // ✅ GUARD : on stop tout si pas de session
+  const sess = requireSessionOrRedirect();
+  if(!sess){ return; }
+
   if(typeof syncAccueilFromCloud === "function"){
     try{
       await syncAccueilFromCloud();
@@ -1250,6 +1266,7 @@ window.addEventListener("DOMContentLoaded", async ()=>{
 </script>
 </body>
 </html>
+
 
 
 
