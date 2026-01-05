@@ -336,9 +336,10 @@ hr{border:none;border-top:1px solid #eef2fb;margin:10px 0}
       <div id="themesList"></div>
       <hr>
       <div class="flex">
-        <input id="newTheme" placeholder="Nouveau thème">
-        <button class="btn-primary" id="addTheme">➕ Ajouter</button>
-      </div>
+  <input id="newTheme" placeholder="Nouveau thème" maxlength="20">
+  <button class="btn-primary" id="addTheme">➕ Ajouter</button>
+</div>
+
     </div>
   </div>
 </div>
@@ -1163,15 +1164,28 @@ const logoUrl = "https://i.postimg.cc/LsB40JQq/logo-cismic.png";
 document.getElementById("btnThemes").onclick=()=>{$("#themesModal").style.display="flex"; renderThemesAdmin();};
 document.getElementById("closeThemes").onclick=()=>{$("#themesModal").style.display="none";};
 document.getElementById("addTheme").onclick=()=>{
-  const v=$("#newTheme").value.trim(); if(!v) return;
-  const list=getThemes(); if(list.includes(v)) return alert("Ce thème existe déjà.");
+  const input = document.getElementById("newTheme");
+  const v = (input.value || "").trim();
+  if(!v) return;
+
+  if(v.length > 20){
+    alert("Le thème est limité à 20 caractères.");
+    input.focus();
+    return;
+  }
+
+  const list=getThemes();
+  if(list.includes(v)) return alert("Ce thème existe déjà.");
+
   list.push(v);
   writeJson(currentThemesKey(), list);
-  $("#newTheme").value="";
+
+  input.value="";
   renderThemesSelect();
   renderThemesAdmin();
   notify("Thème ajouté.");
 };
+
 function renderThemesAdmin(){
   const list = getThemes();
   const container = $("#themesList");
