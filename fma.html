@@ -1534,11 +1534,14 @@ th{background:#f2f2f2}
 
     cols.forEach((c,i)=> c.style.width = pct[i].toFixed(3) + '%');
 
-    // Après fit : autorise le retour à la ligne pour les en-têtes (lisible)
-    document.querySelectorAll('thead th').forEach(th=>{
-      th.style.whiteSpace = 'normal';
-      th.style.overflowWrap = 'break-word';
-    });
+   // Après fit : retour à la ligne OK, mais JAMAIS au milieu d'un mot
+document.querySelectorAll('thead th').forEach(th=>{
+  th.style.whiteSpace = 'normal';
+  th.style.wordBreak = 'keep-all';     // ✅ ne casse pas les mots
+  th.style.overflowWrap = 'normal';    // ✅ casse seulement sur espaces / séparateurs
+  th.style.hyphens = 'none';           // ✅ pas de césure
+});
+
   }
 
   (function(){
