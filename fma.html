@@ -1322,6 +1322,22 @@ function displayFromParts(raw){
 
 function printPivot(){
   const themes = getThemes();
+  // ✅ Largeurs des colonnes (impression pivot)
+  const nThemes = themes.length;
+  const firstPct = 18;   // largeur colonne "Agent \ Thème" (mets 20/22 si besoin)
+  const lastPct  = 8;    // largeur colonne "Total"
+  const themePct = (100 - firstPct - lastPct) / Math.max(1, nThemes);
+
+  // ✅ colgroup injecté dans <table> pour empêcher l’écrasement
+  const colgroup = `
+    <colgroup>
+      <col style="width:${firstPct}%">
+      ${themes.map(()=>`<col style="width:${themePct}%">`).join("")}
+      <col style="width:${lastPct}%">
+    </colgroup>
+  `;
+
+  
   const keyToDisplay = new Map();
 
   usersVerg().forEach(u=>{
@@ -1389,10 +1405,29 @@ const logoUrl = "https://i.postimg.cc/LsB40JQq/logo-cismic.png";
     color:#555;
   }
 
-  table{width:100%;border-collapse:collapse;table-layout:fixed}
-  th,td{border:1px solid #bbb;padding:4px 6px;font-size:10px;word-wrap:break-word;text-align:center}
-  th:first-child, td:first-child{ text-align:left }
+    table{width:100%;border-collapse:collapse;table-layout:fixed}
+  th,td{
+    border:1px solid #bbb;
+    padding:4px 6px;
+    font-size:10px;
+    text-align:center;
+    vertical-align:top;
+    white-space:normal;     /* ✅ autorise retours à la ligne */
+    overflow-wrap:anywhere; /* ✅ évite écrasement */
+    hyphens:auto;
+  }
+  th:first-child, td:first-child{
+    text-align:left;
+    font-weight:700;
+    overflow-wrap:break-word;
+    word-break:normal;
+  }
+  thead th{
+    font-size:9px;
+    line-height:1.1;
+  }
   th{background:#f2f2f2}
+
 </style>
 </head><body>
 
@@ -1406,9 +1441,11 @@ const logoUrl = "https://i.postimg.cc/LsB40JQq/logo-cismic.png";
   </div>
 
   <table>
+    ${colgroup}
     <thead>${header}</thead>
     <tbody>${rows}</tbody>
   </table>
+
 
   <script>
     (function(){
