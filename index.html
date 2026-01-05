@@ -2239,6 +2239,10 @@ function renderFormations(){
     const list = document.getElementById("formation-list");
     if(!list) return;
 
+	      // ✅ IMPORTANT : on vide tout de suite pour éviter de garder l'ancien affichage
+    list.innerHTML = "";
+
+	  
     // 🔑 Clé des consignes (même logique que consignes.html)
     const keyCons = "consignes_"+cisSel;
     let consignes = [];
@@ -2322,7 +2326,7 @@ function renderFormations(){
       if(d2 && serviceIso > d2) return false;
 
       const rec  = (c.recurrence || "none").toLowerCase();
-      const per  = Number(c.recurrencePer || 1) || 1;
+      const per  = Number(c.periodicite || 1) || 1;
       const base = d1;
 
       const baseDate = new Date(base + "T00:00:00");
