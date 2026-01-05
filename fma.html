@@ -357,6 +357,28 @@ hr{border:none;border-top:1px solid #eef2fb;margin:10px 0}
 <script>
 /* ====== Session & rôle ====== */
 const K_FMA="fma_data_v2";
+
+/* ✅ GUARD SESSION (à ajouter) */
+function robustSession(){
+  try{
+    const raw = localStorage.getItem("csver_session");
+    if(!raw) return null;
+    const s = JSON.parse(raw);
+    return (s && typeof s === "object") ? s : null;
+  }catch(_){
+    return null;
+  }
+}
+function requireSessionOrRedirect(){
+  const s = robustSession();
+  if(!s){
+    alert("Session expirée.");
+    try{ window.location.href = "login.html"; }catch(_){}
+    return null;
+  }
+  return s;
+}
+  
 /* 🔁 Thèmes par CIS : on utilise un préfixe + le nom du CIS normalisé */
 const K_THEMES_PREFIX = "csver_themes_";
 function currentThemesKey() {
@@ -364,7 +386,8 @@ function currentThemesKey() {
 }
 
 /* (ajout minimal) Helpers d'autorisation pour détecter Administrateur du CIS */
-function getSession(){ try{ return JSON.parse(localStorage.getItem("csver_session")||"null"); }catch{ return null; } }
+function getSession(){ return robustSession(); }
+
 function normalizeRole(r){
   if(!r) return "";
   const x=String(r).trim().toLowerCase();
@@ -403,12 +426,18 @@ function isAdminRole(){
 }
 
 /* (conservé) variables existantes pour compatibilité */
-let session=getSession();
-let role=session?.role||"admin";
+let session = requireSessionOrRedirect();
+if(!session){ throw new Error("no session"); } // stop net si pas de session
+
+let role = session?.role || "";
 const isAdminLike = ["admin","commandement"].includes(String(role).toLowerCase());
-const isAdminStrict = String(role).toLowerCase() === 'admin'; // 🔒 admin «pur» (inchangé)
-let userName=((session?.prenom||"")+" "+(session?.nom||"")).trim()||"Admin";
-document.getElementById('roleBadge').textContent=role;
+const isAdminStrict = String(role).toLowerCase() === 'admin'; // 🔒 admin «pur»
+
+let userName = (((session?.prenom||"") + " " + (session?.nom||"")).trim());
+if(!userName) userName = session?.matricule || "Agent";
+
+document.getElementById('roleBadge').textContent = role || "agent";
+
 
 /* Affichage des boutons :
    - 🗂️ Thèmes : élargi à admin de CIS + super admin
