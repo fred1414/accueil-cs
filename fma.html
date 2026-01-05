@@ -1102,16 +1102,54 @@ const logoUrl = "https://i.postimg.cc/LsB40JQq/logo-cismic.png";
     </tfoot>
   </table>
 
-  <script>
-    (function(){
-      const img = document.querySelector('.print-logo');
-      if(!img) return window.print();
-      if(img.complete) return window.print();
-      img.onload = () => window.print();
-      img.onerror = () => window.print();
-      setTimeout(()=>window.print(), 1200);
-    })();
-  <\/script>
+<script>
+  function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+  function fitPivotColumns(){
+    const table = document.querySelector('table');
+    if(!table) return;
+
+    const colAgent  = document.getElementById('col-agent');
+    const colTotal  = document.getElementById('col-total');
+    const colThemes = Array.from(document.querySelectorAll('col.col-theme'));
+
+    if(!colAgent || !colTotal || colThemes.length === 0) return;
+
+    // Mesure la largeur la plus grande des noms d’agents (colonne 1, tbody)
+    const agentCells = Array.from(document.querySelectorAll('tbody th:first-child'));
+    const maxNamePx = agentCells.reduce((mx, el) => Math.max(mx, el.scrollWidth), 0);
+
+    const tablePx = table.clientWidth || 1;
+    const desiredAgentPx = maxNamePx + 18; // marge
+    const agentPct = clamp((desiredAgentPx / tablePx) * 100, 14, 30);
+
+    // Total fixe
+    const totalPct = 7;
+
+    // Reste réparti sur les thèmes
+    const themePct = (100 - agentPct - totalPct) / colThemes.length;
+
+    colAgent.style.width = agentPct.toFixed(2) + '%';
+    colTotal.style.width = totalPct.toFixed(2) + '%';
+    colThemes.forEach(c => c.style.width = themePct.toFixed(2) + '%');
+  }
+
+  (function(){
+    const img = document.querySelector('.print-logo');
+
+    const go = () => {
+      fitPivotColumns();
+      requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+    };
+
+    if(!img) return go();
+    if(img.complete) return go();
+    img.onload = go;
+    img.onerror = go;
+    setTimeout(go, 1200);
+  })();
+<\/script>
+
 
 </body></html>`;
 
@@ -1324,18 +1362,21 @@ function printPivot(){
   const themes = getThemes();
   // ✅ Largeurs des colonnes (impression pivot)
   const nThemes = themes.length;
-  const firstPct = 18;   // largeur colonne "Agent \ Thème" (mets 20/22 si besoin)
-  const lastPct  = 8;    // largeur colonne "Total"
-  const themePct = (100 - firstPct - lastPct) / Math.max(1, nThemes);
+    // ✅ Largeurs colonnes (fallback) + colgroup identifiable (pour auto-ajustement)
+  const nThemes = themes.length;
 
-  // ✅ colgroup injecté dans <table> pour empêcher l’écrasement
+  let firstPct = 18; // fallback colonne Agent
+  let lastPct  = 8;  // fallback colonne Total
+  let themePct = (100 - firstPct - lastPct) / Math.max(1, nThemes);
+
   const colgroup = `
     <colgroup>
-      <col style="width:${firstPct}%">
-      ${themes.map(()=>`<col style="width:${themePct}%">`).join("")}
-      <col style="width:${lastPct}%">
+      <col id="col-agent" style="width:${firstPct}%">
+      ${themes.map(()=>`<col class="col-theme" style="width:${themePct}%">`).join("")}
+      <col id="col-total" style="width:${lastPct}%">
     </colgroup>
   `;
+
 
   
   const keyToDisplay = new Map();
@@ -1412,20 +1453,26 @@ const logoUrl = "https://i.postimg.cc/LsB40JQq/logo-cismic.png";
     font-size:10px;
     text-align:center;
     vertical-align:top;
-    white-space:normal;     /* ✅ autorise retours à la ligne */
-    overflow-wrap:anywhere; /* ✅ évite écrasement */
-    hyphens:auto;
+    white-space:normal;
+    overflow-wrap:break-word; /* ✅ pas de découpe agressive */
+    hyphens:none;            /* ✅ pas de césure automatique */
   }
+
   th:first-child, td:first-child{
     text-align:left;
     font-weight:700;
     overflow-wrap:break-word;
     word-break:normal;
   }
-  thead th{
+    thead th{
     font-size:9px;
     line-height:1.1;
+    white-space:normal;
+    word-break:keep-all;     /* ✅ 1 mot ne se coupe pas */
+    overflow-wrap:normal;    /* ✅ coupe seulement sur espaces */
+    hyphens:none;
   }
+
   th{background:#f2f2f2}
 
 </style>
