@@ -844,7 +844,8 @@ document.getElementById("btnEditFma").onclick=()=>{
       <button class="btn-danger icon-btn" title="Retirer">❌</button>`;
     row.querySelector("button").onclick=()=>row.remove();
     box.appendChild(row);
-    const radios = row.querySelectorAll(`input[name="role_${idSafe}]`);
+    const radios = row.querySelectorAll(`input[name="role_${idSafe}"]`);
+
     radios.forEach(radio=>{ if(radio.value===p.role) radio.checked=true; });
   });
   renderParticipantsUI();
@@ -1360,9 +1361,8 @@ function displayFromParts(raw){
 
 function printPivot(){
   const themes = getThemes();
-  // ✅ Largeurs des colonnes (impression pivot)
-  const nThemes = themes.length;
-    // ✅ Largeurs colonnes (fallback) + colgroup identifiable (pour auto-ajustement)
+
+  // ✅ Largeurs colonnes (fallback) + colgroup identifiable (pour auto-ajustement)
   const nThemes = themes.length;
 
   let firstPct = 18; // fallback colonne Agent
@@ -1377,8 +1377,6 @@ function printPivot(){
     </colgroup>
   `;
 
-
-  
   const keyToDisplay = new Map();
 
   usersVerg().forEach(u=>{
