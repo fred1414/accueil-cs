@@ -1405,7 +1405,12 @@ function printPivot(){
 
   const rowTot = mat.map(row=> row.reduce((s,v)=>s+v,0));
 
-  const header = `<tr><th style="text-align:left">Agent \\ Thème</th>${themes.map(t=>`<th>${t}</th>`).join("")}<th>Total</th></tr>`;
+  const header = `<tr>
+  <th id="th-agent" style="text-align:left">Agent \\ Thème</th>
+  ${themes.map(t=>`<th>${t}</th>`).join("")}
+  <th id="th-total">Total</th>
+</tr>`;
+
   const rows = usersArr.map(([_,disp],ri)=>{
     const tds = mat[ri].map(m=>`<td>${m?hhmm(m):""}</td>`).join("");
     return `<tr><th style="text-align:left">${disp}</th>${tds}<th>${rowTot[ri]?hhmm(rowTot[ri]):""}</th></tr>`;
@@ -1445,33 +1450,25 @@ const logoUrl = "https://i.postimg.cc/LsB40JQq/logo-cismic.png";
   }
 
     table{width:100%;border-collapse:collapse;table-layout:fixed}
-  th,td{
-    border:1px solid #bbb;
-    padding:4px 6px;
-    font-size:10px;
-    text-align:center;
-    vertical-align:top;
-    white-space:normal;
-    overflow-wrap:break-word; /* ✅ pas de découpe agressive */
-    hyphens:none;            /* ✅ pas de césure automatique */
-  }
+th,td{
+  border:1px solid #bbb;
+  padding:4px 6px;
+  font-size:10px;
+  text-align:center;
+  vertical-align:top;
+  white-space:nowrap; /* ✅ important pour mesurer les scrollWidth */
+}
+th:first-child, td:first-child{
+  text-align:left;
+  font-weight:700;
+}
+thead th{
+  font-size:9px;
+  line-height:1.1;
+  white-space:nowrap; /* ✅ important pour mesurer */
+}
+th{background:#f2f2f2}
 
-  th:first-child, td:first-child{
-    text-align:left;
-    font-weight:700;
-    overflow-wrap:break-word;
-    word-break:normal;
-  }
-    thead th{
-    font-size:9px;
-    line-height:1.1;
-    white-space:normal;
-    word-break:keep-all;     /* ✅ 1 mot ne se coupe pas */
-    overflow-wrap:normal;    /* ✅ coupe seulement sur espaces */
-    hyphens:none;
-  }
-
-  th{background:#f2f2f2}
 
 </style>
 </head><body>
@@ -1493,15 +1490,76 @@ const logoUrl = "https://i.postimg.cc/LsB40JQq/logo-cismic.png";
 
 
   <script>
-    (function(){
-      const img = document.querySelector('.print-logo');
-      if(!img) return window.print();
-      if(img.complete) return window.print();
-      img.onload = () => window.print();
-      img.onerror = () => window.print();
-      setTimeout(()=>window.print(), 1200);
-    })();
-  <\/script>
+  function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+  function fitPivotColumnsAuto(){
+    const table = document.querySelector('table');
+    if(!table) return;
+
+    const cols = Array.from(table.querySelectorAll('colgroup col'));
+    if(!cols.length) return;
+
+    // Mesure toutes les colonnes (thead + tbody)
+    const maxPx = Array(cols.length).fill(0);
+    const rows = Array.from(table.querySelectorAll('thead tr, tbody tr'));
+
+    rows.forEach(tr=>{
+      Array.from(tr.children).forEach((cell,i)=>{
+        if(i >= maxPx.length) return;
+        maxPx[i] = Math.max(maxPx[i], cell.scrollWidth);
+      });
+    });
+
+    const last = maxPx.length - 1;
+
+    // Garde-fous PORTRAIT (évite qu'une colonne prenne tout)
+    maxPx[0]   = clamp(maxPx[0] + 18, 180, 360); // Agent \ Thème
+    maxPx[last]= clamp(maxPx[last] + 12, 60, 110); // Total
+
+    for(let i=1; i<last; i++){
+      maxPx[i] = clamp(maxPx[i] + 16, 55, 240); // Colonnes thèmes
+    }
+
+    // Convertit en %
+    const sum = maxPx.reduce((s,v)=>s+v,0) || 1;
+    let pct = maxPx.map(v => (v/sum)*100);
+
+    // Contraintes en % (portrait)
+    pct[0] = clamp(pct[0], 18, 36);
+    pct[last] = clamp(pct[last], 6, 10);
+
+    // Renormalise à 100%
+    const pctSum = pct.reduce((s,v)=>s+v,0) || 1;
+    pct = pct.map(v => (v/pctSum)*100);
+
+    cols.forEach((c,i)=> c.style.width = pct[i].toFixed(3) + '%');
+
+    // Après fit : autorise le retour à la ligne pour les en-têtes (lisible)
+    document.querySelectorAll('thead th').forEach(th=>{
+      th.style.whiteSpace = 'normal';
+      th.style.overflowWrap = 'break-word';
+    });
+  }
+
+  (function(){
+    const img = document.querySelector('.print-logo');
+
+    const go = () => {
+      // Laisse le navigateur faire le layout, puis fit, puis print
+      requestAnimationFrame(() => {
+        fitPivotColumnsAuto();
+        requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+      });
+    };
+
+    if(!img) return go();
+    if(img.complete) return go();
+    img.onload = go;
+    img.onerror = go;
+    setTimeout(go, 1200);
+  })();
+<\/script>
+
 
 </body></html>`;
 
